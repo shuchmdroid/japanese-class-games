@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ゲームルーレット — 日本語クラス</title>
+<meta name="description" content="ルーレットを回して、今日みんなでやるゲームを決めよう。当たったゲームのページへは手動で移動します。先生がゲームを自由に追加・編集できます。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎡</text></svg>">
+<style>
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;font-family:"Segoe UI","Yu Gothic UI",Meiryo,"Hiragino Kaku Gothic ProN","Malgun Gothic",system-ui,sans-serif;color:#fff;
+  background:radial-gradient(1200px 700px at 20% -10%,#3b2a6b 0%,rgba(59,42,107,0) 60%),
+             radial-gradient(1100px 700px at 100% 0%,#1d4ed8 0%,rgba(29,78,216,0) 55%),
+             linear-gradient(160deg,#1a1140,#2b1a5e 55%,#11103a);
+  min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+:root{--gold:#ffd34e}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;max-width:1000px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
+.brand .logo{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#ec6f9e,#2563eb);box-shadow:0 6px 16px rgba(234,95,147,.4);font-size:20px}
+.brand small{display:block;font-size:11px;font-weight:600;color:#c9c2e8}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.chip-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:9px 15px;font-size:14px;font-weight:700;backdrop-filter:blur(6px);transition:background .15s,transform .12s}
+.chip-btn:hover{background:rgba(255,255,255,.2)}
+.chip-btn:active{transform:scale(.95)}
+.chip-btn.on{background:var(--gold);color:#3a2a00;border-color:var(--gold)}
+
+.wrap{max-width:760px;margin:0 auto;padding:6px 18px 60px;display:flex;flex-direction:column;align-items:center}
+h1.title{font-size:clamp(22px,5vw,30px);margin:6px 0 2px;text-align:center}
+p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
+
+/* wheel */
+.wheel-box{position:relative;width:min(86vw,440px);aspect-ratio:1/1;margin-top:6px}
+.pointer{position:absolute;top:-6px;left:50%;transform:translateX(-50%);z-index:5;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}
+.pointer svg{display:block}
+.hub{position:absolute;top:50%;left:50%;width:64px;height:64px;border-radius:50%;transform:translate(-50%,-50%);z-index:4;
+  background:radial-gradient(circle at 35% 30%,#fff,#ffd34e 65%,#e0a000);
+  border:4px solid #fff;box-shadow:0 6px 18px rgba(0,0,0,.4);display:grid;place-items:center;font-size:26px;cursor:pointer}
+.hub:active{transform:translate(-50%,-50%) scale(.94)}
+svg.wheel{width:100%;height:100%;border-radius:50%;box-shadow:0 0 0 8px rgba(255,255,255,.12),0 22px 50px rgba(0,0,0,.5);background:#0e0a2c}
+/* 回転は属性 rotate(角度 150 150) で中心(150,150)を指定。CSSのtransform-originは指定しない（二重指定で中心がずれるため） */
+
+.spin-btn{margin-top:22px;border:0;border-radius:999px;padding:18px 50px;font-size:23px;font-weight:900;color:#3a2400;
+  background:linear-gradient(135deg,#ffe27a,#ffb43b);box-shadow:0 12px 30px rgba(255,170,40,.45),inset 0 2px 0 rgba(255,255,255,.6);transition:transform .12s,filter .15s}
+.spin-btn:hover{transform:translateY(-2px)}
+.spin-btn:active{transform:translateY(1px) scale(.98)}
+.spin-btn:disabled{filter:grayscale(.4) brightness(.85);cursor:default;transform:none}
+
+/* result */
+.result{margin-top:20px;min-height:84px;text-align:center;width:100%}
+.result .label{font-size:13px;color:#a99fd6;font-weight:700;letter-spacing:.1em}
+.result .game{font-size:clamp(26px,7vw,40px);font-weight:900;margin:6px 0 12px;opacity:0;transform:scale(.6);transition:all .4s cubic-bezier(.2,1.5,.4,1)}
+.result.show .game{opacity:1;transform:scale(1)}
+.result .go{display:none;background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff;border:0;border-radius:999px;padding:13px 28px;font-size:17px;font-weight:800;box-shadow:0 10px 24px rgba(120,90,255,.4)}
+.result.show .go.has{display:inline-flex;align-items:center;gap:8px}
+
+/* settings */
+.overlay{position:fixed;inset:0;background:rgba(10,6,30,.6);backdrop-filter:blur(3px);display:none;z-index:50;align-items:flex-start;justify-content:center;padding:30px 16px;overflow:auto}
+.overlay.open{display:flex}
+.panel{background:#fff;color:#241552;border-radius:18px;max-width:520px;width:100%;padding:22px;box-shadow:0 30px 70px rgba(0,0,0,.5)}
+.panel h3{margin:0 0 4px;font-size:20px}
+.panel p.note{margin:0 0 14px;color:#7b71a8;font-size:13px}
+.panel textarea{width:100%;min-height:200px;border:1.5px solid #d9d2f0;border-radius:10px;padding:12px;font:inherit;line-height:1.7;color:#241552;resize:vertical}
+.ex{background:#f4f1fb;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#7b71a8;margin-top:10px;line-height:1.6}
+.ex code{background:#fff;padding:1px 6px;border-radius:5px;border:1px solid #e3def5}
+.panel-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.pbtn{border-radius:10px;padding:11px 18px;font-weight:800;border:1.5px solid #d9d2f0;background:#fff;color:#241552}
+.pbtn.primary{background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff;border-color:transparent}
+.pbtn.ghost{background:#f4f1fb}
+
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:40;overflow:hidden}
+.cf{position:absolute;top:-20px;width:10px;height:14px;opacity:.95;will-change:transform}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a class="brand" href="games.html">
+    <span class="logo">🎡</span>
+    <span>ゲームルーレット<small>日本語クラス・ゲーム</small></span>
+  </a>
+  <div class="top-actions">
+    <button class="chip-btn on" id="soundBtn">🔊 音</button>
+    <button class="chip-btn" id="fsBtn">⛶ 全画面</button>
+    <button class="chip-btn" id="setBtn">⚙ ゲーム編集</button>
+    <a class="chip-btn" href="bingo.html">🎱 ビンゴ</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1 class="title">🎡 今日のゲームをきめよう！</h1>
+  <p class="sub">ルーレットを回して、当たったゲームをみんなで！</p>
+
+  <div class="wheel-box">
+    <div class="pointer">
+      <svg width="46" height="40" viewBox="0 0 46 40"><path d="M23 40 L4 4 Q23 16 42 4 Z" fill="#ffd34e" stroke="#fff" stroke-width="3" stroke-linejoin="round"/></svg>
+    </div>
+    <svg class="wheel" id="wheel" viewBox="0 0 300 300" aria-label="ゲームルーレット">
+      <g id="rot"></g>
+    </svg>
+    <div class="hub" id="hub" title="回す">🎯</div>
+  </div>
+
+  <button class="spin-btn" id="spinBtn">🎡 まわす！</button>
+
+  <div class="result" id="result">
+    <div class="label">RESULT</div>
+    <div class="game" id="resultGame">？</div>
+    <a class="go" id="goBtn" href="#">▶ このゲームをひらく</a>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <h3>🎮 ゲームを編集</h3>
+    <p class="note">1行に1つのゲーム。先頭に絵文字、リンク先があれば <b>| のあと</b>にURL（ファイル名）を書きます。</p>
+    <textarea id="listArea" spellcheck="false"></textarea>
+    <div class="ex">
+      例：<br>
+      <code>🎱 ビンゴ | bingo.html</code> … クリックでビンゴのページへ行けます<br>
+      <code>🗣️ しりとり</code> … リンクなし（口頭でやるゲームなど）
+    </div>
+    <div class="panel-actions">
+      <button class="pbtn ghost" id="resetBtn">初期リストに戻す</button>
+      <button class="pbtn" id="setCancel">とじる</button>
+      <button class="pbtn primary" id="setSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<div id="confetti"></div>
+
+<script>
+/* ====== 既定のゲーム一覧（先生が編集可） ====== */
+const DEFAULT = [
+  "🎱 ビンゴ | bingo.html",
+  "🗣️ しりとり",
+  "🎭 ジェスチャーゲーム | gesture.html",
+  "🃏 神経衰弱 | memory.html",
+  "❓ クイズ大会",
+  "🎭 ものまね",
+  "📝 ことわざかるた",
+  "🏃 だるまさんがころんだ",
+];
+const PALETTE = ["#ec6f9e","#2563eb","#ffd34e","#43d9ad","#ff8a5c","#c08bff","#5ec8f0","#f76d8e","#7ad17a","#ffae3b"];
+
+const LS_LIST="roulette.list.v1", LS_CFG="roulette.cfg.v1";
+function load(k,d){try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+
+let cfg=load(LS_CFG,{sound:true});
+let items=parse(load(LS_LIST,null)||DEFAULT);
+
+function parse(lines){
+  return lines.map(l=>{
+    const [t,u]=l.split("|").map(s=>s.trim());
+    return {text:t||l.trim(), url:u||""};
+  }).filter(x=>x.text);
+}
+function rawLines(){ return (load(LS_LIST,null)||DEFAULT); }
+
+const $=s=>document.querySelector(s);
+const rot=$("#rot"), wheel=$("#wheel"), spinBtn=$("#spinBtn"), hub=$("#hub");
+const result=$("#result"), resultGame=$("#resultGame"), goBtn=$("#goBtn");
+
+let rotation=0, spinning=false;
+const CX=150, CY=150, R=150;
+
+function pol(angDeg,rad){ // 上(12時)=0°・時計回り
+  const a=(angDeg-90)*Math.PI/180; // -90で頂点を上に
+  return [CX+rad*Math.cos(a), CY+rad*Math.sin(a)];
+}
+
+function drawWheel(){
+  rot.innerHTML="";
+  const n=items.length, seg=360/n;
+  for(let i=0;i<n;i++){
+    const a0=i*seg, a1=(i+1)*seg;
+    const [x0,y0]=pol(a0,R), [x1,y1]=pol(a1,R);
+    const large=seg>180?1:0;
+    const path=document.createElementNS("http://www.w3.org/2000/svg","path");
+    path.setAttribute("d",`M${CX} ${CY} L${x0} ${y0} A${R} ${R} 0 ${large} 1 ${x1} ${y1} Z`);
+    path.setAttribute("fill",PALETTE[i%PALETTE.length]);
+    path.setAttribute("stroke","rgba(255,255,255,.65)");
+    path.setAttribute("stroke-width","2");
+    rot.appendChild(path);
+
+    // ラベル（放射状）
+    const mid=a0+seg/2;
+    const [tx,ty]=pol(mid,R*0.62);
+    let rotDeg=mid; if(mid>90 && mid<270) rotDeg=mid+180; // 下半分は反転して読みやすく
+    const txt=document.createElementNS("http://www.w3.org/2000/svg","text");
+    txt.setAttribute("x",tx); txt.setAttribute("y",ty);
+    txt.setAttribute("text-anchor","middle");
+    txt.setAttribute("dominant-baseline","central");
+    txt.setAttribute("transform",`rotate(${rotDeg-90} ${tx} ${ty})`);
+    txt.setAttribute("fill","#fff");
+    txt.setAttribute("font-weight","800");
+    const fs=n>10?11:(n>7?13:15);
+    txt.setAttribute("font-size",fs);
+    txt.setAttribute("style","paint-order:stroke;stroke:rgba(0,0,0,.28);stroke-width:3px");
+    txt.textContent=trim(items[i].text, n>10?7:10);
+    rot.appendChild(txt);
+  }
+  rot.setAttribute("transform",`rotate(${rotation} ${CX} ${CY})`);
+}
+function trim(s,max){ return s.length>max ? s.slice(0,max-1)+"…" : s; }
+
+/* ====== サウンド ====== */
+let actx=null;
+function audio(){ if(!cfg.sound) return null; if(!actx){try{actx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return null}} if(actx.state==="suspended")actx.resume(); return actx; }
+function tick(){ const a=audio(); if(!a)return; const t=a.currentTime,o=a.createOscillator(),g=a.createGain();
+  o.type="square"; o.frequency.value=900; g.gain.setValueAtTime(0.12,t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.04);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t+0.05); }
+function tone(f,s,d,ty="triangle",v=.22){ const a=audio(); if(!a)return; const t=a.currentTime+s,o=a.createOscillator(),g=a.createGain();
+  o.type=ty; o.frequency.setValueAtTime(f,t); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(v,t+0.012); g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t+d+0.02); }
+function fanfare(){ [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone(f,i*0.1,0.55,"triangle",0.22)); tone(1318.5,0.42,0.5,"sine",0.16); }
+
+/* ====== スピン ====== */
+function spin(){
+  if(spinning||!items.length) return;
+  spinning=true; spinBtn.disabled=true; result.classList.remove("show");
+  audio();
+  const n=items.length, seg=360/n;
+  const choice=Math.floor(Math.random()*n);
+  // 当たりセグメントの中心をポインター（上）に合わせる回転量
+  const desired=(360-(choice+0.5)*seg)%360;
+  const turns=5+Math.floor(Math.random()*3);
+  let target=rotation+turns*360;
+  const curMod=((target%360)+360)%360;
+  target += ((desired-curMod)+360)%360;
+
+  const start=rotation, delta=target-start, dur=4200+Math.random()*800;
+  let startT=null, lastIdx=-1;
+  function frame(ts){
+    if(startT===null) startT=ts;
+    const p=Math.min((ts-startT)/dur,1);
+    const eased=1-Math.pow(1-p,3); // easeOutCubic
+    rotation=start+delta*eased;
+    rot.setAttribute("transform",`rotate(${rotation} ${CX} ${CY})`);
+    const idx=Math.floor(((((-rotation)%360)+360)%360)/seg);
+    if(idx!==lastIdx){ lastIdx=idx; tick(); }
+    if(p<1) requestAnimationFrame(frame);
+    else finish(choice);
+  }
+  requestAnimationFrame(frame);
+}
+
+function finish(i){
+  rotation=((rotation%360)+360)%360;
+  spinning=false; spinBtn.disabled=false;
+  const g=items[i];
+  resultGame.textContent=g.text;
+  goBtn.classList.toggle("has",!!g.url);
+  if(g.url){ goBtn.href=g.url; }
+  result.classList.add("show");
+  fanfare(); confetti();
+}
+
+function confetti(){
+  const box=$("#confetti"), colors=PALETTE.concat("#fff");
+  for(let i=0;i<50;i++){ const c=document.createElement("div"); c.className="cf";
+    c.style.left=Math.random()*100+"vw"; c.style.background=colors[i%colors.length];
+    c.style.borderRadius=Math.random()<.5?"2px":"50%";
+    const d=1.4+Math.random()*1.4; c.style.animation=`fall ${d}s cubic-bezier(.3,.6,.5,1) forwards`;
+    c.style.transform=`translateY(-20px) rotate(${Math.random()*360}deg)`;
+    box.appendChild(c); setTimeout(()=>c.remove(),d*1000+100);
+  }
+}
+
+/* ====== 設定 ====== */
+const overlay=$("#overlay"), listArea=$("#listArea");
+$("#setBtn").onclick=()=>{ listArea.value=rawLines().join("\n"); overlay.classList.add("open"); };
+$("#setCancel").onclick=()=>overlay.classList.remove("open");
+$("#setSave").onclick=()=>{
+  const lines=listArea.value.split("\n").map(s=>s.trim()).filter(Boolean);
+  if(lines.length<2){ alert("ゲームは2つ以上にしてください。"); return; }
+  save(LS_LIST,lines); items=parse(lines); rotation=0; drawWheel();
+  result.classList.remove("show"); overlay.classList.remove("open");
+};
+$("#resetBtn").onclick=()=>{ if(!confirm("ゲーム一覧を初期状態に戻しますか？"))return;
+  localStorage.removeItem(LS_LIST); items=parse(DEFAULT); rotation=0; drawWheel();
+  result.classList.remove("show"); overlay.classList.remove("open"); };
+overlay.onclick=e=>{ if(e.target===overlay) overlay.classList.remove("open"); };
+
+$("#soundBtn").onclick=function(){ cfg.sound=!cfg.sound; save(LS_CFG,cfg);
+  this.classList.toggle("on",cfg.sound); this.textContent=cfg.sound?"🔊 音":"🔇 音"; if(cfg.sound)audio(); };
+$("#soundBtn").classList.toggle("on",cfg.sound); $("#soundBtn").textContent=cfg.sound?"🔊 音":"🔇 音";
+
+$("#fsBtn").onclick=function(){ if(!document.fullscreenElement){(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen||function(){}).call(document.documentElement);} else {(document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);} };
+
+spinBtn.onclick=spin; hub.onclick=spin;
+document.addEventListener("keydown",e=>{ if((e.code==="Space"||e.code==="Enter")&&!overlay.classList.contains("open")){e.preventDefault();spin();} });
+
+drawWheel();
+</script>
+<script src="intro.js"></script>
+<script>ClassIntro.init({key:"roulette",icon:"🎡",title:"ゲームルーレット",desc:"ルーレットを回して、今日みんなでやるゲームを決めます。\n止まったところのゲームで遊びましょう！"});</script>
+</body>
+</html>

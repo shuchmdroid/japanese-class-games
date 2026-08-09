@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>今日の教科書 — 日本語クラス</title>
+<meta name="description" content="教科書のようなページで新しい概念を教えるツール。左に日本語・右に翻訳。文にカーソルを合わせると対応する文が光ります。画像・ページめくり・ページ検索・AI一括入力つき。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;font-family:"Segoe UI","Yu Gothic UI",Meiryo,"Hiragino Kaku Gothic ProN","Malgun Gothic",system-ui,sans-serif;color:#fff;
+  background:radial-gradient(1200px 700px at 20% -10%,#3b2a6b 0%,rgba(59,42,107,0) 60%),
+             radial-gradient(1100px 700px at 100% 0%,#1d4ed8 0%,rgba(29,78,216,0) 55%),
+             linear-gradient(160deg,#1a1140,#2b1a5e 55%,#11103a);
+  min-height:100vh;-webkit-font-smoothing:antialiased}
+:root{--gold:#ffd34e;--hl:#ffe98a;--hl2:#fff2a8}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;max-width:1100px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
+.brand .logo{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#ec6f9e,#2563eb);box-shadow:0 6px 16px rgba(234,95,147,.4);font-size:20px}
+.brand small{display:block;font-size:11px;font-weight:600;color:#c9c2e8}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.chip-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:9px 15px;font-size:14px;font-weight:700;backdrop-filter:blur(6px);transition:background .15s,transform .12s}
+.chip-btn:hover{background:rgba(255,255,255,.2)}
+.chip-btn:active{transform:scale(.95)}
+
+.wrap{max-width:1000px;margin:0 auto;padding:6px 16px 50px}
+.screen{animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+
+/* ---------- read (textbook) ---------- */
+.book{perspective:2400px;margin-top:6px;padding:0 10px}
+.page{position:relative;color:#2a2733;border-radius:12px;overflow:hidden;
+  background:linear-gradient(90deg,#e9e0ca 0%,#fdfbf2 4%,#fdfbf2 46%,#ece2c8 50%,#fdfbf2 54%,#fdfbf2 96%,#e9e0ca 100%);
+  box-shadow:0 24px 54px rgba(0,0,0,.42),inset 0 0 0 1px rgba(0,0,0,.05),
+    -7px 0 0 -3px #f1ead7,-13px 0 0 -6px #e9e0ca,7px 0 0 -3px #f1ead7,13px 0 0 -6px #e9e0ca;
+  padding:22px 30px 26px;transform-style:preserve-3d;transition:transform .3s ease,opacity .3s ease;backface-visibility:hidden}
+.page::after{content:"";position:absolute;left:50%;top:14px;bottom:14px;width:2px;transform:translateX(-50%);z-index:2;pointer-events:none;
+  background:linear-gradient(rgba(120,90,40,0),rgba(120,90,40,.28) 20%,rgba(120,90,40,.28) 80%,rgba(120,90,40,0))}
+.page.flipping{pointer-events:none}
+.page-title{font-size:clamp(20px,3.2vw,30px);font-weight:900;color:#3a2d6b;border-bottom:3px solid #e6ddc4;padding-bottom:10px;margin:0 0 14px;letter-spacing:.01em}
+.page-title::before{content:"📖 ";font-size:.9em}
+.pagebody{}
+.prow{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px dashed #e2d9bf;transition:background .12s;cursor:default}
+.prow:hover,.prow.sel{background:var(--hl)}
+.prow.sel{background:var(--hl2);box-shadow:inset 0 0 0 2px #f0c94a}
+.prow .cell{padding:11px 16px;line-height:1.7;font-size:clamp(15px,2.2vw,20px);min-width:0;word-break:break-word}
+.prow .cell.jp{font-weight:600;color:#241f33}
+.prow .cell.tr{color:#4a4a68;font-size:clamp(14px,2vw,18px)}
+.pimg{padding:14px 8px;text-align:center;border-bottom:1px dashed #e2d9bf}
+.pimg img{max-width:min(100%,560px);max-height:46vh;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,.18)}
+/* 本の中のページ番号 */
+.pageno{position:absolute;left:0;right:0;bottom:9px;text-align:center;font-size:12.5px;color:#a89a72;font-weight:700;letter-spacing:.14em;z-index:3}
+/* 表紙（見開き：左＝画像・題名、右＝ポイントの言葉） */
+.cover{display:grid;grid-template-columns:1fr 1fr;align-items:center;height:100%;padding:8px 0 26px}
+.cover .cleft,.cover .cright{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px;padding:0 26px;min-width:0}
+.cover.solo .cleft{grid-column:1/-1}
+.cover img{max-height:44vh;max-width:88%;border-radius:12px;box-shadow:0 12px 28px rgba(0,0,0,.2)}
+.cover .cttl{font-size:clamp(24px,3.8vw,42px);font-weight:900;color:#3a2d6b;line-height:1.3}
+.cover .kwlabel{font-size:clamp(13px,1.8vw,17px);color:#a89a72;font-weight:800;letter-spacing:.12em}
+.cover .kwlabel::before{content:"🔑 "}
+.cover .kw{display:flex;flex-direction:column;gap:13px;align-items:center;max-width:100%}
+.cover .kw span{background:#fff;border:2px solid #e6ddc4;border-radius:999px;padding:9px 24px;font-weight:800;color:#3a2d6b;font-size:clamp(16px,2.6vw,26px);box-shadow:0 3px 8px rgba(0,0,0,.08);max-width:100%;word-break:break-word}
+@media(max-width:620px){
+  .cover{display:flex;flex-direction:column;justify-content:center;gap:14px}
+  .cover .kw{flex-direction:row;flex-wrap:wrap;justify-content:center}
+}
+/* たしかめ問題 */
+.quiz-head{display:inline-block;background:#fdeef3;color:#c2185b;font-weight:900;border-radius:999px;padding:6px 16px;font-size:clamp(13px,2vw,16px);margin:0 0 10px}
+.quiz .qrow{padding:13px 14px;border-bottom:1px dashed #e2d9bf}
+.quiz .qq{font-weight:700;font-size:clamp(15px,2.3vw,21px);color:#241f33;line-height:1.65}
+.quiz .qq::before{content:"Q. ";color:#c2185b;font-weight:900}
+.quiz .ans{margin-top:9px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.quiz .ansbtn{border:1.5px solid #e0d6b8;background:#fff;border-radius:999px;padding:7px 16px;font-weight:800;font-size:13.5px;color:#7a6a3a;cursor:pointer}
+.quiz .ansbtn:hover{background:#faf5e6}
+.quiz .atext{display:none;font-weight:800;color:#178a64;font-size:clamp(15px,2.3vw,21px)}
+.quiz .qrow.show .atext{display:inline}
+/* 編集：表紙・問題 */
+.covrow{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.covrow .lbl{font-size:12px;font-weight:800;color:#a99fd6;flex:0 0 auto}
+.covrow .covthumb{width:64px;height:48px;border-radius:8px;border:1.5px dashed rgba(255,255,255,.3);background-color:rgba(255,255,255,.08);background-size:cover;background-position:center;display:grid;place-items:center;color:#cfc8f0;cursor:pointer;position:relative;flex:0 0 auto;font-size:15px}
+.covrow .covthumb.has{border-style:solid;border-color:rgba(255,255,255,.4)}
+.covrow .covthumb:hover{border-color:#ec6f9e;box-shadow:0 0 0 3px rgba(236,111,158,.4),0 6px 16px rgba(236,111,158,.3);color:#fff}
+.covrow .covthumb .imgx{position:absolute;top:-7px;right:-7px;width:18px;height:18px;border-radius:50%;border:0;background:#e53935;color:#fff;font-size:11px;font-weight:900;display:grid;place-items:center;cursor:pointer;line-height:1;padding:0}
+.covrow input{flex:1;min-width:150px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:9px;padding:9px 11px;font:inherit;font-weight:600;font-size:14px}
+.covrow input.kwl{flex:0 1 185px;min-width:120px}
+.qedit{margin-top:12px;border-top:1.5px dashed rgba(255,255,255,.15);padding-top:10px}
+.qedit .qlabel{font-size:12px;font-weight:800;color:#a99fd6;margin-bottom:8px}
+.empty-note{text-align:center;color:#a99fd6;margin-top:34px;font-size:15px;line-height:1.9}
+.page-empty{color:#8a8478;text-align:center;padding:30px;font-size:15px}
+@media(max-width:620px){
+  .prow{grid-template-columns:1fr}
+  .prow .cell.tr{border-top:1.5px dashed #e6ddc4}
+  .page::after{display:none}
+  .page{background:linear-gradient(#fdfbf2,#f6f1e2);box-shadow:0 20px 50px rgba(0,0,0,.4),inset 0 0 0 1px rgba(0,0,0,.05)}
+}
+
+.controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px}
+.navbtn{border:0;border-radius:14px;padding:14px 22px;font-size:17px;font-weight:900;color:#3a2400;background:linear-gradient(135deg,#ffe27a,#ffb43b);box-shadow:0 8px 22px rgba(255,170,40,.35)}
+.navbtn:disabled{filter:grayscale(.5) brightness(.85);cursor:default}
+.navbtn:active{transform:scale(.97)}
+.counter{color:#c9c2e8;font-weight:800;font-size:15px}
+.counter b{color:var(--gold);font-size:18px}
+.readhint{text-align:center;color:#a99fd6;font-size:12.5px;margin:8px 0 0}
+
+/* ---------- page list panel ---------- */
+.navpanel{position:fixed;top:0;right:0;height:100%;width:min(88vw,340px);background:rgba(24,16,58,.97);backdrop-filter:blur(10px);border-left:1.5px solid rgba(255,255,255,.16);box-shadow:-14px 0 44px rgba(0,0,0,.5);z-index:80;display:flex;flex-direction:column;padding:16px;transform:translateX(100%);transition:transform .26s ease;pointer-events:none}
+.navpanel.open{transform:translateX(0);pointer-events:auto}
+.np-head{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:17px;margin-bottom:12px}
+.np-close{background:rgba(255,255,255,.12);border:0;color:#fff;width:34px;height:34px;border-radius:9px;font-weight:800;font-size:15px}
+.np-jump{display:flex;gap:8px;margin-bottom:12px}
+.np-jump input{flex:1;min-width:0;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:10px;padding:10px 12px;font:inherit;font-weight:700}
+.np-jump button{border:0;border-radius:10px;padding:0 16px;font-weight:800;background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff}
+.np-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch}
+.np-item{display:flex;gap:10px;align-items:flex-start;text-align:left;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:12px;padding:11px 13px;color:#e7e2ff;font-weight:700;font-size:15px;line-height:1.4;cursor:pointer;width:100%}
+.np-item:hover{background:rgba(255,255,255,.13)}
+.np-item .num{flex:0 0 auto;min-width:24px;height:24px;border-radius:7px;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:13px;font-weight:800}
+.np-item .sub{font-size:11px;color:#a99fd6;font-weight:700;margin-top:2px}
+.np-item.cur{background:linear-gradient(135deg,rgba(236,111,158,.4),rgba(37,99,235,.4));border-color:var(--gold);color:#fff}
+.np-item.cur .num{background:var(--gold);color:#3a2a00}
+.np-empty{color:#a99fd6;padding:10px 4px;font-size:14px}
+
+/* ---------- edit ---------- */
+h1.title{font-size:clamp(22px,5vw,30px);margin:8px 0 2px;text-align:center}
+p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
+.pg{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:16px;padding:16px;margin-bottom:14px}
+.pg-head{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.pg-head .num{width:26px;height:26px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;background:linear-gradient(135deg,#ec6f9e,#2563eb)}
+.pg-head input.ttl{flex:1;min-width:120px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:9px;padding:9px 12px;font:inherit;font-weight:800}
+.psm{width:34px;height:34px;border-radius:9px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-weight:800;flex:0 0 auto}
+.psm:disabled{opacity:.35}
+.psm.del{color:#ff9aa8;border-color:rgba(255,107,133,.4)}
+.items{display:flex;flex-direction:column;gap:8px;margin:6px 0 10px}
+.irow{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:stretch}
+.irow textarea{min-height:44px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:9px;padding:8px 10px;font:inherit;font-size:14px;line-height:1.5;resize:vertical}
+.irow .iact{display:flex;flex-direction:column;gap:3px}
+.irow .iact button{width:30px;height:20px;border-radius:6px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-size:10px;font-weight:800;line-height:1;padding:0}
+.irow .iact button.del{color:#ff9aa8;border-color:rgba(255,107,133,.4)}
+.irow.img{grid-template-columns:1fr auto}
+.irow .thumb{height:70px;border-radius:9px;background-size:contain;background-position:center;background-repeat:no-repeat;background-color:#fff;border:1.5px solid rgba(255,255,255,.2);transition:box-shadow .12s,border-color .12s}
+.irow .thumb:hover{border-color:#ec6f9e;box-shadow:0 0 0 3px rgba(236,111,158,.4)}
+#editList:focus{outline:none}
+.ilabels{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;font-size:11px;color:#a99fd6;font-weight:700;padding:0 2px}
+.ilabels span:last-child{width:34px}
+.addbtns{display:flex;gap:8px;flex-wrap:wrap}
+.addbtns button{background:transparent;border:1.5px dashed rgba(255,255,255,.32);color:#cfc8f0;border-radius:10px;padding:8px 13px;font-weight:800;font-size:13px}
+.addbtns button:hover{border-color:#fff;color:#fff}
+.addbtns button.ai{border-style:solid;border-color:rgba(122,240,196,.5);color:#7af0c4}
+.note{font-size:12.5px;color:#a99fd6;margin:2px 2px 14px;line-height:1.7}
+.editbar{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:4px}
+.langfield{display:flex;align-items:center;gap:8px;font-weight:800;font-size:14px;color:#e7e2ff;margin-bottom:12px;flex-wrap:wrap}
+.langfield input{border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.95);color:#241552;border-radius:10px;padding:8px 12px;font:inherit;font-weight:700;width:160px}
+.mini{border-radius:10px;padding:11px 18px;font-weight:800;font-size:15px;border:0}
+.mini.save{background:linear-gradient(135deg,#7af0c4,#2bbf8e);color:#063b2c}
+.mini.primary{background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff}
+.mini.plain{background:rgba(255,255,255,.14);color:#fff}
+
+/* AI modal */
+.overlay{position:fixed;inset:0;background:rgba(10,6,30,.66);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow:auto;z-index:90}
+.ai-panel{background:#1c1346;border:1.5px solid rgba(255,255,255,.16);border-radius:18px;max-width:600px;width:100%;padding:20px;box-shadow:0 30px 70px rgba(0,0,0,.55)}
+.ai-panel h3{margin:0 0 6px;font-size:19px}
+.ai-panel .step{font-weight:800;color:var(--gold);font-size:13px;margin:14px 0 6px}
+.ai-panel textarea{width:100%;min-height:90px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:10px;padding:11px;font:inherit;line-height:1.6;resize:vertical}
+.ai-prompt{background:rgba(255,255,255,.95);color:#241552;border-radius:8px;padding:10px;margin:6px 0;font-size:12.5px;line-height:1.6;white-space:pre-wrap;font-weight:600;max-height:150px;overflow:auto}
+.ai-lang{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:#e7e2ff;margin-bottom:6px}
+.ai-lang input{flex:1;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.95);color:#241552;border-radius:8px;padding:7px 10px;font:inherit;font-weight:700}
+.ai-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);background:#43d9ad;color:#063b2c;font-weight:800;font-size:15px;padding:12px 26px;border-radius:999px;box-shadow:0 12px 34px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:100}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a class="brand" href="games.html">
+    <span class="logo">📚</span>
+    <span>今日の教科書<small>日本語クラス・授業ツール</small></span>
+  </a>
+  <div class="top-actions">
+    <button class="chip-btn" id="listBtn">📋 一覧</button>
+    <button class="chip-btn" id="modeBtn">✏️ 編集</button>
+    <button class="chip-btn" id="fsBtn">⛶ 全画面</button>
+    <a class="chip-btn" href="games.html">🎮 ゲーム集</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ============ READ ============ -->
+  <section id="read" class="screen">
+    <div class="book"><div class="page" id="page"></div></div>
+    <div class="empty-note" id="emptyNote" hidden>まだ教科書がありません。<br>右上の「✏️ 編集」から、ページ（テーマ）と文章を登録してください。</div>
+    <div class="controls" id="controls">
+      <button class="navbtn" id="prevBtn">◀ 前のページ</button>
+      <div class="counter" id="counter"></div>
+      <button class="navbtn" id="nextBtn">次のページ ▶</button>
+    </div>
+    <div class="readhint" id="readhint">💡 文にカーソルを合わせる（タップ）と、対応する日本語↔翻訳が一緒に光ります。</div>
+  </section>
+
+  <!-- ============ EDIT ============ -->
+  <section id="edit" class="screen" hidden>
+    <h1 class="title">✏️ 教科書の編集</h1>
+    <p class="sub">ページ（テーマ）ごとに、日本語の文と翻訳を「1文ずつ対」で登録します。画像も差し込めます。</p>
+    <div class="langfield">🌐 翻訳の言語（任意）<input type="text" id="langInput" placeholder="例：English"></div>
+    <div id="editList"></div>
+    <div class="addbtns" style="margin-bottom:14px">
+      <button data-add="page">＋ ページ（テーマ）を追加</button>
+    </div>
+    <div class="note">💡 各ページに、日本語文と翻訳文を1組ずつ。<b>「🤖 AIで一括」</b>で、日本語の文章を貼ると「日本語文｜翻訳文」を1文ずつ作るプロンプトが出ます（コピーして AI に貼り、結果を戻すだけ）。画像は「＋画像」／貼り付け（Ctrl+V）／ドロップで。</div>
+    <div class="editbar">
+      <button class="mini save" id="saveBtn">💾 保存</button>
+      <button class="mini primary" id="doneBtn">▶ 発表する</button>
+    </div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast">✅ 保存しました</div>
+<input type="file" id="imgFile" accept="image/*" hidden>
+
+<div class="navpanel" id="navPanel">
+  <div class="np-head"><span>📋 ページ一覧</span><button class="np-close" id="npClose">✕</button></div>
+  <div class="np-jump">
+    <input type="number" id="npNum" min="1" inputmode="numeric" placeholder="番号で移動（例：1）">
+    <button id="npGo">移動</button>
+  </div>
+  <div class="np-list" id="npList"></div>
+</div>
+
+<div class="overlay" id="aiOverlay" hidden>
+  <div class="ai-panel">
+    <h3>🤖 AIで文を一括作成</h3>
+    <div class="ai-lang">🌐 翻訳の言語：<input type="text" id="aiLang" placeholder="例：English / ドイツ語 / 中文"></div>
+    <div class="step">① 日本語の文章を貼り付け</div>
+    <textarea id="aiSrc" placeholder="ここに教えたい日本語の文章を貼り付け（例：干支やお辞儀についての説明文）"></textarea>
+    <div class="step">② このプロンプトをコピーして ChatGPT などに貼る</div>
+    <div class="ai-prompt" id="aiPrompt"></div>
+    <button class="mini plain" id="aiCopy">プロンプトをコピー</button>
+    <div class="step">③ AIの結果（「日本語文｜翻訳文」の行）を貼り付け</div>
+    <textarea id="aiResult" placeholder="例：&#10;日本では、あいさつのときにお辞儀をします。 | In Japan, people bow when greeting.&#10;お辞儀には、いくつかの種類があります。 | There are several kinds of bows."></textarea>
+    <div class="ai-actions">
+      <button class="mini plain" id="aiCancel">やめる</button>
+      <button class="mini primary" id="aiAdd">このページに追加</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+function load(k,d){ try{const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v}catch(e){return d} }
+function save(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+/* ====== データ ====== */
+const SEED={pages:[
+  {title:"お辞儀について", keywords:["お辞儀","会釈","感謝"], quiz:[
+    {q:"軽いお辞儀は何と呼ばれますか？",a:"会釈（えしゃく）"},
+    {q:"深いお辞儀は、どんな気持ちを表しますか？",a:"感謝やお詫びの気持ち"},
+  ], items:[
+    {t:"p",jp:"日本では、あいさつのときにお辞儀をします。",tr:"In Japan, people bow when they greet each other."},
+    {t:"p",jp:"お辞儀には、いくつかの種類があります。",tr:"There are several kinds of bows."},
+    {t:"p",jp:"軽いお辞儀は「会釈（えしゃく）」と呼ばれます。",tr:"A light bow is called an \"eshaku.\""},
+    {t:"p",jp:"深いお辞儀は、感謝やお詫びの気持ちを表します。",tr:"A deep bow expresses gratitude or an apology."},
+  ]},
+]};
+let data=load("textbook.data.v1",null);
+if(!data || !Array.isArray(data.pages)){ data={pages:SEED.pages.map(p=>({title:p.title,keywords:(p.keywords||[]).slice(),quiz:(p.quiz||[]).map(x=>({...x})),items:p.items.map(it=>({...it}))}))}; save("textbook.data.v1",data); }
+data.pages.forEach(p=>{ if(!Array.isArray(p.items)) p.items=[]; if(typeof p.title!=="string") p.title=""; if(!Array.isArray(p.keywords)) p.keywords=[]; if(!Array.isArray(p.quiz)) p.quiz=[]; if(typeof p.coverImg!=="string") p.coverImg=""; if(typeof p.kwLabel!=="string") p.kwLabel=""; });
+let cfg=load("textbook.cfg.v1",{lang:"English"});
+function saveData(){ save("textbook.data.v1",data); }
+function trySaveData(){ try{ localStorage.setItem("textbook.data.v1", JSON.stringify(data)); return true; }catch(e){ return false; } }
+function saveCfg(){ save("textbook.cfg.v1",cfg); }
+
+/* ====== 状態 ====== */
+let topicIdx=0, screenIdx=0, screens=[[0,0]], flipping=false;
+
+/* ====== 発表（教科書を読む） ====== */
+const pageEl=$("#page");
+function itemHTML(it){
+  if(it.t==="img" && it.src) return `<div class="pimg"><img src="${it.src}" alt=""></div>`;
+  if(it.t==="p") return `<div class="prow"><div class="cell jp">${esc(it.jp)}</div><div class="cell tr">${esc(it.tr)}</div></div>`;
+  return "";
+}
+function pageBudget(){
+  const vh=window.innerHeight||700;
+  const top=(document.querySelector(".top")||{}).offsetHeight||62;
+  const ctr=(document.querySelector("#controls")||{}).offsetHeight||60;
+  return Math.max(240, vh - top - ctr - 96);
+}
+function quizRowHTML(qz){ return `<div class="qrow"><div class="qq">${esc(qz.q)}</div><div class="ans"><button class="ansbtn">答えを見る</button><span class="atext">${esc(qz.a)}</span></div></div>`; }
+// 1テーマを「表紙 → 本文（高さに収まる分ずつ）→ たしかめ問題」の画面列に分割
+function computeScreens(ti){
+  const topic=data.pages[ti]; if(!topic) return [{type:"content",s:0,e:0}];
+  const items=topic.items||[], quiz=topic.quiz||[];
+  const hasCover = !!(topic.coverImg || (topic.keywords&&topic.keywords.length));
+  const scr=[]; if(hasCover) scr.push({type:"cover"});
+  const W=pageEl.clientWidth;
+  if(W<50){ // 実寸が取れない時は分割しない
+    if(items.length) scr.push({type:"content",s:0,e:items.length});
+    if(quiz.length) scr.push({type:"quiz",s:0,e:quiz.length});
+    return scr.length?scr:[{type:"content",s:0,e:0}];
+  }
+  const budget=pageBudget();
+  const meas=document.createElement("div"); meas.className="page";
+  meas.style.cssText="position:absolute;left:-99999px;top:0;visibility:hidden;height:auto;overflow:visible;box-shadow:none";
+  meas.style.width=W+"px";
+  meas.innerHTML=`<div class="page-title">${esc(topic.title||"")}</div><div class="quiz-head">✏️ たしかめ問題</div><div class="pagebody"></div>`;
+  document.body.appendChild(meas);
+  const titleH=meas.querySelector(".page-title").offsetHeight;
+  const quizHeadH=meas.querySelector(".quiz-head").offsetHeight;
+  const itemsBudget=Math.max(120, budget - titleH - 86);   // 余白＋ページ番号のぶん
+  const body=meas.querySelector(".pagebody");
+  const hs=items.map(it=>{ const d=document.createElement("div"); d.innerHTML=itemHTML(it); const el=d.firstElementChild; if(!el) return 0; body.appendChild(el); return el.offsetHeight; });
+  let start=0, acc=0;
+  for(let i=0;i<hs.length;i++){ if(acc>0 && acc+hs[i]>itemsBudget){ scr.push({type:"content",s:start,e:i}); start=i; acc=0; } acc+=hs[i]; }
+  if(items.length && start<items.length) scr.push({type:"content",s:start,e:items.length});
+  // たしかめ問題も高さで分割
+  body.innerHTML=""; body.classList.add("quiz");
+  const qhs=quiz.map(qz=>{ const d=document.createElement("div"); d.innerHTML=quizRowHTML(qz); const el=d.firstElementChild; body.appendChild(el); return el.offsetHeight; });
+  const qBudget=Math.max(100, itemsBudget - quizHeadH - 8);
+  start=0; acc=0;
+  for(let i=0;i<qhs.length;i++){ if(acc>0 && acc+qhs[i]>qBudget){ scr.push({type:"quiz",s:start,e:i}); start=i; acc=0; } acc+=qhs[i]; }
+  if(quiz.length && start<quiz.length) scr.push({type:"quiz",s:start,e:quiz.length});
+  document.body.removeChild(meas);
+  return scr.length?scr:[{type:"content",s:0,e:0}];
+}
+function renderScreen(){
+  const has=data.pages.length>0;
+  $("#emptyNote").hidden=has; document.querySelector(".book").hidden=!has; $("#controls").hidden=!has; $("#readhint").hidden=!has;
+  if(!has) return;
+  if(topicIdx>data.pages.length-1) topicIdx=Math.max(0,data.pages.length-1);
+  const topic=data.pages[topicIdx];
+  if(screenIdx>screens.length-1) screenIdx=screens.length-1; if(screenIdx<0) screenIdx=0;
+  const scr=screens[screenIdx]||{type:"content",s:0,e:(topic.items||[]).length};
+  pageEl.style.height=pageBudget()+"px";
+  let html="";
+  if(scr.type==="cover"){
+    const hasKw=topic.keywords&&topic.keywords.length;
+    html+=`<div class="cover${hasKw?"":" solo"}">`
+      +`<div class="cleft">`+(topic.coverImg?`<img src="${topic.coverImg}" alt="">`:"")+`<div class="cttl">${esc(topic.title||"（無題）")}</div></div>`
+      +(hasKw?`<div class="cright"><div class="kwlabel">${esc(topic.kwLabel||"大事なことば")}</div><div class="kw">${topic.keywords.map(k=>`<span>${esc(k)}</span>`).join("")}</div></div>`:"")
+      +`</div>`;
+  } else if(scr.type==="quiz"){
+    html+=`<div class="page-title">${esc(topic.title||"（無題）")}</div><div class="quiz-head">✏️ たしかめ問題</div><div class="pagebody quiz">`;
+    for(let i=scr.s;i<scr.e;i++) html+=quizRowHTML(topic.quiz[i]);
+    html+=`</div>`;
+  } else {
+    html+=`<div class="page-title">${esc(topic.title||"（無題）")}</div><div class="pagebody">`;
+    if(!topic.items.length) html+=`<div class="page-empty">このページにはまだ文章がありません。「✏️ 編集」から追加してください。</div>`;
+    for(let i=scr.s;i<scr.e;i++) html+=itemHTML(topic.items[i]);
+    html+=`</div>`;
+  }
+  html+=`<div class="pageno">— ${screenIdx+1} / ${screens.length} —</div>`;
+  pageEl.innerHTML=html;
+  pageEl.querySelectorAll(".prow").forEach(row=>{ row.onclick=()=>{ const on=row.classList.contains("sel"); pageEl.querySelectorAll(".prow.sel").forEach(r=>r.classList.remove("sel")); if(!on) row.classList.add("sel"); }; });
+  pageEl.querySelectorAll(".ansbtn").forEach(b=>{ b.onclick=()=>b.closest(".qrow").classList.toggle("show"); });
+  $("#counter").innerHTML=`<b>${topicIdx+1}</b> / ${data.pages.length}`;
+  $("#prevBtn").disabled=(topicIdx<=0 && screenIdx<=0);
+  $("#nextBtn").disabled=(topicIdx>=data.pages.length-1 && screenIdx>=screens.length-1);
+  if($("#navPanel").classList.contains("open")) renderNavList();
+}
+function gotoTopic(ti,screen){
+  topicIdx=Math.max(0,Math.min(ti,data.pages.length-1));
+  screens=computeScreens(topicIdx);
+  screenIdx = screen==="last" ? screens.length-1 : Math.min(Math.max(0,screen||0), screens.length-1);
+  renderScreen();
+}
+function renderPage(){ if(!data.pages.length){ renderScreen(); return; } gotoTopic(topicIdx, screenIdx); }
+
+// やわらかいページめくり（スライド＋フェード＋わずかな傾き）
+function flipTo(dir){
+  if(flipping || !data.pages.length) return;
+  let tTopic=topicIdx, tScreen=screenIdx+dir, mode="screen";
+  if(tScreen>=screens.length){ if(topicIdx<data.pages.length-1){ tTopic=topicIdx+1; mode="first"; } else return; }
+  else if(tScreen<0){ if(topicIdx>0){ tTopic=topicIdx-1; mode="last"; } else return; }
+  flipping=true; pageEl.classList.add("flipping");
+  pageEl.style.transition="transform .2s ease-in, opacity .2s ease-in";
+  pageEl.style.transform=`translateX(${dir>0?-22:22}px) rotateY(${dir>0?-5:5}deg)`; pageEl.style.opacity="0";
+  setTimeout(()=>{
+    if(mode==="screen"){ screenIdx=tScreen; }
+    else { topicIdx=tTopic; screens=computeScreens(topicIdx); screenIdx = mode==="last"?screens.length-1:0; }
+    renderScreen();
+    pageEl.style.transition="none";
+    pageEl.style.transform=`translateX(${dir>0?22:-22}px) rotateY(${dir>0?5:-5}deg)`; pageEl.style.opacity="0";
+    pageEl.offsetWidth;
+    pageEl.style.transition="transform .38s cubic-bezier(.22,.61,.36,1), opacity .38s ease-out";
+    pageEl.style.transform="translateX(0) rotateY(0)"; pageEl.style.opacity="1";
+    setTimeout(()=>{ pageEl.classList.remove("flipping"); flipping=false; pageEl.style.transition=""; },400);
+  },200);
+}
+let rzT; window.addEventListener("resize",()=>{ clearTimeout(rzT); rzT=setTimeout(()=>{ if(!$("#read").hidden && data.pages.length){ screens=computeScreens(topicIdx); renderScreen(); } },200); });
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden && !$("#read").hidden && data.pages.length){ screens=computeScreens(topicIdx); renderScreen(); } });
+
+/* ====== ページ一覧・番号ジャンプ ====== */
+const navPanel=$("#navPanel"), npList=$("#npList");
+function jumpTo(i){ if(i<0||i>=data.pages.length) return; gotoTopic(i,0); }
+function renderNavList(){
+  npList.innerHTML="";
+  if(!data.pages.length){ npList.innerHTML='<div class="np-empty">ページがありません。「✏️ 編集」から追加してください。</div>'; return; }
+  data.pages.forEach((p,i)=>{
+    const it=document.createElement("button"); it.className="np-item"+(i===topicIdx?" cur":"");
+    const n=p.items.filter(x=>x.t==="p").length, q=(p.quiz||[]).length;
+    it.innerHTML=`<span class="num">${i+1}</span><span><div>${esc(p.title||"（無題）")}</div><div class="sub">${n}文${q?`・問題${q}`:""}</div></span>`;
+    it.onclick=()=>{ jumpTo(i); closeNav(); };
+    npList.appendChild(it);
+  });
+}
+function openNav(){ renderNavList(); navPanel.classList.add("open"); setTimeout(()=>{ const c=npList.querySelector(".np-item.cur"); if(c)c.scrollIntoView({block:"center"}); $("#npNum").focus(); },20); }
+function closeNav(){ navPanel.classList.remove("open"); }
+function jumpByNumber(close){ const n=parseInt($("#npNum").value); if(n>=1&&n<=data.pages.length){ jumpTo(n-1); renderNavList(); if(close)closeNav(); } }
+$("#listBtn").onclick=()=>{ navPanel.classList.contains("open")?closeNav():openNav(); };
+$("#npClose").onclick=closeNav;
+$("#npNum").addEventListener("input",()=>jumpByNumber(false));
+$("#npNum").addEventListener("keydown",e=>{ if(e.key==="Enter") jumpByNumber(true); });
+$("#npGo").onclick=()=>jumpByNumber(true);
+
+/* ====== 編集 ====== */
+const editList=$("#editList");
+function renderEdit(){
+  $("#langInput").value=cfg.lang||"";
+  editList.innerHTML=data.pages.map((p,pi)=>pageEditHTML(p,pi)).join("");
+  editList.querySelectorAll(".thumb[data-src],.covthumb[data-src]").forEach(t=>{ t.style.backgroundImage=`url("${t.dataset.src}")`; });
+}
+function pageEditHTML(p,pi){
+  const items=p.items.map((it,ii)=>{
+    if(it.t==="img"){
+      return `<div class="irow img">
+        <div class="thumb" data-src="${it.src||""}"></div>
+        <div class="iact"><button data-act="up" data-pi="${pi}" data-ii="${ii}">▲</button><button data-act="down" data-pi="${pi}" data-ii="${ii}">▼</button><button class="del" data-act="del" data-pi="${pi}" data-ii="${ii}">✕</button></div>
+      </div>`;
+    }
+    return `<div class="irow">
+      <textarea data-pi="${pi}" data-ii="${ii}" data-f="jp" placeholder="日本語の文">${esc(it.jp)}</textarea>
+      <textarea data-pi="${pi}" data-ii="${ii}" data-f="tr" placeholder="翻訳の文">${esc(it.tr)}</textarea>
+      <div class="iact"><button data-act="up" data-pi="${pi}" data-ii="${ii}">▲</button><button data-act="down" data-pi="${pi}" data-ii="${ii}">▼</button><button class="del" data-act="del" data-pi="${pi}" data-ii="${ii}">✕</button></div>
+    </div>`;
+  }).join("");
+  const quizRows=(p.quiz||[]).map((qz,qi)=>`
+    <div class="irow">
+      <textarea data-pi="${pi}" data-qi="${qi}" data-f="q" placeholder="問題（例：干支は何種類ありますか？）">${esc(qz.q)}</textarea>
+      <textarea data-pi="${pi}" data-qi="${qi}" data-f="a" placeholder="答え（例：12種類）">${esc(qz.a)}</textarea>
+      <div class="iact"><button class="del" data-act="qdel" data-pi="${pi}" data-qi="${qi}">✕</button></div>
+    </div>`).join("");
+  return `<div class="pg" data-pi="${pi}">
+    <div class="pg-head"><span class="num">${pi+1}</span>
+      <input class="ttl" data-pi="${pi}" data-f="title" placeholder="ページ名（例：干支について）" value="${esc(p.title)}">
+      <button class="psm" data-act="pup" data-pi="${pi}" ${pi===0?"disabled":""}>▲</button>
+      <button class="psm" data-act="pdown" data-pi="${pi}" ${pi===data.pages.length-1?"disabled":""}>▼</button>
+      <button class="psm del" data-act="pdel" data-pi="${pi}">🗑</button>
+    </div>
+    <div class="covrow">
+      <span class="lbl">📕 表紙</span>
+      <div class="covthumb${p.coverImg?" has":""}" data-act="cov" data-pi="${pi}" ${p.coverImg?`data-src="${p.coverImg}"`:""} title="クリックで選択／この枠にカーソルを合わせて Ctrl+V 貼り付け／ドロップもOK">${p.coverImg?`<button class="imgx" data-act="covdel" data-pi="${pi}" title="表紙画像を削除">✕</button>`:"🖼"}</div>
+      <span class="lbl" style="color:#8f86bf">（クリック・Ctrl+V・ドロップ）</span>
+      <input class="kwl" data-pi="${pi}" data-f="kwlabel" placeholder="見出し（例：大事なことば）" value="${esc(p.kwLabel||"")}">
+      <input data-pi="${pi}" data-f="keywords" placeholder="ポイントの言葉（、で区切って数個。例：干支、十二支、年）" value="${esc((p.keywords||[]).join("、"))}">
+    </div>
+    ${p.items.some(x=>x.t==="p")?'<div class="ilabels"><span>日本語の文</span><span>翻訳の文</span><span></span></div>':''}
+    <div class="items">${items}</div>
+    <div class="addbtns">
+      <button data-act="addp" data-pi="${pi}">＋ 文（日本語・翻訳）</button>
+      <button data-act="addimg" data-pi="${pi}">＋ 画像</button>
+      <button class="ai" data-act="ai" data-pi="${pi}">🤖 AIで一括</button>
+    </div>
+    <div class="qedit">
+      <div class="qlabel">✅ たしかめ問題（テーマの最後のページに出ます・任意）</div>
+      ${quizRows}
+      <div class="addbtns"><button data-act="addq" data-pi="${pi}">＋ 問題を追加</button></div>
+    </div>
+  </div>`;
+}
+// 入力は再描画せず data を更新（フォーカス維持）
+editList.addEventListener("input",e=>{
+  const t=e.target, pi=+t.dataset.pi, f=t.dataset.f; if(isNaN(pi)||!f) return;
+  if(f==="title"){ data.pages[pi].title=t.value; }
+  else if(f==="keywords"){ data.pages[pi].keywords=t.value.split(/[、,，]/).map(s=>s.trim()).filter(Boolean); }
+  else if(f==="kwlabel"){ data.pages[pi].kwLabel=t.value.trim(); }
+  else if(f==="q"||f==="a"){ const qi=+t.dataset.qi; if(!isNaN(qi)&&data.pages[pi].quiz[qi]) data.pages[pi].quiz[qi][f]=t.value; }
+  else { const ii=+t.dataset.ii; if(!isNaN(ii)) data.pages[pi].items[ii][f]=t.value; }
+  saveData();
+});
+editList.addEventListener("focusin",e=>{ const pg=e.target.closest(".pg"); if(pg) curEditPage=+pg.dataset.pi; });
+editList.addEventListener("click",e=>{
+  const b=e.target.closest("[data-act]"); if(!b) return;
+  const act=b.dataset.act, pi=+b.dataset.pi;
+  if(act==="addp"){ data.pages[pi].items.push({t:"p",jp:"",tr:""}); }
+  else if(act==="addimg"){ curEditPage=pi; imgTarget={kind:"item", pi, at:data.pages[pi].items.length}; imgFile.value=""; imgFile.click(); return; }
+  else if(act==="cov"){ imgTarget={kind:"cover", pi}; imgFile.value=""; imgFile.click(); return; }
+  else if(act==="covdel"){ data.pages[pi].coverImg=""; }
+  else if(act==="addq"){ (data.pages[pi].quiz=data.pages[pi].quiz||[]).push({q:"",a:""}); }
+  else if(act==="qdel"){ const qi=+b.dataset.qi; data.pages[pi].quiz.splice(qi,1); }
+  else if(act==="ai"){ openAi(pi); return; }
+  else if(act==="del"){ const ii=+b.dataset.ii; data.pages[pi].items.splice(ii,1); }
+  else if(act==="up"){ const ii=+b.dataset.ii; if(ii>0){ const a=data.pages[pi].items; [a[ii-1],a[ii]]=[a[ii],a[ii-1]]; } }
+  else if(act==="down"){ const ii=+b.dataset.ii; const a=data.pages[pi].items; if(ii<a.length-1){ [a[ii+1],a[ii]]=[a[ii],a[ii+1]]; } }
+  else if(act==="pdel"){ if(data.pages.length<=1){ alert("ページは最低1つ必要です。"); return; } if(!confirm(`ページ ${pi+1} を削除しますか？`)) return; data.pages.splice(pi,1); }
+  else if(act==="pup"){ if(pi>0){ [data.pages[pi-1],data.pages[pi]]=[data.pages[pi],data.pages[pi-1]]; } }
+  else if(act==="pdown"){ if(pi<data.pages.length-1){ [data.pages[pi+1],data.pages[pi]]=[data.pages[pi],data.pages[pi+1]]; } }
+  else return;
+  saveData(); renderEdit();
+});
+$(".addbtns [data-add='page']").onclick=()=>{ data.pages.push({title:"",coverImg:"",keywords:[],quiz:[],items:[{t:"p",jp:"",tr:""}]}); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
+
+/* ====== 画像（貼り付け・選択・ドロップ・自動圧縮） ====== */
+let curEditPage=0, imgTarget=null, lastMouse={x:-1,y:-1};
+const imgFile=$("#imgFile");
+document.addEventListener("mousemove",e=>{ lastMouse={x:e.clientX,y:e.clientY}; },{passive:true});
+function pageOfPoint(){ if(lastMouse.x<0) return null; const el=document.elementFromPoint(lastMouse.x,lastMouse.y); const pg=el&&el.closest&&el.closest(".pg"); return pg?+pg.dataset.pi:null; }
+function coverOfPoint(){ if(lastMouse.x<0) return null; const el=document.elementFromPoint(lastMouse.x,lastMouse.y); const c=el&&el.closest&&el.closest(".covthumb"); return c?+c.dataset.pi:null; }
+function compressImage(file, cb){
+  const url=URL.createObjectURL(file), im=new Image();
+  im.onload=()=>{ const max=560; let w=im.width||1,h=im.height||1;
+    if(w>=h&&w>max){ h=Math.round(h*max/w); w=max; } else if(h>w&&h>max){ w=Math.round(w*max/h); h=max; }
+    const cv=document.createElement("canvas"); cv.width=w; cv.height=h; const c=cv.getContext("2d");
+    c.fillStyle="#fff"; c.fillRect(0,0,w,h); c.drawImage(im,0,0,w,h); URL.revokeObjectURL(url);
+    try{ cb(cv.toDataURL("image/jpeg",0.85)); }catch(e){ cb(null); } };
+  im.onerror=()=>{ URL.revokeObjectURL(url); cb(null); }; im.src=url;
+}
+function addImage(file, pi, at){
+  compressImage(file, url=>{
+    if(!url){ alert("画像を読み込めませんでした。"); return; }
+    const items=data.pages[pi].items; const pos=(at==null?items.length:at);
+    items.splice(pos,0,{t:"img",src:url});
+    if(!trySaveData()){ items.splice(pos,1); alert("画像が多くて保存できませんでした。画像を減らすか、ページを分けてください。"); return; }
+    renderEdit(); showToast("🖼 画像を追加しました");
+  });
+}
+function setCover(file,pi){
+  compressImage(file,url=>{
+    if(!url){ alert("画像を読み込めませんでした。"); return; }
+    const old=data.pages[pi].coverImg; data.pages[pi].coverImg=url;
+    if(!trySaveData()){ data.pages[pi].coverImg=old; alert("画像が多くて保存できませんでした。画像を減らすか、ページを分けてください。"); return; }
+    renderEdit(); showToast("📕 表紙画像を設定しました");
+  });
+}
+imgFile.onchange=()=>{ const f=imgFile.files[0]; if(f){ const t=imgTarget||{kind:"item",pi:curEditPage,at:null}; if(t.kind==="cover") setCover(f,t.pi); else addImage(f,t.pi,t.at); } imgFile.value=""; imgTarget=null; };
+editList.addEventListener("dragover",e=>{ if(e.target.closest(".pg")) e.preventDefault(); });
+editList.addEventListener("drop",e=>{
+  const cov=e.target.closest(".covthumb"), pg=e.target.closest(".pg");
+  if(!cov && !pg) return; e.preventDefault();
+  const f=[...(e.dataTransfer.files||[])].find(x=>x.type.startsWith("image/")); if(!f) return;
+  if(cov){ setCover(f,+cov.dataset.pi); return; }            // 表紙枠なら表紙
+  addImage(f,+pg.dataset.pi,null);                            // それ以外は本文画像
+});
+document.addEventListener("paste",e=>{
+  if($("#edit").hidden || !$("#aiOverlay").hidden) return;
+  const items=(e.clipboardData&&e.clipboardData.items)||[]; let file=null;
+  for(const it of items){ if(it.type&&it.type.startsWith("image/")){ file=it.getAsFile(); break; } }
+  if(!file) return;
+  const cp=coverOfPoint();
+  if(cp!=null){ e.preventDefault(); setCover(file,cp); return; }   // 表紙枠の上→表紙
+  const pi=pageOfPoint(); const target=(pi!=null)?pi:curEditPage;
+  if(target==null||!data.pages[target]) return;
+  e.preventDefault(); addImage(file,target,null);
+});
+// 他のページ/アプリから戻ったとき、ページ内をクリックしなくても、編集エリアに
+// カーソルを合わせるだけで Ctrl+V 貼り付けが効くように、フォーカスを取り戻す。
+editList.tabIndex=-1;
+function grabPasteFocus(){
+  if($("#edit").hidden) return;
+  const a=document.activeElement;
+  // 何か入力中（テキスト欄・ボタン等）なら邪魔しない。フォーカスが外れている時だけ取り戻す
+  if(a && a!==document.body && a!==document.documentElement) return;
+  try{ editList.focus({preventScroll:true}); }catch(_){}
+}
+editList.addEventListener("pointerover",grabPasteFocus);
+editList.addEventListener("pointermove",grabPasteFocus,{passive:true});
+window.addEventListener("focus",grabPasteFocus);
+
+/* ====== AI一括 ====== */
+let aiTargetPage=0;
+function aiPromptText(){
+  const lang=($("#aiLang").value||"").trim()||"英語";
+  const src=$("#aiSrc").value.trim();
+  return `次の日本語の文章を、意味のまとまりで1文ずつに分けてください。\n各文に【${lang}】の翻訳を付け、「日本語文 | 翻訳文」の形で、1行に1組ずつ出力してください。番号や説明は付けないでください。\n\n文章:\n${src||"（ここに①で貼った文章が入ります）"}`;
+}
+function updateAiPrompt(){ $("#aiPrompt").textContent=aiPromptText(); }
+function openAi(pi){
+  aiTargetPage=pi;
+  $("#aiLang").value=cfg.lang||"英語"; $("#aiSrc").value=""; $("#aiResult").value="";
+  updateAiPrompt(); $("#aiOverlay").hidden=false; setTimeout(()=>$("#aiSrc").focus(),30);
+}
+$("#aiSrc").addEventListener("input",updateAiPrompt);
+$("#aiLang").addEventListener("input",()=>{ cfg.lang=$("#aiLang").value.trim(); saveCfg(); updateAiPrompt(); });
+$("#aiCancel").onclick=()=>{ $("#aiOverlay").hidden=true; };
+$("#aiOverlay").onclick=e=>{ if(e.target===$("#aiOverlay")) $("#aiOverlay").hidden=true; };
+$("#aiCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText($("#aiPrompt").textContent); showToast("📋 プロンプトをコピーしました"); }catch(e){ const r=document.createRange(); r.selectNodeContents($("#aiPrompt")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); showToast("手動でコピーしてください（選択しました）"); } };
+$("#aiAdd").onclick=()=>{
+  const lines=$("#aiResult").value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  const pairs=[];
+  lines.forEach(line=>{
+    const norm=line.replace(/｜/g,"|").replace(/\t/g,"|");
+    const i=norm.indexOf("|");
+    if(i<0){ if(line) pairs.push({t:"p",jp:line,tr:""}); return; }
+    const jp=norm.slice(0,i).trim(), tr=norm.slice(i+1).trim();
+    if(jp||tr) pairs.push({t:"p",jp,tr});
+  });
+  if(!pairs.length){ alert("文が読み取れませんでした。「日本語文 | 翻訳文」の形で貼り付けてください。"); return; }
+  const page=data.pages[aiTargetPage];
+  // 流し込む前に、空欄だけの文（プレースホルダ）を取り除く＝先頭に空白の一文が残らないように。画像・入力済みの文は残す
+  page.items=page.items.filter(it=> it.t!=="p" || (it.jp||"").trim() || (it.tr||"").trim());
+  page.items.push(...pairs);
+  saveData(); $("#aiOverlay").hidden=true; renderEdit(); showToast(`✅ ${pairs.length}文を追加しました`);
+};
+
+/* ====== トースト ====== */
+let toastTimer=null;
+function showToast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); if(toastTimer)clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),1600); }
+
+/* ====== モード切替・イベント ====== */
+function showEdit(){ closeNav(); $("#listBtn").hidden=true; $("#read").hidden=true; $("#edit").hidden=false; renderEdit(); }
+function showRead(){ $("#edit").hidden=true; $("#read").hidden=false; $("#listBtn").hidden=false; if(topicIdx>data.pages.length-1) topicIdx=Math.max(0,data.pages.length-1); renderPage(); }
+$("#modeBtn").onclick=showEdit;
+$("#doneBtn").onclick=showRead;
+$("#saveBtn").onclick=()=>{ saveData(); showToast("✅ 保存しました"); };
+$("#langInput").addEventListener("input",function(){ cfg.lang=this.value.trim(); saveCfg(); });
+$("#prevBtn").onclick=()=>flipTo(-1);
+$("#nextBtn").onclick=()=>flipTo(1);
+$("#fsBtn").onclick=function(){ if(!document.fullscreenElement){(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen||function(){}).call(document.documentElement);} else {(document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);} };
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape" && navPanel.classList.contains("open")){ closeNav(); return; }
+  const tag=(document.activeElement&&document.activeElement.tagName)||"";
+  if(!$("#read").hidden && tag!=="INPUT" && tag!=="TEXTAREA"){
+    if(e.key==="ArrowLeft") flipTo(-1);
+    else if(e.key==="ArrowRight") flipTo(1);
+  }
+});
+
+renderPage();
+</script>
+<script src="editbar.js"></script>
+<script src="intro.js"></script>
+<script>ClassIntro.init({key:"textbook",icon:"📚",title:"今日の教科書",desc:"今日のテーマについて、教科書のページをみんなで読んでいきます。\n左が日本語、右が翻訳です。文に触れると、対応する文どうしに色が付きます。"});</script>
+</body>
+</html>

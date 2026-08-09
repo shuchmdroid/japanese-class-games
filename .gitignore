@@ -1,0 +1,7 @@
+.vercel
+data.json
+data.json.tmp
+node_modules
+.DS_Store
+*.tmp
+.claude

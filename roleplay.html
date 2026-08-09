@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>今日のロールプレイ — 日本語クラス</title>
+<meta name="description" content="教師が用意したロールプレイ（会話）を生徒が練習。役名つきの吹き出しで表示し、ふりがな・ローマ字・翻訳は自由にON/OFF。表紙（題名・画像）とAI一括入力つき。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗣️</text></svg>">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;font-family:"Segoe UI","Yu Gothic UI",Meiryo,"Hiragino Kaku Gothic ProN","Malgun Gothic",system-ui,sans-serif;color:#fff;
+  background:radial-gradient(1200px 700px at 20% -10%,#3b2a6b 0%,rgba(59,42,107,0) 60%),
+             radial-gradient(1100px 700px at 100% 0%,#1d4ed8 0%,rgba(29,78,216,0) 55%),
+             linear-gradient(160deg,#1a1140,#2b1a5e 55%,#11103a);
+  min-height:100vh;-webkit-font-smoothing:antialiased}
+:root{--gold:#ffd34e;--tr:#43d9ad;--furi:#bcb2ec}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;max-width:1000px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
+.brand .logo{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#ec6f9e,#2563eb);box-shadow:0 6px 16px rgba(234,95,147,.4);font-size:20px}
+.brand small{display:block;font-size:11px;font-weight:600;color:#c9c2e8}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.chip-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:9px 15px;font-size:14px;font-weight:700;backdrop-filter:blur(6px);transition:background .15s,transform .12s}
+.chip-btn:hover{background:rgba(255,255,255,.2)}
+.chip-btn:active{transform:scale(.95)}
+
+.wrap{max-width:880px;margin:0 auto;padding:6px 16px 50px}
+.screen{animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+.counter{text-align:center;color:#c9c2e8;font-weight:800;font-size:15px;margin:4px 0 8px}
+.counter b{color:var(--gold);font-size:18px}
+
+/* ---------- cover ---------- */
+.cover{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:20px;min-height:52vh;padding:12px}
+.cover img{max-width:min(78%,460px);max-height:44vh;border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,.4)}
+.cover .cttl{font-size:clamp(30px,6.5vw,58px);font-weight:900;color:#fff;line-height:1.3}
+.cover .csub{color:#c9c2e8;font-weight:700;font-size:14px}
+.cover .croles{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;align-items:flex-end}
+.cover .crole{display:flex;flex-direction:column;align-items:center;gap:7px}
+.cover .crole img{width:clamp(60px,10vw,92px);height:clamp(60px,10vw,92px);border-radius:50%;object-fit:cover;background:#fff;border:3px solid var(--rc,#ec6f9e);box-shadow:0 8px 20px rgba(0,0,0,.3)}
+.cover .cpill{border-radius:999px;padding:7px 18px;font-weight:800;font-size:clamp(14px,2.4vw,19px);color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+
+/* ---------- dialog ---------- */
+.stage{display:flex;flex-direction:column;gap:11px;padding:6px 0;min-height:40vh}
+.line{display:flex;gap:9px;align-items:flex-start;max-width:96%}
+.line.right{flex-direction:row-reverse;align-self:flex-end}
+.rbadge{flex:0 0 auto;border-radius:999px;padding:7px 14px;font-weight:800;color:#fff;font-size:13.5px;margin-top:4px;box-shadow:0 4px 10px rgba(0,0,0,.25);white-space:nowrap}
+/* 役のアバター（画像つきの役） */
+.rside{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:3px;max-width:80px}
+.ravatar{width:50px;height:50px;border-radius:50%;object-fit:cover;background:#fff;border:2.5px solid var(--rc,#ec6f9e);box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.rside .rbadge{margin-top:0;padding:3px 11px;font-size:11.5px}
+.stage.dense .ravatar{width:38px;height:38px}
+.stage.dense .rside .rbadge{padding:2px 9px;font-size:10.5px}
+.bubble{background:radial-gradient(circle at 50% 20%,#fff,#f3eeff);color:#241552;border-radius:16px;padding:8px 14px;box-shadow:0 8px 22px rgba(0,0,0,.25);min-width:0}
+.line.right .bubble{background:radial-gradient(circle at 50% 20%,#fffdf3,#fdf3d8)}
+.bubble .ro{color:#b07d00;font-weight:700;font-size:clamp(12px,1.9vw,16px);display:none;line-height:1.3}
+.bubble .jp{font-size:clamp(19px,3.4vw,30px);font-weight:800;line-height:1.4}
+/* 画面に収まらない時の自動コンパクト化（まず余白だけ→それでも溢れたら文字を約1割だけ縮小） */
+.stage.dense{gap:7px}
+.stage.dense .bubble{padding:6px 12px;border-radius:13px}
+.stage.dense .rbadge{padding:4px 10px;font-size:12px;margin-top:2px}
+.stage.dense .bubble .jp{line-height:1.3}
+.stage.dense .bubble .tr{margin-top:3px;padding-top:3px}
+.stage.dense .fill-legend{padding:4px 12px;font-size:12px}
+.stage.dense2 .bubble .jp{font-size:clamp(17px,3vw,26px)}
+.stage.dense2 .bubble .ro{font-size:clamp(11px,1.7vw,14px)}
+.stage.dense2 .bubble .jp rt{font-size:.4em}
+.stage.dense2 .bubble .tr{font-size:clamp(12px,1.9vw,15px)}
+.bubble .tr{color:#178a64;font-weight:700;font-size:clamp(13px,2.1vw,17px);display:none;border-top:1.5px dashed #d9d2f0;margin-top:6px;padding-top:5px;line-height:1.4}
+/* 生徒が入れかえる言葉（【 】で囲んだ部分） */
+.fill{color:#d6336c;background:rgba(214,51,108,.09);border-bottom:2.5px dashed #e788ab;border-radius:4px;padding:0 4px;font-weight:900}
+.fill-legend{align-self:center;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.18);border-radius:999px;padding:7px 16px;font-size:13px;font-weight:700;color:#e7e2ff;margin-bottom:2px}
+.fill-legend .fill{background:#fff;padding:1px 8px}
+.stage.show-ro .ro{display:block}
+.stage.show-tr .tr{display:block}
+/* ふりがなをルビ（漢字の真上）で表示。ふりがなOFFでルビ非表示 */
+.bubble .jp rt{font-size:.46em;color:#6f56b8;font-weight:800;line-height:1.05;user-select:none}
+.bubble .jp .fill rt{color:#c2185b}
+.stage:not(.show-fu) .bubble .jp rt{display:none}
+.stage.show-fu .bubble .jp{line-height:2.05}
+.stage.show-fu.dense .bubble .jp,.stage.show-fu.dense2 .bubble .jp{line-height:1.75}
+.stage .empty-play{color:#a99fd6;text-align:center;padding:40px 10px;font-size:15px}
+
+.controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px}
+.navbtn{border:0;border-radius:14px;padding:14px 22px;font-size:17px;font-weight:900;color:#3a2400;background:linear-gradient(135deg,#ffe27a,#ffb43b);box-shadow:0 8px 22px rgba(255,170,40,.35)}
+.navbtn:disabled{filter:grayscale(.5) brightness(.85);cursor:default}
+.navbtn:active{transform:scale(.97)}
+.toggles{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.tg{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);color:#e7e2ff;border-radius:999px;padding:9px 15px;font-weight:800;font-size:14px}
+.tg.on{background:var(--gold);color:#3a2a00;border-color:var(--gold)}
+.tg.tr-on{background:var(--tr);color:#063b2c;border-color:var(--tr)}
+.tg:active{transform:scale(.96)}
+.empty-note{text-align:center;color:#a99fd6;margin-top:30px;font-size:15px;line-height:1.9}
+
+/* ---------- page list panel ---------- */
+.navpanel{position:fixed;top:0;right:0;height:100%;width:min(88vw,340px);background:rgba(24,16,58,.97);backdrop-filter:blur(10px);border-left:1.5px solid rgba(255,255,255,.16);box-shadow:-14px 0 44px rgba(0,0,0,.5);z-index:80;display:flex;flex-direction:column;padding:16px;transform:translateX(100%);transition:transform .26s ease;pointer-events:none}
+.navpanel.open{transform:translateX(0);pointer-events:auto}
+.np-head{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:17px;margin-bottom:12px}
+.np-close{background:rgba(255,255,255,.12);border:0;color:#fff;width:34px;height:34px;border-radius:9px;font-weight:800;font-size:15px}
+.np-jump{display:flex;gap:8px;margin-bottom:12px}
+.np-jump input{flex:1;min-width:0;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:10px;padding:10px 12px;font:inherit;font-weight:700}
+.np-jump button{border:0;border-radius:10px;padding:0 16px;font-weight:800;background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff}
+.np-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch}
+.np-item{display:flex;gap:10px;align-items:flex-start;text-align:left;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:12px;padding:11px 13px;color:#e7e2ff;font-weight:700;font-size:15px;line-height:1.4;cursor:pointer;width:100%}
+.np-item:hover{background:rgba(255,255,255,.13)}
+.np-item .num{flex:0 0 auto;min-width:24px;height:24px;border-radius:7px;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:13px;font-weight:800}
+.np-item .sub{font-size:11px;color:#a99fd6;font-weight:700;margin-top:2px}
+.np-item.cur{background:linear-gradient(135deg,rgba(236,111,158,.4),rgba(37,99,235,.4));border-color:var(--gold);color:#fff}
+.np-item.cur .num{background:var(--gold);color:#3a2a00}
+.np-empty{color:#a99fd6;padding:10px 4px;font-size:14px}
+
+/* ---------- edit ---------- */
+h1.title{font-size:clamp(22px,5vw,30px);margin:8px 0 2px;text-align:center}
+p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
+.pg{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:16px;padding:16px;margin-bottom:14px}
+.pg-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.pg-head .num{width:26px;height:26px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;background:linear-gradient(135deg,#ec6f9e,#2563eb)}
+.pg-head input.ttl{flex:1;min-width:120px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:9px;padding:9px 12px;font:inherit;font-weight:800}
+.psm{width:34px;height:34px;border-radius:9px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-weight:800;flex:0 0 auto}
+.psm:disabled{opacity:.35}
+.psm.del{color:#ff9aa8;border-color:rgba(255,107,133,.4)}
+.covrow{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.covrow .lbl{font-size:12px;font-weight:800;color:#a99fd6;flex:0 0 auto}
+.covrow .covthumb{width:64px;height:48px;border-radius:8px;border:1.5px dashed rgba(255,255,255,.3);background-color:rgba(255,255,255,.08);background-size:cover;background-position:center;display:grid;place-items:center;color:#cfc8f0;cursor:pointer;position:relative;flex:0 0 auto;font-size:15px}
+.covrow .covthumb.has{border-style:solid;border-color:rgba(255,255,255,.4)}
+.covrow .covthumb:hover{border-color:#ec6f9e;box-shadow:0 0 0 3px rgba(236,111,158,.4),0 6px 16px rgba(236,111,158,.3);color:#fff}
+.covrow .covthumb .imgx{position:absolute;top:-7px;right:-7px;width:18px;height:18px;border-radius:50%;border:0;background:#e53935;color:#fff;font-size:11px;font-weight:900;display:grid;place-items:center;cursor:pointer;line-height:1;padding:0}
+.roles-edit{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.roles-edit .lbl{font-size:12px;font-weight:800;color:#a99fd6}
+.rolechip{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 4px 3px 12px;font-weight:800;color:#fff}
+.rolechip input{width:90px;border:0;background:transparent;color:#fff;font:inherit;font-weight:800;font-size:13.5px;outline:none}
+.rolechip input::placeholder{color:rgba(255,255,255,.6)}
+.rolechip button{width:20px;height:20px;border-radius:50%;border:0;background:rgba(0,0,0,.25);color:#fff;font-size:10px;font-weight:900;padding:0}
+.ravwrap{position:relative;display:inline-flex}
+.rolechip .ravsm{width:26px;height:26px;border-radius:50%;border:1.5px dashed rgba(255,255,255,.55);background-color:rgba(0,0,0,.18);background-size:cover;background-position:center;font-size:11px;display:grid;place-items:center;cursor:pointer;padding:0}
+.rolechip .ravsm.has{border-style:solid;border-color:#fff}
+.rolechip .ravsm:hover{border-color:#ec6f9e;box-shadow:0 0 0 3px rgba(236,111,158,.5)}
+#editList:focus{outline:none}
+.ravwrap .rx{position:absolute;top:-6px;right:-6px;width:15px;height:15px;border-radius:50%;border:0;background:#e53935;color:#fff;font-size:9px;font-weight:900;display:grid;place-items:center;line-height:1;padding:0;cursor:pointer}
+.lines{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.lrow{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:6px;align-items:start}
+.lrow select{border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.95);color:#241552;border-radius:9px;padding:8px 6px;font:inherit;font-weight:700;font-size:13px;max-width:110px}
+.lrow textarea{min-height:42px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:9px;padding:8px 10px;font:inherit;font-size:14px;line-height:1.5;resize:vertical;min-width:0}
+.lrow .sub2{display:flex;flex-direction:column;gap:6px;min-width:0}
+.lrow .iact{display:flex;flex-direction:column;gap:3px}
+.lrow .iact button{width:30px;height:20px;border-radius:6px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-size:10px;font-weight:800;line-height:1;padding:0}
+.lrow .iact button.del{color:#ff9aa8;border-color:rgba(255,107,133,.4)}
+.llabels{font-size:11px;color:#a99fd6;font-weight:700;padding:0 2px;margin-bottom:2px}
+.addbtns{display:flex;gap:8px;flex-wrap:wrap}
+.addbtns button{background:transparent;border:1.5px dashed rgba(255,255,255,.32);color:#cfc8f0;border-radius:10px;padding:8px 13px;font-weight:800;font-size:13px}
+.addbtns button:hover{border-color:#fff;color:#fff}
+.addbtns button.ai{border-style:solid;border-color:rgba(122,240,196,.5);color:#7af0c4}
+.note{font-size:12.5px;color:#a99fd6;margin:2px 2px 14px;line-height:1.7}
+.editbar{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:4px}
+.mini{border-radius:10px;padding:11px 18px;font-weight:800;font-size:15px;border:0}
+.mini.save{background:linear-gradient(135deg,#7af0c4,#2bbf8e);color:#063b2c}
+.mini.primary{background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff}
+.mini.plain{background:rgba(255,255,255,.14);color:#fff}
+
+/* AI modal */
+.overlay{position:fixed;inset:0;background:rgba(10,6,30,.66);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow:auto;z-index:90}
+.ai-panel{background:#1c1346;border:1.5px solid rgba(255,255,255,.16);border-radius:18px;max-width:620px;width:100%;padding:20px;box-shadow:0 30px 70px rgba(0,0,0,.55)}
+.ai-panel h3{margin:0 0 6px;font-size:19px}
+.ai-panel .step{font-weight:800;color:var(--gold);font-size:13px;margin:14px 0 6px}
+.ai-panel textarea{width:100%;min-height:100px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:10px;padding:11px;font:inherit;line-height:1.6;resize:vertical}
+.ai-prompt{background:rgba(255,255,255,.95);color:#241552;border-radius:8px;padding:10px;margin:6px 0;font-size:12.5px;line-height:1.6;white-space:pre-wrap;font-weight:600;max-height:150px;overflow:auto}
+.ai-lang{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:#e7e2ff;margin-bottom:6px}
+.ai-lang input{flex:1;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.95);color:#241552;border-radius:8px;padding:7px 10px;font:inherit;font-weight:700}
+.ai-roles{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12.5px;font-weight:800;color:#c9c2e8;background:rgba(0,0,0,.22);border-radius:10px;padding:9px 12px;margin-bottom:4px}
+.ai-roles .rc{border-radius:999px;padding:4px 12px;color:#fff;font-size:12.5px}
+.ai-roles .arr{color:#8f86bf}
+.ai-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);background:#43d9ad;color:#063b2c;font-weight:800;font-size:15px;padding:12px 26px;border-radius:999px;box-shadow:0 12px 34px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:100}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a class="brand" href="games.html">
+    <span class="logo">🗣️</span>
+    <span>今日のロールプレイ<small>日本語クラス・授業ツール</small></span>
+  </a>
+  <div class="top-actions">
+    <button class="chip-btn" id="listBtn">📋 一覧</button>
+    <button class="chip-btn" id="modeBtn">✏️ 編集</button>
+    <button class="chip-btn" id="fsBtn">⛶ 全画面</button>
+    <a class="chip-btn" href="games.html">🎮 ゲーム集</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ============ PRESENT ============ -->
+  <section id="present" class="screen">
+    <div class="counter" id="counter"></div>
+    <div id="viewBox"></div>
+    <div class="empty-note" id="emptyNote" hidden>まだロールプレイがありません。<br>右上の「✏️ 編集」から、会話を登録してください。</div>
+    <div class="controls" id="controls">
+      <button class="navbtn" id="prevBtn">◀ 前へ</button>
+      <div class="toggles" id="toggles">
+        <button class="tg" id="tgFuri">ふりがな</button>
+        <button class="tg" id="tgRomaji">ローマ字</button>
+        <button class="tg" id="tgTr">🌐 翻訳</button>
+      </div>
+      <button class="navbtn" id="nextBtn">次へ ▶</button>
+    </div>
+  </section>
+
+  <!-- ============ EDIT ============ -->
+  <section id="edit" class="screen" hidden>
+    <h1 class="title">✏️ ロールプレイの編集</h1>
+    <p class="sub">役名と日本語のセリフを登録。ふりがな・ローマ字・翻訳はAIにまとめて作らせて貼り付けられます。</p>
+    <div id="editList"></div>
+    <div class="addbtns" style="margin-bottom:14px">
+      <button data-add="play">＋ ロールプレイを追加</button>
+    </div>
+    <div class="note">💡 <b>表紙</b>＝題名と画像（会話の前に表示）。画像は<b>いらすとや等をコピー → 貼りたい場所にカーソルを合わせて Ctrl+V</b>：<b>役チップの上なら、その役のアバター</b>に、それ以外の場所なら<b>表紙</b>に入ります（一発目で効かないときは画面を一度クリックしてから）。ドロップも同じです。<b>役</b>は自由に増やせます。セリフの<b>ふりがな・ローマ字・翻訳</b>は手入力でも、「🤖 AIで一括」でもOK。<br>✏️ <b>生徒が入れかえる言葉</b>は<b>【 】で囲む</b>と色付きで表示されます（例：はじめまして、<b>【田中】</b>です → 生徒は自分の名前に入れかえて話す）。</div>
+    <div class="editbar">
+      <button class="mini save" id="saveBtn">💾 保存</button>
+      <button class="mini primary" id="doneBtn">▶ 発表する</button>
+    </div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast">✅ 保存しました</div>
+<input type="file" id="imgFile" accept="image/*" hidden>
+
+<div class="navpanel" id="navPanel">
+  <div class="np-head"><span>📋 ロールプレイ一覧</span><button class="np-close" id="npClose">✕</button></div>
+  <div class="np-jump">
+    <input type="number" id="npNum" min="1" inputmode="numeric" placeholder="番号で移動（例：1）">
+    <button id="npGo">移動</button>
+  </div>
+  <div class="np-list" id="npList"></div>
+</div>
+
+<div class="overlay" id="aiOverlay" hidden>
+  <div class="ai-panel">
+    <h3>🤖 AIでふりがな・ローマ字・翻訳を一括作成</h3>
+    <div class="ai-lang">🌐 翻訳の言語：<input type="text" id="aiLang" placeholder="例：English / ドイツ語 / 中文"></div>
+    <div class="ai-roles" id="aiRoles"></div>
+    <div class="step">① 会話を貼り付け（1行＝1セリフ。<b>改行すると次の役の人のセリフ</b>になります）</div>
+    <textarea id="aiSrc" placeholder="例：&#10;はじめまして。【田中】です。&#10;はじめまして。【リサ】です。&#10;どこから来ましたか。&#10;※【 】で囲んだ言葉＝生徒が入れかえる部分（色付きで表示されます）"></textarea>
+    <div class="step">② このプロンプトをコピーして ChatGPT などに貼る</div>
+    <div class="ai-prompt" id="aiPrompt"></div>
+    <button class="mini plain" id="aiCopy">プロンプトをコピー</button>
+    <div class="step">③ AIの結果を貼り付け（日本語 | よみ | ローマ字 | 翻訳）</div>
+    <textarea id="aiResult" placeholder="例：&#10;はじめまして。田中です。 | はじめまして。たなかです。 | hajimemashite. tanaka desu. | Nice to meet you. I'm Tanaka.&#10;はじめまして。リサです。 | はじめまして。りさです。 | hajimemashite. risa desu. | Nice to meet you. I'm Lisa."></textarea>
+    <div class="ai-actions">
+      <button class="mini plain" id="aiCancel">やめる</button>
+      <button class="mini primary" id="aiAdd">このロールプレイに追加</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+function load(k,d){ try{const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v}catch(e){return d} }
+function save(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+// 【 】（または { } / [ ]）で囲んだ部分＝生徒が入れかえる言葉 → 色付き表示
+function rich(s){
+  return esc(s)
+    .replace(/【([^】]*)】/g,'<span class="fill">$1</span>')
+    .replace(/\{([^}]*)\}/g,'<span class="fill">$1</span>')
+    .replace(/\[([^\]]*)\]/g,'<span class="fill">$1</span>');
+}
+function hasFill(s){ return /【[^】]*】|\{[^}]*\}|\[[^\]]*\]/.test(s||""); }
+
+// ==== ふりがなを漢字の真上に整列（ルビ表示） ====
+function kata2hira(s){ return String(s).replace(/[ァ-ヶ]/g, c=>String.fromCharCode(c.charCodeAt(0)-0x60)); }
+function isKanjiCh(ch){ return /[々〆〇㐀-䶿一-鿿豈-﫿]/.test(ch); }
+// 読みが必要な文字＝漢字・数字（数字は「さん」等で読むためアンカーにしない）
+function isReadCh(ch){ return isKanjiCh(ch) || /[0-9０-９]/.test(ch); }
+// jp（漢字かな交じり）と kana（全文のよみ）から、ブロックに読みを割り当ててルビHTMLを作る（【】なしの前提）
+function alignRuby(jp, kana){
+  jp=String(jp||""); kana=String(kana||"");
+  const hira=kata2hira(kana).replace(/\s+/g,"");                 // 読み：ひらがな化＋空白除去
+  if(!hira || kata2hira(jp).replace(/\s+/g,"")===hira) return esc(jp);  // 読み無し／全部かな→ルビ不要
+  // ブロック（読み必要）／アンカー（かな・記号・空白）に分割
+  let segs=[], i=0;
+  while(i<jp.length){ const b=isReadCh(jp[i]); let j=i+1; while(j<jp.length && isReadCh(jp[j])===b) j++; segs.push({b,t:jp.slice(i,j)}); i=j; }
+  // 空白だけのアンカーで隣り合うブロックは統合（読みを分割できないため 例:「3回 行」）
+  for(let s=segs.length-2;s>=1;s--){ if(!segs[s].b && /^\s+$/.test(segs[s].t) && segs[s-1].b && segs[s+1] && segs[s+1].b){ segs[s-1].t+=segs[s].t+segs[s+1].t; segs.splice(s,2); } }
+  let pos=0, out="";
+  for(let s=0;s<segs.length;s++){
+    const seg=segs[s];
+    if(!seg.b){                                                 // アンカー：読み位置を合わせて進める
+      const a=kata2hira(seg.t).replace(/\s+/g,""); if(a){ const idx=hira.indexOf(a,pos); if(idx>=0) pos=idx+a.length; } out+=esc(seg.t);
+    } else {                                                    // ブロック：次のアンカーまでの読みを割り当て
+      let reading; const next=segs[s+1];
+      if(next){ const a=kata2hira(next.t).replace(/\s+/g,""); const idx=a?hira.indexOf(a,pos):-1; if(idx>=pos){ reading=hira.slice(pos,idx); pos=idx; } else { reading=hira.slice(pos); pos=hira.length; } }
+      else { reading=hira.slice(pos); pos=hira.length; }
+      out += reading ? `<ruby>${esc(seg.t)}<rt>${esc(reading)}</rt></ruby>` : esc(seg.t);
+    }
+  }
+  return out;
+}
+function splitFill(s){
+  const parts=[]; const re=/【([^】]*)】|\{([^}]*)\}|\[([^\]]*)\]/g; let last=0,m;
+  while((m=re.exec(s))){ if(m.index>last) parts.push({fill:false,t:s.slice(last,m.index)}); parts.push({fill:true,t:(m[1]!=null?m[1]:m[2]!=null?m[2]:m[3])||""}); last=re.lastIndex; }
+  if(last<s.length) parts.push({fill:false,t:s.slice(last)});
+  if(!parts.length) parts.push({fill:false,t:s});
+  return parts;
+}
+// 日本語のセリフを、ふりがなルビ＋【】色付き で描画
+function furiHTML(jp, kana){
+  jp=String(jp||""); kana=String(kana||"");
+  const jpP=splitFill(jp), kaP=splitFill(kana);
+  if(jpP.length===kaP.length){
+    return jpP.map((p,i)=>{ const inner=alignRuby(p.t, kaP[i].t); return p.fill?`<span class="fill">${inner}</span>`:inner; }).join("");
+  }
+  // 【】の数が合わない時は安全側：ふりがな整列のみ（色付けなし）
+  return alignRuby(jp.replace(/[【】\{\}\[\]]/g,""), kana.replace(/[【】\{\}\[\]]/g,""));
+}
+
+const ROLE_COLORS=["#ec6f9e","#2563eb","#2bbf8e","#e08a00","#8e24aa","#00897b"];
+
+/* ====== データ ====== */
+const SEED={plays:[
+  {title:"自己紹介", coverImg:"", roles:["田中","リサ"], lines:[
+    {role:0, jp:"はじめまして。【田中】です。", kana:"はじめまして。【たなか】です。", romaji:"hajimemashite. 【tanaka】 desu.", tr:"Nice to meet you. I'm 【Tanaka】."},
+    {role:1, jp:"はじめまして。【リサ】です。", kana:"はじめまして。【りさ】です。", romaji:"hajimemashite. 【risa】 desu.", tr:"Nice to meet you. I'm 【Lisa】."},
+    {role:0, jp:"どこから来ましたか。", kana:"どこからきましたか。", romaji:"doko kara kimashita ka.", tr:"Where are you from?"},
+    {role:1, jp:"ドイツから来ました。", kana:"どいつからきました。", romaji:"doitsu kara kimashita.", tr:"I'm from Germany."},
+    {role:0, jp:"よろしくお願いします。", kana:"よろしくおねがいします。", romaji:"yoroshiku onegai shimasu.", tr:"Nice to meet you (please treat me well)."},
+    {role:1, jp:"こちらこそ、よろしくお願いします。", kana:"こちらこそ、よろしくおねがいします。", romaji:"kochira koso, yoroshiku onegai shimasu.", tr:"Likewise, nice to meet you."},
+  ]},
+]};
+let data=load("roleplay.data.v1",null);
+if(!data || !Array.isArray(data.plays)){ data={plays:SEED.plays.map(p=>({title:p.title,coverImg:"",roles:p.roles.slice(),lines:p.lines.map(l=>({...l}))}))}; save("roleplay.data.v1",data); }
+data.plays.forEach(p=>{ if(typeof p.title!=="string")p.title=""; if(typeof p.coverImg!=="string")p.coverImg=""; if(!Array.isArray(p.roles)||!p.roles.length)p.roles=["A","B"]; if(!Array.isArray(p.lines))p.lines=[]; if(!Array.isArray(p.roleImgs))p.roleImgs=[]; });
+let cfg=load("roleplay.cfg.v1",{lang:"English", furi:false, romaji:false, tr:false});
+function saveData(){ save("roleplay.data.v1",data); }
+function trySaveData(){ try{ localStorage.setItem("roleplay.data.v1", JSON.stringify(data)); return true; }catch(e){ return false; } }
+function saveCfg(){ save("roleplay.cfg.v1",cfg); }
+
+/* ====== 状態（表紙→会話 の画面列） ====== */
+let pi=0, part=0; // part: 0=表紙, 1=会話
+const viewBox=$("#viewBox");
+function roleColor(i){ return ROLE_COLORS[i%ROLE_COLORS.length]; }
+
+function renderScreen(){
+  const has=data.plays.length>0;
+  $("#emptyNote").hidden=has; viewBox.hidden=!has; $("#controls").hidden=!has; $("#counter").hidden=!has;
+  if(!has) return;
+  if(pi>data.plays.length-1) pi=Math.max(0,data.plays.length-1);
+  const p=data.plays[pi];
+  $("#counter").innerHTML=`<b>${pi+1}</b> / ${data.plays.length}`;
+  if(part===0){
+    viewBox.innerHTML=`<div class="cover">`
+      +(p.coverImg?`<img src="${p.coverImg}" alt="">`:"")
+      +`<div class="cttl">【${esc(p.title||"無題")}】</div>`
+      +`<div class="croles">${p.roles.map((r,i)=>{ const im=(p.roleImgs||[])[i]; return `<span class="crole">${im?`<img src="${im}" style="--rc:${roleColor(i)}" alt="">`:""}<span class="cpill" style="background:${roleColor(i)}">${esc(r||("役"+(i+1)))}</span></span>`; }).join("")}</div>`
+      +`<div class="csub">🗣️ ロールプレイ</div>`
+      +`</div>`;
+    $("#toggles").style.visibility="hidden";
+  } else {
+    let html=`<div class="stage${cfg.romaji?" show-ro":""}${cfg.furi?" show-fu":""}${cfg.tr?" show-tr":""}" id="stage">`;
+    if(!p.lines.length) html+=`<div class="empty-play">この会話にはまだセリフがありません。「✏️ 編集」から追加してください。</div>`;
+    if(p.lines.some(l=>hasFill(l.jp)||hasFill(l.kana)||hasFill(l.romaji)||hasFill(l.tr)))
+      html+=`<div class="fill-legend">✏️ <span class="fill">色つきの言葉</span> ＝ 自分の言葉に入れかえて話そう</div>`;
+    p.lines.forEach(l=>{
+      const side=(l.role%2===1)?" right":"";
+      const rname=esc(p.roles[l.role]||("役"+(l.role+1)));
+      const rimg=(p.roleImgs||[])[l.role];
+      const badge=rimg
+        ? `<div class="rside"><img class="ravatar" style="--rc:${roleColor(l.role)}" src="${rimg}" alt=""><span class="rbadge" style="background:${roleColor(l.role)}">${rname}</span></div>`
+        : `<span class="rbadge" style="background:${roleColor(l.role)}">${rname}</span>`;
+      html+=`<div class="line${side}">
+        ${badge}
+        <div class="bubble">
+          <div class="ro">${rich(l.romaji)}</div>
+          <div class="jp">${furiHTML(l.jp, l.kana)}</div>
+          <div class="tr">${rich(l.tr)}</div>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+    viewBox.innerHTML=html;
+    $("#toggles").style.visibility="";
+  }
+  applyToggles();
+  $("#prevBtn").disabled=(pi<=0 && part<=0);
+  $("#nextBtn").disabled=(pi>=data.plays.length-1 && part>=1);
+  if($("#navPanel").classList.contains("open")) renderNavList();
+}
+function applyToggles(){
+  const st=document.querySelector("#stage");
+  if(st){ st.classList.toggle("show-ro",cfg.romaji); st.classList.toggle("show-fu",cfg.furi); st.classList.toggle("show-tr",cfg.tr); }
+  $("#tgFuri").classList.toggle("on",cfg.furi);
+  $("#tgRomaji").classList.toggle("on",cfg.romaji);
+  $("#tgTr").classList.toggle("tr-on",cfg.tr);
+  $("#tgTr").textContent="🌐 翻訳"+(cfg.lang?` (${cfg.lang})`:"");
+  fitDialog();
+}
+// 画面の高さに収まらない時だけ、段階的にコンパクト化（文字サイズはできるだけ維持）
+function fitDialog(){
+  const st=document.querySelector("#stage"); if(!st) return;
+  st.classList.remove("dense","dense2");
+  if(window.innerHeight<200) return;                       // 実寸が取れない時はそのまま
+  const over=()=>document.body.scrollHeight>window.innerHeight+4;
+  if(over()) st.classList.add("dense");                    // まず余白だけ詰める
+  if(over()) st.classList.add("dense2");                   // それでも溢れたら文字を約1割縮小
+}
+window.addEventListener("resize",()=>{ if(!$("#present").hidden && part===1) fitDialog(); });
+if(window.ResizeObserver){ let fitT=0; new ResizeObserver(()=>{ if($("#present").hidden||part!==1) return; clearTimeout(fitT); fitT=setTimeout(fitDialog,60); }).observe(document.documentElement); }
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden && !$("#present").hidden && part===1) fitDialog(); });
+document.addEventListener("fullscreenchange",()=>{ if(!$("#present").hidden && part===1) setTimeout(fitDialog,120); });
+function go(d){
+  let np=pi, npart=part+d;
+  if(npart>1){ if(np<data.plays.length-1){ np++; npart=0; } else return; }
+  else if(npart<0){ if(np>0){ np--; npart=1; } else return; }
+  pi=np; part=npart; renderScreen(); window.scrollTo(0,0);
+}
+
+/* ====== 一覧・番号ジャンプ ====== */
+const navPanel=$("#navPanel"), npList=$("#npList");
+function jumpTo(i){ if(i<0||i>=data.plays.length) return; pi=i; part=0; renderScreen(); }
+function renderNavList(){
+  npList.innerHTML="";
+  if(!data.plays.length){ npList.innerHTML='<div class="np-empty">ロールプレイがありません。「✏️ 編集」から追加してください。</div>'; return; }
+  data.plays.forEach((p,i)=>{
+    const it=document.createElement("button"); it.className="np-item"+(i===pi?" cur":"");
+    it.innerHTML=`<span class="num">${i+1}</span><span><div>${esc(p.title||"（無題）")}</div><div class="sub">${p.roles.map(esc).join("・")}／${p.lines.length}セリフ</div></span>`;
+    it.onclick=()=>{ jumpTo(i); closeNav(); };
+    npList.appendChild(it);
+  });
+}
+function openNav(){ renderNavList(); navPanel.classList.add("open"); setTimeout(()=>{ const c=npList.querySelector(".np-item.cur"); if(c)c.scrollIntoView({block:"center"}); $("#npNum").focus(); },20); }
+function closeNav(){ navPanel.classList.remove("open"); }
+function jumpByNumber(close){ const n=parseInt($("#npNum").value); if(n>=1&&n<=data.plays.length){ jumpTo(n-1); renderNavList(); if(close)closeNav(); } }
+$("#listBtn").onclick=()=>{ navPanel.classList.contains("open")?closeNav():openNav(); };
+$("#npClose").onclick=closeNav;
+$("#npNum").addEventListener("input",()=>jumpByNumber(false));
+$("#npNum").addEventListener("keydown",e=>{ if(e.key==="Enter") jumpByNumber(true); });
+$("#npGo").onclick=()=>jumpByNumber(true);
+
+/* ====== 編集 ====== */
+const editList=$("#editList");
+function renderEdit(){
+  editList.innerHTML=data.plays.map((p,i)=>playEditHTML(p,i)).join("");
+  editList.querySelectorAll(".covthumb[data-src]").forEach(t=>{ t.style.backgroundImage=`url("${t.dataset.src}")`; });
+}
+function playEditHTML(p,pidx){
+  const roleChips=p.roles.map((r,ri)=>{
+    const im=(p.roleImgs||[])[ri];
+    return `
+    <span class="rolechip" style="background:${roleColor(ri)}">
+      <span class="ravwrap">
+        <button class="ravsm${im?" has":""}" data-act="roleimg" data-pi="${pidx}" data-ri="${ri}" ${im?`style="background-image:url('${im}')"`:""} title="この役の画像を選択（いらすとや等）">${im?"":"🖼"}</button>
+        ${im?`<button class="rx" data-act="roleimgdel" data-pi="${pidx}" data-ri="${ri}" title="役の画像を削除">✕</button>`:""}
+      </span>
+      <input data-pi="${pidx}" data-ri="${ri}" data-f="role" placeholder="役${ri+1}" value="${esc(r)}">
+      <button data-act="roledel" data-pi="${pidx}" data-ri="${ri}" title="この役を削除">✕</button>
+    </span>`;
+  }).join("");
+  const lineRows=p.lines.map((l,li)=>`
+    <div class="lrow">
+      <select data-pi="${pidx}" data-li="${li}" data-f="role">${p.roles.map((r,ri)=>`<option value="${ri}" ${ri===l.role?"selected":""}>${esc(r||("役"+(ri+1)))}</option>`).join("")}</select>
+      <div class="sub2">
+        <textarea data-pi="${pidx}" data-li="${li}" data-f="jp" placeholder="日本語のセリフ">${esc(l.jp)}</textarea>
+        <textarea data-pi="${pidx}" data-li="${li}" data-f="kana" placeholder="よみ（ふりがな）">${esc(l.kana)}</textarea>
+      </div>
+      <div class="sub2">
+        <textarea data-pi="${pidx}" data-li="${li}" data-f="romaji" placeholder="ローマ字">${esc(l.romaji)}</textarea>
+        <textarea data-pi="${pidx}" data-li="${li}" data-f="tr" placeholder="翻訳">${esc(l.tr)}</textarea>
+      </div>
+      <div class="iact">
+        <button data-act="lup" data-pi="${pidx}" data-li="${li}">▲</button>
+        <button data-act="ldown" data-pi="${pidx}" data-li="${li}">▼</button>
+        <button class="del" data-act="ldel" data-pi="${pidx}" data-li="${li}">✕</button>
+      </div>
+    </div>`).join("");
+  return `<div class="pg" data-pi="${pidx}">
+    <div class="pg-head"><span class="num">${pidx+1}</span>
+      <input class="ttl" data-pi="${pidx}" data-f="title" placeholder="題名（例：自己紹介）" value="${esc(p.title)}">
+      <button class="psm" data-act="pup" data-pi="${pidx}" ${pidx===0?"disabled":""}>▲</button>
+      <button class="psm" data-act="pdown" data-pi="${pidx}" ${pidx===data.plays.length-1?"disabled":""}>▼</button>
+      <button class="psm del" data-act="pdel" data-pi="${pidx}">🗑</button>
+    </div>
+    <div class="covrow">
+      <span class="lbl">📕 表紙画像</span>
+      <div class="covthumb${p.coverImg?" has":""}" data-act="cov" data-pi="${pidx}" ${p.coverImg?`data-src="${p.coverImg}"`:""} title="クリックで選択／この枠にカーソルを合わせて Ctrl+V 貼り付け／ドロップもOK">${p.coverImg?`<button class="imgx" data-act="covdel" data-pi="${pidx}" title="表紙画像を削除">✕</button>`:"🖼"}</div>
+      <span class="lbl" style="color:#8f86bf">（クリックで選択・Ctrl+V 貼り付け・ドロップ）</span>
+    </div>
+    <div class="roles-edit"><span class="lbl">🎭 役</span>${roleChips}<button class="psm" data-act="roleadd" data-pi="${pidx}" title="役を追加" style="width:28px;height:28px;font-size:13px">＋</button></div>
+    <div class="llabels">セリフ（役／日本語・よみ／ローマ字・翻訳）</div>
+    <div class="lines">${lineRows}</div>
+    <div class="addbtns">
+      <button data-act="ladd" data-pi="${pidx}">＋ セリフを追加</button>
+      <button class="ai" data-act="ai" data-pi="${pidx}">🤖 AIで一括</button>
+    </div>
+  </div>`;
+}
+// 入力（再描画せず data 更新）
+editList.addEventListener("input",e=>{
+  const t=e.target, p=+t.dataset.pi, f=t.dataset.f; if(isNaN(p)||!f) return;
+  const play=data.plays[p]; if(!play) return;
+  if(f==="title"){ play.title=t.value; }
+  else if(f==="role" && t.dataset.ri!=null){ play.roles[+t.dataset.ri]=t.value; }
+  else if(t.dataset.li!=null){ const l=play.lines[+t.dataset.li]; if(l){ if(f==="role") l.role=+t.value; else l[f]=t.value; } }
+  saveData();
+});
+editList.addEventListener("change",e=>{
+  const t=e.target; if(t.tagName!=="SELECT") return;
+  const p=+t.dataset.pi, li=+t.dataset.li;
+  if(!isNaN(p)&&!isNaN(li)&&data.plays[p]&&data.plays[p].lines[li]){ data.plays[p].lines[li].role=+t.value; saveData(); }
+});
+editList.addEventListener("click",e=>{
+  const b=e.target.closest("[data-act]"); if(!b) return;
+  const act=b.dataset.act, p=+b.dataset.pi, play=data.plays[p];
+  if(act==="cov"){ imgTarget={kind:"cover",pi:p}; imgFile.value=""; imgFile.click(); return; }
+  else if(act==="covdel"){ play.coverImg=""; }
+  else if(act==="roleimg"){ imgTarget={kind:"role",pi:p,ri:+b.dataset.ri}; imgFile.value=""; imgFile.click(); return; }
+  else if(act==="roleimgdel"){ (play.roleImgs=play.roleImgs||[])[+b.dataset.ri]=""; }
+  else if(act==="roleadd"){ if(play.roles.length>=6){ alert("役は最大6つまでです。"); return; } play.roles.push(""); (play.roleImgs=play.roleImgs||[]).push(""); }
+  else if(act==="roledel"){ const ri=+b.dataset.ri; if(play.roles.length<=1){ alert("役は最低1つ必要です。"); return; }
+    play.roles.splice(ri,1); (play.roleImgs=play.roleImgs||[]).splice(ri,1); play.lines.forEach(l=>{ if(l.role===ri) l.role=0; else if(l.role>ri) l.role--; }); }
+  else if(act==="ladd"){ play.lines.push({role:0,jp:"",kana:"",romaji:"",tr:""}); }
+  else if(act==="ldel"){ play.lines.splice(+b.dataset.li,1); }
+  else if(act==="lup"){ const li=+b.dataset.li; if(li>0){ [play.lines[li-1],play.lines[li]]=[play.lines[li],play.lines[li-1]]; } }
+  else if(act==="ldown"){ const li=+b.dataset.li; if(li<play.lines.length-1){ [play.lines[li+1],play.lines[li]]=[play.lines[li],play.lines[li+1]]; } }
+  else if(act==="pdel"){ if(data.plays.length<=1){ alert("ロールプレイは最低1つ必要です。"); return; } if(!confirm(`「${play.title||"無題"}」を削除しますか？`)) return; data.plays.splice(p,1); }
+  else if(act==="pup"){ if(p>0){ [data.plays[p-1],data.plays[p]]=[data.plays[p],data.plays[p-1]]; } }
+  else if(act==="pdown"){ if(p<data.plays.length-1){ [data.plays[p+1],data.plays[p]]=[data.plays[p],data.plays[p+1]]; } }
+  else if(act==="ai"){ openAi(p); return; }
+  else return;
+  saveData(); renderEdit();
+});
+$(".addbtns [data-add='play']").onclick=()=>{ data.plays.push({title:"",coverImg:"",roles:["A","B"],lines:[{role:0,jp:"",kana:"",romaji:"",tr:""}]}); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
+
+/* ====== 表紙画像（選択・圧縮・容量ガード） ====== */
+let imgTarget=null;
+const imgFile=$("#imgFile");
+function compressImage(file, cb, max){
+  const url=URL.createObjectURL(file), im=new Image();
+  im.onload=()=>{ max=max||560; let w=im.width||1,h=im.height||1;
+    if(w>=h&&w>max){ h=Math.round(h*max/w); w=max; } else if(h>w&&h>max){ w=Math.round(w*max/h); h=max; }
+    const cv=document.createElement("canvas"); cv.width=w; cv.height=h; const c=cv.getContext("2d");
+    c.fillStyle="#fff"; c.fillRect(0,0,w,h); c.drawImage(im,0,0,w,h); URL.revokeObjectURL(url);
+    try{ cb(cv.toDataURL("image/jpeg",0.85)); }catch(e){ cb(null); } };
+  im.onerror=()=>{ URL.revokeObjectURL(url); cb(null); }; im.src=url;
+}
+function setCover(file,p){
+  if(!data.plays[p]) return;
+  compressImage(file,url=>{
+    if(!url){ alert("画像を読み込めませんでした。"); return; }
+    const old=data.plays[p].coverImg; data.plays[p].coverImg=url;
+    if(!trySaveData()){ data.plays[p].coverImg=old; alert("画像が多くて保存できませんでした。"); return; }
+    renderEdit(); showToast("📕 表紙画像を設定しました");
+  });
+}
+function setRoleImg(file,p,ri){
+  if(!data.plays[p]) return;
+  compressImage(file,url=>{
+    if(!url){ alert("画像を読み込めませんでした。"); return; }
+    const arr=(data.plays[p].roleImgs=data.plays[p].roleImgs||[]);
+    const old=arr[ri]; arr[ri]=url;
+    if(!trySaveData()){ arr[ri]=old; alert("画像が多くて保存できませんでした。"); return; }
+    renderEdit(); showToast("🎭 役の画像を設定しました");
+  },240);   // 役のアバターは小さめでOK
+}
+imgFile.onchange=()=>{
+  const f=imgFile.files[0];
+  if(f && imgTarget){ if(imgTarget.kind==="role") setRoleImg(f,imgTarget.pi,imgTarget.ri); else setCover(f,imgTarget.pi); }
+  imgFile.value=""; imgTarget=null;
+};
+// 貼り付け（Ctrl+V）とドロップ：カーソルのあるロールプレイの表紙に
+let curEditPlay=0, lastMouse={x:-1,y:-1};
+document.addEventListener("mousemove",e=>{ lastMouse={x:e.clientX,y:e.clientY}; },{passive:true});
+function playOfPoint(){ if(lastMouse.x<0) return null; const el=document.elementFromPoint(lastMouse.x,lastMouse.y); const pg=el&&el.closest&&el.closest(".pg"); return pg?+pg.dataset.pi:null; }
+// カーソルが役チップの上にあるか（あればその役に貼り付け）
+function roleOfPoint(){ if(lastMouse.x<0) return null; const el=document.elementFromPoint(lastMouse.x,lastMouse.y); const chip=el&&el.closest&&el.closest(".rolechip"); if(!chip) return null; const d=chip.querySelector("[data-ri]"); return d?{pi:+d.dataset.pi,ri:+d.dataset.ri}:null; }
+editList.addEventListener("focusin",e=>{ const pg=e.target.closest(".pg"); if(pg) curEditPlay=+pg.dataset.pi; });
+editList.addEventListener("dragover",e=>{ if(e.target.closest(".pg")) e.preventDefault(); });
+editList.addEventListener("drop",e=>{
+  const chip=e.target.closest(".rolechip"), pg=e.target.closest(".pg");
+  if(!chip && !pg) return;
+  e.preventDefault();
+  const f=[...(e.dataTransfer.files||[])].find(x=>x.type.startsWith("image/")); if(!f) return;
+  if(chip){ const d=chip.querySelector("[data-ri]"); if(d){ setRoleImg(f,+d.dataset.pi,+d.dataset.ri); return; } }
+  setCover(f,+pg.dataset.pi);
+});
+document.addEventListener("paste",e=>{
+  if($("#edit").hidden || !$("#aiOverlay").hidden) return;   // AIモーダル中はテキスト貼り付けを邪魔しない
+  const items=(e.clipboardData&&e.clipboardData.items)||[]; let file=null;
+  for(const it of items){ if(it.type&&it.type.startsWith("image/")){ file=it.getAsFile(); break; } }
+  if(!file) return;
+  const role=roleOfPoint();                                   // 役チップの上なら、その役のアバターへ
+  if(role){ e.preventDefault(); setRoleImg(file,role.pi,role.ri); return; }
+  const p=playOfPoint(); const target=(p!=null)?p:curEditPlay;
+  if(target==null||!data.plays[target]) return;
+  e.preventDefault(); setCover(file,target);
+});
+// 他のページ/アプリから戻ったとき、ページ内をクリックしなくても、編集エリアに
+// カーソルを合わせるだけで Ctrl+V 貼り付けが効くように、フォーカスを取り戻す。
+editList.tabIndex=-1;
+function grabPasteFocus(){
+  if($("#edit").hidden) return;
+  const a=document.activeElement;
+  if(a && a!==document.body && a!==document.documentElement) return;  // 入力中は邪魔しない
+  try{ editList.focus({preventScroll:true}); }catch(_){}
+}
+editList.addEventListener("pointerover",grabPasteFocus);
+editList.addEventListener("pointermove",grabPasteFocus,{passive:true});
+window.addEventListener("focus",grabPasteFocus);
+
+/* ====== AI一括 ====== */
+let aiTarget=0;
+function aiPromptText(){
+  const lang=($("#aiLang").value||"").trim()||"英語";
+  const src=$("#aiSrc").value.trim();
+  return `次の日本語のロールプレイ（会話）を処理してください。1行が1セリフです。\n各行について「日本語 | よみ | ローマ字 | 翻訳」の形で、1行に1セリフずつ出力してください。\n・行の順番と行数は絶対に変えないでください（分けたり、まとめたりしない）\n・よみ＝セリフ全文をひらがなで\n・ローマ字＝ヘボン式\n・翻訳は「${lang}」で\n・【 】で囲まれた言葉（生徒が入れかえる部分）は、よみ・ローマ字・翻訳でも対応する言葉を必ず【 】で囲んでください\n番号や説明は付けないでください。\n\n会話:\n${src||"（ここに①で貼った会話が入ります）"}`;
+}
+function updateAiPrompt(){ $("#aiPrompt").textContent=aiPromptText(); }
+function openAi(p){
+  aiTarget=p;
+  const play=data.plays[p];
+  // 役の割り当て順を表示（1行目→役1、2行目→役2、…のくり返し）
+  const chips=play.roles.map((r,i)=>`<span class="rc" style="background:${roleColor(i)}">${esc(r||("役"+(i+1)))}</span>`).join('<span class="arr">→</span>');
+  $("#aiRoles").innerHTML=`🎭 役の割り当て順：${chips}<span class="arr">→（くり返し）</span>`;
+  $("#aiLang").value=cfg.lang||"英語"; $("#aiSrc").value=""; $("#aiResult").value="";
+  updateAiPrompt(); $("#aiOverlay").hidden=false; setTimeout(()=>$("#aiSrc").focus(),30);
+}
+$("#aiSrc").addEventListener("input",updateAiPrompt);
+$("#aiLang").addEventListener("input",()=>{ cfg.lang=$("#aiLang").value.trim(); saveCfg(); updateAiPrompt(); });
+$("#aiCancel").onclick=()=>{ $("#aiOverlay").hidden=true; };
+$("#aiOverlay").onclick=e=>{ if(e.target===$("#aiOverlay")) $("#aiOverlay").hidden=true; };
+$("#aiCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText($("#aiPrompt").textContent); showToast("📋 プロンプトをコピーしました"); }catch(e){ const r=document.createRange(); r.selectNodeContents($("#aiPrompt")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); showToast("手動でコピーしてください（選択しました）"); } };
+$("#aiAdd").onclick=()=>{
+  const play=data.plays[aiTarget]; if(!play) return;
+  const lines=$("#aiResult").value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  const added=[];
+  lines.forEach(line=>{
+    const parts=line.replace(/｜/g,"|").split("|").map(s=>s.trim());
+    const [jp,kana,romaji,tr]=[parts[0]||"",parts[1]||"",parts[2]||"",parts[3]||""];
+    if(!jp) return;
+    added.push({jp,kana,romaji,tr});
+  });
+  if(!added.length){ alert("セリフが読み取れませんでした。「日本語 | よみ | ローマ字 | 翻訳」の形で貼り付けてください。"); return; }
+  // 役は入力済みのものを順番に自動割り当て（既存のセリフの続きから回す）
+  play.lines=play.lines.filter(l=>((l.jp||"")+(l.kana||"")+(l.romaji||"")+(l.tr||"")).trim()!=="");   // 空のセリフ行は除いてから
+  const n=play.roles.length;
+  const start=play.lines.length ? (play.lines[play.lines.length-1].role+1)%n : 0;
+  added.forEach((l,i)=>{ l.role=(start+i)%n; });
+  play.lines.push(...added);
+  saveData(); $("#aiOverlay").hidden=true; renderEdit(); showToast(`✅ ${added.length}セリフを追加しました（役は順番に自動割り当て）`);
+};
+
+/* ====== トースト ====== */
+let toastTimer=null;
+function showToast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); if(toastTimer)clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),1600); }
+
+/* ====== モード切替・イベント ====== */
+function showEdit(){ closeNav(); $("#listBtn").hidden=true; $("#present").hidden=true; $("#edit").hidden=false; renderEdit(); }
+function showPresent(){ $("#edit").hidden=true; $("#present").hidden=false; $("#listBtn").hidden=false; if(pi>data.plays.length-1){ pi=Math.max(0,data.plays.length-1); part=0; } renderScreen(); }
+$("#modeBtn").onclick=showEdit;
+$("#doneBtn").onclick=showPresent;
+$("#saveBtn").onclick=()=>{ saveData(); showToast("✅ 保存しました"); };
+$("#prevBtn").onclick=()=>go(-1);
+$("#nextBtn").onclick=()=>go(1);
+$("#tgFuri").onclick=()=>{ cfg.furi=!cfg.furi; saveCfg(); applyToggles(); };
+$("#tgRomaji").onclick=()=>{ cfg.romaji=!cfg.romaji; saveCfg(); applyToggles(); };
+$("#tgTr").onclick=()=>{ cfg.tr=!cfg.tr; saveCfg(); applyToggles(); };
+$("#fsBtn").onclick=function(){ if(!document.fullscreenElement){(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen||function(){}).call(document.documentElement);} else {(document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);} };
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape" && navPanel.classList.contains("open")){ closeNav(); return; }
+  const tag=(document.activeElement&&document.activeElement.tagName)||"";
+  if(!$("#present").hidden && tag!=="INPUT" && tag!=="TEXTAREA" && tag!=="SELECT"){
+    if(e.key==="ArrowLeft") go(-1);
+    else if(e.key==="ArrowRight") go(1);
+  }
+});
+
+renderScreen();
+</script>
+<script src="editbar.js"></script>
+<script src="intro.js"></script>
+<script>ClassIntro.init({key:"roleplay",icon:"🗣️",title:"今日のロールプレイ",desc:"今日のロールプレイ（会話）を練習します。\n役に分かれて、セリフを声に出して読みましょう。\n色つきのことばは、自分のことばに入れかえてOK！"});</script>
+</body>
+</html>

@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>今日のフレーズ — 日本語クラス</title>
+<meta name="description" content="授業で覚えさせたい文・フレーズを1つずつ提示。文節ごとにローマ字・ふりがな・翻訳・文法説明を表示。教師が事前に登録。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;font-family:"Segoe UI","Yu Gothic UI",Meiryo,"Hiragino Kaku Gothic ProN","Malgun Gothic",system-ui,sans-serif;color:#fff;
+  background:radial-gradient(1200px 700px at 20% -10%,#3b2a6b 0%,rgba(59,42,107,0) 60%),
+             radial-gradient(1100px 700px at 100% 0%,#1d4ed8 0%,rgba(29,78,216,0) 55%),
+             linear-gradient(160deg,#1a1140,#2b1a5e 55%,#11103a);
+  min-height:100vh;-webkit-font-smoothing:antialiased}
+:root{--gold:#ffd34e;--tr:#7af0c4;--furi:#bcb2ec}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;max-width:1000px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
+.brand .logo{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#ec6f9e,#2563eb);box-shadow:0 6px 16px rgba(234,95,147,.4);font-size:20px}
+.brand small{display:block;font-size:11px;font-weight:600;color:#c9c2e8}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.chip-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:9px 15px;font-size:14px;font-weight:700;backdrop-filter:blur(6px);transition:background .15s,transform .12s}
+.chip-btn:hover{background:rgba(255,255,255,.2)}
+.chip-btn:active{transform:scale(.95)}
+.chip-btn.on{background:var(--gold);color:#3a2a00;border-color:var(--gold)}
+
+.wrap{max-width:960px;margin:0 auto;padding:6px 16px 50px}
+.screen{animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+
+/* ---------- present ---------- */
+.counter{text-align:center;color:#c9c2e8;font-weight:800;font-size:15px;margin:6px 0 4px}
+.counter b{color:var(--gold);font-size:18px}
+.stage{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:10px 22px;min-height:42vh;align-content:center;padding:14px 4px}
+.seg{display:flex;flex-direction:column;align-items:center;text-align:center}
+.seg .romaji{font-size:clamp(13px,2.3vw,20px);color:var(--gold);font-weight:700;letter-spacing:.02em;min-height:1.35em;line-height:1.2}
+.seg .furi{font-size:clamp(14px,2.5vw,22px);color:var(--furi);font-weight:700;min-height:1.45em;line-height:1.2}
+.seg .jp{font-size:clamp(30px,7vw,62px);font-weight:900;line-height:1.18;color:#fff}
+.seg .tr{display:none;margin-top:8px;font-size:clamp(14px,3vw,24px);color:var(--tr);font-weight:700;border-top:1.5px dashed rgba(255,255,255,.22);padding-top:7px;max-width:18ch}
+.stage.hide-romaji .romaji{visibility:hidden}
+.stage.hide-furi .furi{visibility:hidden}
+.stage.show-tr .seg .tr{display:block}
+
+.note-panel{max-width:760px;margin:14px auto 0;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.16);border-radius:14px;padding:16px 18px;line-height:1.85;white-space:pre-wrap;font-size:clamp(14px,2.6vw,18px);color:#eee8ff}
+.note-panel .nh{font-weight:800;color:var(--gold);margin-bottom:6px;font-size:14px}
+.note-panel .note-ja{margin-top:9px;padding-top:9px;border-top:1.5px dashed rgba(255,255,255,.2);color:var(--furi);font-size:.92em}
+.note-panel .note-ja::before{content:"🇯🇵 ";font-size:.9em}
+
+.controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:22px}
+.navbtn{border:0;border-radius:14px;padding:14px 22px;font-size:17px;font-weight:900;color:#3a2400;background:linear-gradient(135deg,#ffe27a,#ffb43b);box-shadow:0 8px 22px rgba(255,170,40,.35)}
+.navbtn:disabled{filter:grayscale(.5) brightness(.85);cursor:default}
+.navbtn:active{transform:scale(.97)}
+.toggles{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.tg{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);color:#e7e2ff;border-radius:999px;padding:9px 15px;font-weight:800;font-size:14px}
+.tg.on{background:var(--gold);color:#3a2a00;border-color:var(--gold)}
+.tg.tr-on{background:var(--tr);color:#063b2c;border-color:var(--tr)}
+.tg:active{transform:scale(.96)}
+.empty-note{text-align:center;color:#a99fd6;margin-top:30px;font-size:15px;line-height:1.8}
+
+/* ---------- edit ---------- */
+h1.title{font-size:clamp(22px,5vw,30px);margin:8px 0 2px;text-align:center}
+p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
+.editbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;position:sticky;top:8px;z-index:40;padding:9px 12px;margin-bottom:14px;border-radius:14px;background:rgba(22,15,52,.5);-webkit-backdrop-filter:blur(14px) saturate(1.3);backdrop-filter:blur(14px) saturate(1.3);border:1px solid rgba(255,255,255,.11);box-shadow:0 10px 28px rgba(0,0,0,.38)}
+.langfield{display:flex;align-items:center;gap:8px;font-weight:800;font-size:14px;color:#e7e2ff}
+.langfield input{border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.95);color:#241552;border-radius:10px;padding:8px 12px;font:inherit;font-weight:700;width:160px}
+.ph{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:16px;padding:16px;margin-bottom:14px}
+.ph-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.ph-head b{font-size:16px}
+.ph-actions{display:flex;gap:6px}
+.psm{width:36px;height:36px;border-radius:10px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-weight:800}
+.psm:disabled{opacity:.35}
+.psm.del{color:#ff9aa8;border-color:rgba(255,107,133,.4)}
+.seg-edit{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.seglabels{display:flex;gap:6px;font-size:11px;color:#a99fd6;font-weight:700;padding:0 2px}
+.seglabels span:nth-child(1){flex:1.2 1 110px}.seglabels span:nth-child(2){flex:1 1 90px}.seglabels span:nth-child(3){flex:1 1 90px}.seglabels span:nth-child(4){flex:1.2 1 110px}.seglabels span.sp{flex:0 0 36px}
+.segrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.segrow input{flex:1 1 110px;min-width:0;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:9px;padding:9px 10px;font:inherit;font-weight:600;font-size:14px}
+.segrow .rmseg{flex:0 0 36px;height:38px;border-radius:9px;border:1.5px solid rgba(255,107,133,.4);background:rgba(255,107,133,.12);color:#ffd0d8;font-weight:800}
+.ghost-btn{background:transparent;border:1.5px dashed rgba(255,255,255,.32);color:#cfc8f0;border-radius:12px;padding:9px 14px;font-weight:800;font-size:14px}
+.ghost-btn:hover{border-color:#fff;color:#fff}
+.ghost-btn.sm{padding:7px 12px;font-size:13px}
+.notelbl{display:block;font-weight:800;font-size:13px;color:#cfc8f0;margin-top:12px}
+.notelbl textarea{width:100%;margin-top:6px;min-height:64px;resize:vertical;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:10px;padding:10px 12px;font:inherit;line-height:1.6}
+.big-btn{display:block;width:100%;border:0;border-radius:16px;padding:16px;font-size:20px;font-weight:900;color:#3a2400;background:linear-gradient(135deg,#ffe27a,#ffb43b);box-shadow:0 12px 30px rgba(255,170,40,.4);margin-top:6px}
+.big-btn:active{transform:translateY(1px) scale(.99)}
+.hint{font-size:12.5px;color:#a99fd6;margin:2px 2px 14px;line-height:1.7}
+.editbar-btns{display:flex;gap:8px;flex-wrap:wrap}
+.chip-btn.save-chip{background:#43d9ad;color:#063b2c;border-color:#43d9ad}
+.chip-btn.save-chip:hover{background:#5ee0bd}
+.big-btn.save-big{background:linear-gradient(135deg,#7af0c4,#2bbf8e);color:#063b2c;box-shadow:0 12px 30px rgba(43,191,142,.4);margin-bottom:10px}
+/* 保存トースト */
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);background:#43d9ad;color:#063b2c;font-weight:800;font-size:15px;padding:12px 26px;border-radius:999px;box-shadow:0 12px 34px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease;z-index:100}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* フレーズ一覧パネル（右からスライド） */
+.navpanel{position:fixed;top:0;right:0;height:100%;width:min(88vw,340px);background:rgba(24,16,58,.97);backdrop-filter:blur(10px);border-left:1.5px solid rgba(255,255,255,.16);box-shadow:-14px 0 44px rgba(0,0,0,.5);z-index:80;display:flex;flex-direction:column;padding:16px;transform:translateX(100%);transition:transform .26s ease;pointer-events:none}
+.navpanel.open{transform:translateX(0);pointer-events:auto}
+.np-head{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:17px;margin-bottom:12px}
+.np-close{background:rgba(255,255,255,.12);border:0;color:#fff;width:34px;height:34px;border-radius:9px;font-weight:800;font-size:15px}
+.np-jump{display:flex;gap:8px;margin-bottom:12px}
+.np-jump input{flex:1;min-width:0;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:10px;padding:10px 12px;font:inherit;font-weight:700}
+.np-jump button{border:0;border-radius:10px;padding:0 16px;font-weight:800;background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff}
+.np-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch}
+.np-item{display:flex;gap:10px;align-items:flex-start;text-align:left;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:12px;padding:11px 13px;color:#e7e2ff;font-weight:700;font-size:15px;line-height:1.45;cursor:pointer;width:100%}
+.np-item:hover{background:rgba(255,255,255,.13)}
+.np-item .num{flex:0 0 auto;min-width:24px;height:24px;border-radius:7px;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:13px;font-weight:800}
+.np-item.cur{background:linear-gradient(135deg,rgba(236,111,158,.4),rgba(37,99,235,.4));border-color:var(--gold);color:#fff}
+.np-item.cur .num{background:var(--gold);color:#3a2a00}
+.np-empty{color:#a99fd6;padding:10px 4px;font-size:14px}
+.add-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.ghost-btn.ai-btn{border-style:solid;border-color:rgba(122,240,196,.55);color:#7af0c4}
+/* AI一括モーダル */
+.overlay{position:fixed;inset:0;background:rgba(10,6,30,.66);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow:auto;z-index:120}
+.ai-panel{background:#1c1346;border:1.5px solid rgba(255,255,255,.16);border-radius:18px;max-width:620px;width:100%;padding:20px;box-shadow:0 30px 70px rgba(0,0,0,.55)}
+.ai-panel h3{margin:0 0 6px;font-size:19px}
+.ai-panel .step{font-weight:800;color:var(--gold);font-size:13px;margin:14px 0 6px}
+.ai-panel textarea{width:100%;min-height:96px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:10px;padding:11px;font:inherit;line-height:1.6;resize:vertical}
+.ai-prompt{background:rgba(255,255,255,.95);color:#241552;border-radius:8px;padding:10px;margin:6px 0;font-size:12.5px;line-height:1.6;white-space:pre-wrap;font-weight:600;max-height:160px;overflow:auto}
+.ai-lang{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:#e7e2ff;margin-bottom:6px}
+.ai-lang input{flex:1;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.95);color:#241552;border-radius:8px;padding:7px 10px;font:inherit;font-weight:700}
+.ai-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+.mini{border-radius:10px;padding:11px 18px;font-weight:800;font-size:15px;border:0}
+.mini.primary{background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff}
+.mini.plain{background:rgba(255,255,255,.14);color:#fff}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a class="brand" href="games.html">
+    <span class="logo">📖</span>
+    <span>今日のフレーズ<small>日本語クラス・授業ツール</small></span>
+  </a>
+  <div class="top-actions">
+    <button class="chip-btn" id="listBtn">📋 一覧</button>
+    <button class="chip-btn" id="modeBtn">✏️ 編集</button>
+    <button class="chip-btn" id="fsBtn">⛶ 全画面</button>
+    <a class="chip-btn" href="games.html">🎮 ゲーム集</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ============ PRESENT ============ -->
+  <section id="present" class="screen">
+    <div class="counter" id="counter">– / –</div>
+    <div class="stage" id="stage"></div>
+    <div class="note-panel" id="notePanel" hidden><div class="nh">📝 説明</div><div id="noteBody"></div></div>
+    <div class="empty-note" id="emptyNote" hidden>まだフレーズがありません。<br>右上の「✏️ 編集」から「今日の文・フレーズ」を登録してください。</div>
+    <div class="controls" id="controls">
+      <button class="navbtn" id="prevBtn">◀ 前へ</button>
+      <div class="toggles">
+        <button class="tg on" id="tgFuri">ふりがな</button>
+        <button class="tg on" id="tgRomaji">ローマ字</button>
+        <button class="tg" id="tgTr">🌐 翻訳</button>
+        <button class="tg" id="tgNote">📝 説明</button>
+      </div>
+      <button class="navbtn" id="nextBtn">次へ ▶</button>
+    </div>
+  </section>
+
+  <!-- ============ EDIT ============ -->
+  <section id="edit" class="screen" hidden>
+    <h1 class="title">✏️ フレーズの編集</h1>
+    <p class="sub">授業で覚えさせたい文・フレーズを、文節ごとに登録します。</p>
+    <div class="editbar">
+      <label class="langfield">🌐 翻訳の言語（任意）<input type="text" id="langInput" placeholder="例：English"></label>
+      <div class="editbar-btns">
+        <button class="chip-btn save-chip" id="saveBtn">💾 保存</button>
+        <button class="chip-btn on" id="doneBtn">▶ 発表する</button>
+      </div>
+    </div>
+    <div class="hint">💡 1つの文を「文節（私は／日本語を／勉強しています…）」に分けて入力します。<b>よみ</b>＝漢字の読み（ひらがな）。<b>ローマ字</b>は空欄ならよみから自動で作ります。<b>翻訳</b>は文節ごとに、好きな言語で。<br>🤖 <b>AIで一括作成</b>＝おぼえさせたい文を貼るだけで、文節分け・よみ・ローマ字・翻訳・説明（＋その<b>日本語訳</b>）までAIに作らせて登録できます。</div>
+    <div id="editList"></div>
+    <div class="add-row">
+      <button class="ghost-btn" id="addPhraseBtn">＋ フレーズを追加</button>
+      <button class="ghost-btn ai-btn" id="aiBtn">🤖 AIで一括作成</button>
+    </div>
+    <button class="big-btn save-big" id="saveBtn2">💾 保存する</button>
+    <button class="big-btn" id="doneBtn2">▶ 発表する</button>
+  </section>
+
+</div>
+
+<div class="toast" id="toast">✅ 保存しました</div>
+
+<div class="navpanel" id="navPanel">
+  <div class="np-head"><span>📋 フレーズ一覧</span><button class="np-close" id="npClose">✕</button></div>
+  <div class="np-jump">
+    <input type="number" id="npNum" min="1" inputmode="numeric" placeholder="番号で移動（例：1）">
+    <button id="npGo">移動</button>
+  </div>
+  <div class="np-list" id="npList"></div>
+</div>
+
+<div class="overlay" id="aiOverlay" hidden>
+  <div class="ai-panel">
+    <h3>🤖 AIでフレーズを一括作成</h3>
+    <div class="ai-lang">🌐 翻訳の言語：<input type="text" id="aiLang" placeholder="例：English / ドイツ語 / 中文"></div>
+    <div class="step">① おぼえさせたい文を貼り付け（1行に1文）</div>
+    <textarea id="aiSrc" placeholder="例：&#10;私は日本語を勉強しています。&#10;お名前は何ですか。"></textarea>
+    <div class="step">② このプロンプトをコピーして ChatGPT などに貼る</div>
+    <div class="ai-prompt" id="aiPrompt"></div>
+    <button class="mini plain" id="aiCopy">プロンプトをコピー</button>
+    <div class="step">③ AIの結果を貼り付け（文と文の間は空行）</div>
+    <textarea id="aiResult" placeholder="例：&#10;私は | わたしは | watashi wa | I (topic)&#10;日本語を | にほんごを | nihongo o | Japanese (object)&#10;勉強しています | べんきょうしています | benkyou shite imasu | am studying&#10;説明: &quot;wa&quot; marks the topic and &quot;o&quot; the object.&#10;和訳: 「は」は主題、「を」は目的語を表す助詞です。&#10;&#10;（次の文…）"></textarea>
+    <div class="ai-actions">
+      <button class="mini plain" id="aiCancel">やめる</button>
+      <button class="mini primary" id="aiAdd">フレーズを追加</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+function load(k,d){ try{const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v}catch(e){return d} }
+function save(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+/* ====== データ ====== */
+const SEED=[
+  {segs:[
+    {jp:"私は",kana:"わたしは",romaji:"watashi wa",tr:"I (topic)"},
+    {jp:"日本語を",kana:"にほんごを",romaji:"nihongo o",tr:"Japanese (object)"},
+    {jp:"勉強しています",kana:"べんきょうしています",romaji:"benkyou shite imasu",tr:"am studying"},
+  ], note:"「は」は主題、「を」は動作の対象（目的語）を表す助詞です。\n「〜ています」は現在進行中の動作・状態を表します。"},
+  {segs:[
+    {jp:"お名前は",kana:"おなまえは",romaji:"onamae wa",tr:"your name (topic)"},
+    {jp:"何ですか",kana:"なんですか",romaji:"nan desu ka",tr:"what is it?"},
+  ], note:"「お〜」は丁寧の接頭辞。文末の「〜ですか」で丁寧な疑問文になります。"},
+];
+let data = load("phrases.data.v1", null);
+if(!data || !Array.isArray(data.phrases)){ data={phrases:SEED.map(p=>({segs:p.segs.map(s=>({...s})),note:p.note,noteJa:""}))}; save("phrases.data.v1",data); }
+data.phrases.forEach(p=>{ if(!Array.isArray(p.segs)) p.segs=[]; if(typeof p.note!=="string") p.note=""; if(typeof p.noteJa!=="string") p.noteJa=""; });
+let cfg = load("phrases.cfg.v1", {furi:true, romaji:true, lang:"English"});
+function saveData(){ save("phrases.data.v1", data); }
+function saveCfg(){ save("phrases.cfg.v1", cfg); }
+
+/* ====== かな→ローマ字（教師がローマ字を空欄にした時の自動生成） ====== */
+const BASE={"あ":"a","い":"i","う":"u","え":"e","お":"o","か":"ka","き":"ki","く":"ku","け":"ke","こ":"ko","さ":"sa","し":"shi","す":"su","せ":"se","そ":"so","た":"ta","ち":"chi","つ":"tsu","て":"te","と":"to","な":"na","に":"ni","ぬ":"nu","ね":"ne","の":"no","は":"ha","ひ":"hi","ふ":"fu","へ":"he","ほ":"ho","ま":"ma","み":"mi","む":"mu","め":"me","も":"mo","や":"ya","ゆ":"yu","よ":"yo","ら":"ra","り":"ri","る":"ru","れ":"re","ろ":"ro","わ":"wa","を":"o","が":"ga","ぎ":"gi","ぐ":"gu","げ":"ge","ご":"go","ざ":"za","じ":"ji","ず":"zu","ぜ":"ze","ぞ":"zo","だ":"da","ぢ":"ji","づ":"zu","で":"de","ど":"do","ば":"ba","び":"bi","ぶ":"bu","べ":"be","ぼ":"bo","ぱ":"pa","ぴ":"pi","ぷ":"pu","ぺ":"pe","ぽ":"po","ぁ":"a","ぃ":"i","ぅ":"u","ぇ":"e","ぉ":"o"};
+const YOON={"き":"ky","し":"sh","ち":"ch","に":"ny","ひ":"hy","み":"my","り":"ry","ぎ":"gy","じ":"j","ぢ":"j","び":"by","ぴ":"py"};
+function kanaToRomaji(input){
+  if(!input) return "";
+  let s=input.replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)); // カタカナ→ひらがな
+  const units=[];
+  for(let i=0;i<s.length;i++){
+    const c=s[i], n=s[i+1];
+    if(YOON[c] && (n==="ゃ"||n==="ゅ"||n==="ょ")){ units.push(YOON[c]+{"ゃ":"a","ゅ":"u","ょ":"o"}[n]); i++; }
+    else if(c==="っ") units.push("っ");
+    else if(c==="ー") units.push("ー");
+    else if(c==="ん") units.push("n");
+    else if(BASE[c]!=null) units.push(BASE[c]);
+    else units.push(c);
+  }
+  let out="";
+  for(let i=0;i<units.length;i++){
+    const u=units[i];
+    if(u==="っ"){ const nx=units[i+1]||""; const m=nx.match(/^[a-z]/); out+=m?m[0]:""; }
+    else if(u==="ー"){ const m=out.match(/[aeiou]$/); out+=m?m[0]:""; }
+    else out+=u;
+  }
+  return out;
+}
+function isKana(s){ return /^[぀-ゟ゠-ヿーー\s]+$/.test(s||""); }
+function romajiOf(seg){
+  if(seg.romaji && seg.romaji.trim()) return seg.romaji.trim();
+  if(seg.kana && seg.kana.trim()) return kanaToRomaji(seg.kana.trim());
+  if(isKana(seg.jp)) return kanaToRomaji(seg.jp);
+  return "";
+}
+
+/* ====== 状態 ====== */
+let idx=0, showTr=false, showNote=false;
+
+/* ====== 発表（present） ====== */
+const stage=$("#stage"), counter=$("#counter"), notePanel=$("#notePanel"), noteBody=$("#noteBody");
+function clampIdx(){ if(idx<0)idx=0; if(idx>data.phrases.length-1)idx=data.phrases.length-1; if(data.phrases.length===0)idx=0; }
+function renderPhrase(){
+  clampIdx();
+  const has=data.phrases.length>0;
+  $("#emptyNote").hidden=has; $("#stage").hidden=!has; $("#controls").hidden=!has; counter.hidden=!has;
+  if(!has){ notePanel.hidden=true; return; }
+  const p=data.phrases[idx];
+  counter.innerHTML=`<b>${idx+1}</b> / ${data.phrases.length}`;
+  stage.innerHTML="";
+  p.segs.forEach(seg=>{
+    const col=document.createElement("div"); col.className="seg";
+    const rom=romajiOf(seg);
+    const furi=(seg.kana && seg.kana.trim() && seg.kana.trim()!==seg.jp.trim()) ? seg.kana.trim() : "";
+    col.innerHTML=`<div class="romaji">${esc(rom)}</div><div class="furi">${esc(furi)}</div><div class="jp">${esc(seg.jp)}</div>`+
+                  (seg.tr&&seg.tr.trim()?`<div class="tr">${esc(seg.tr)}</div>`:`<div class="tr"></div>`);
+    stage.appendChild(col);
+  });
+  if(p.note || p.noteJa){
+    noteBody.innerHTML=(p.note?`<div>${esc(p.note)}</div>`:"")+(p.noteJa?`<div class="note-ja">${esc(p.noteJa)}</div>`:"");
+  } else { noteBody.textContent="（このフレーズに説明はありません）"; }
+  applyToggles();
+  if($("#navPanel").classList.contains("open")) renderNavList();
+}
+function applyToggles(){
+  stage.classList.toggle("hide-romaji", !cfg.romaji);
+  stage.classList.toggle("hide-furi", !cfg.furi);
+  stage.classList.toggle("show-tr", showTr);
+  notePanel.hidden = !showNote || data.phrases.length===0;
+  $("#tgFuri").classList.toggle("on", cfg.furi);
+  $("#tgRomaji").classList.toggle("on", cfg.romaji);
+  $("#tgTr").classList.toggle("tr-on", showTr);
+  $("#tgNote").classList.toggle("on", showNote);
+  $("#tgTr").textContent = "🌐 翻訳"+(cfg.lang?` (${cfg.lang})`:"");
+  $("#prevBtn").disabled = idx<=0;
+  $("#nextBtn").disabled = idx>=data.phrases.length-1;
+}
+function go(d){ idx+=d; showTr=false; showNote=false; renderPhrase(); }
+
+/* ====== 編集（edit） ====== */
+const editList=$("#editList");
+function renderEdit(){
+  $("#langInput").value=cfg.lang||"";
+  editList.innerHTML=data.phrases.map((p,pi)=>phraseHTML(p,pi)).join("");
+}
+function phraseHTML(p,pi){
+  const segs=p.segs.map((s,si)=>`
+    <div class="segrow">
+      <input data-pi="${pi}" data-si="${si}" data-f="jp" placeholder="日本語（例：私は）" value="${esc(s.jp)}">
+      <input data-pi="${pi}" data-si="${si}" data-f="kana" placeholder="よみ（かな）" value="${esc(s.kana)}">
+      <input data-pi="${pi}" data-si="${si}" data-f="romaji" placeholder="ローマ字（空欄で自動）" value="${esc(s.romaji)}">
+      <input data-pi="${pi}" data-si="${si}" data-f="tr" placeholder="翻訳" value="${esc(s.tr)}">
+      <button class="rmseg" data-act="delseg" data-pi="${pi}" data-si="${si}" title="この文節を削除">✕</button>
+    </div>`).join("");
+  return `<div class="ph">
+    <div class="ph-head"><b>フレーズ ${pi+1}</b>
+      <div class="ph-actions">
+        <button class="psm" data-act="up" data-pi="${pi}" ${pi===0?"disabled":""}>▲</button>
+        <button class="psm" data-act="down" data-pi="${pi}" ${pi===data.phrases.length-1?"disabled":""}>▼</button>
+        <button class="psm del" data-act="delph" data-pi="${pi}">🗑</button>
+      </div>
+    </div>
+    <div class="seglabels"><span>日本語</span><span>よみ</span><span>ローマ字</span><span>翻訳</span><span class="sp"></span></div>
+    <div class="seg-edit">${segs}</div>
+    <button class="ghost-btn sm" data-act="addseg" data-pi="${pi}">＋ 文節を追加</button>
+    <label class="notelbl">📝 説明（文法など・任意）
+      <textarea data-pi="${pi}" data-f="note" placeholder="文法の解説など。生徒が理解しやすくなります。">${esc(p.note)}</textarea>
+    </label>
+    <label class="notelbl">🇯🇵 説明の日本語訳（任意）
+      <textarea data-pi="${pi}" data-f="noteJa" placeholder="上の説明の日本語訳。「🤖 AIで一括作成」で自動で入ります。">${esc(p.noteJa)}</textarea>
+    </label>
+  </div>`;
+}
+// 入力は再描画せず data を更新（フォーカス維持）
+editList.addEventListener("input",e=>{
+  const t=e.target, pi=+t.dataset.pi, f=t.dataset.f;
+  if(isNaN(pi)||!f) return;
+  if(f==="note"){ data.phrases[pi].note=t.value; }
+  else if(f==="noteJa"){ data.phrases[pi].noteJa=t.value; }
+  else { const si=+t.dataset.si; if(!isNaN(si)) data.phrases[pi].segs[si][f]=t.value; }
+  saveData();
+});
+editList.addEventListener("click",e=>{
+  const b=e.target.closest("button[data-act]"); if(!b) return;
+  const act=b.dataset.act, pi=+b.dataset.pi;
+  if(act==="addseg"){ data.phrases[pi].segs.push({jp:"",kana:"",romaji:"",tr:""}); }
+  else if(act==="delseg"){ const si=+b.dataset.si; data.phrases[pi].segs.splice(si,1); if(!data.phrases[pi].segs.length) data.phrases[pi].segs.push({jp:"",kana:"",romaji:"",tr:""}); }
+  else if(act==="delph"){ if(!confirm(`フレーズ ${pi+1} を削除しますか？`)) return; data.phrases.splice(pi,1); }
+  else if(act==="up"&&pi>0){ const t=data.phrases[pi];data.phrases[pi]=data.phrases[pi-1];data.phrases[pi-1]=t; }
+  else if(act==="down"&&pi<data.phrases.length-1){ const t=data.phrases[pi];data.phrases[pi]=data.phrases[pi+1];data.phrases[pi+1]=t; }
+  else return;
+  saveData(); renderEdit();
+});
+
+/* ====== モード切替・イベント ====== */
+function showEdit(){ $("#present").hidden=true; $("#edit").hidden=false; $("#listBtn").hidden=true; closeNav(); renderEdit(); }
+function showPresent(){ $("#edit").hidden=true; $("#present").hidden=false; $("#listBtn").hidden=false; if(idx>data.phrases.length-1) idx=Math.max(0,data.phrases.length-1); renderPhrase(); }
+
+/* ====== フレーズ一覧・番号ジャンプ ====== */
+const navPanel=$("#navPanel"), npList=$("#npList");
+function jumpTo(i){ if(i<0||i>=data.phrases.length) return; idx=i; showTr=false; showNote=false; renderPhrase(); }
+function renderNavList(){
+  npList.innerHTML="";
+  if(!data.phrases.length){ npList.innerHTML='<div class="np-empty">フレーズがありません。「✏️ 編集」から追加してください。</div>'; return; }
+  data.phrases.forEach((p,i)=>{
+    const sentence=p.segs.map(s=>s.jp).join("").trim()||"（空）";
+    const it=document.createElement("button");
+    it.className="np-item"+(i===idx?" cur":"");
+    it.innerHTML=`<span class="num">${i+1}</span><span>${esc(sentence)}</span>`;
+    it.onclick=()=>{ jumpTo(i); closeNav(); };
+    npList.appendChild(it);
+  });
+}
+function openNav(){ renderNavList(); navPanel.classList.add("open"); setTimeout(()=>{ const cur=npList.querySelector(".np-item.cur"); if(cur) cur.scrollIntoView({block:"center"}); $("#npNum").focus(); },20); }
+function closeNav(){ navPanel.classList.remove("open"); }
+function jumpByNumber(close){ const n=parseInt($("#npNum").value); if(n>=1 && n<=data.phrases.length){ jumpTo(n-1); renderNavList(); if(close) closeNav(); } }
+$("#listBtn").onclick=()=>{ navPanel.classList.contains("open")?closeNav():openNav(); };
+$("#npClose").onclick=closeNav;
+$("#npNum").addEventListener("input",()=>jumpByNumber(false));            // 「1」を打てばその場所へ
+$("#npNum").addEventListener("keydown",e=>{ if(e.key==="Enter") jumpByNumber(true); });
+$("#npGo").onclick=()=>jumpByNumber(true);
+
+let toastTimer=null;
+function showToast(msg){
+  const t=$("#toast"); t.textContent=msg; t.classList.add("show");
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove("show"),1600);
+}
+function doSave(){ saveData(); saveCfg(); showToast("✅ 保存しました"); }
+$("#saveBtn").onclick=doSave;
+$("#saveBtn2").onclick=doSave;
+
+$("#modeBtn").onclick=showEdit;
+$("#doneBtn").onclick=showPresent;
+$("#doneBtn2").onclick=showPresent;
+$("#addPhraseBtn").onclick=()=>{ data.phrases.push({segs:[{jp:"",kana:"",romaji:"",tr:""}],note:"",noteJa:""}); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
+
+/* ====== AIで一括作成 ====== */
+function aiPromptText(){
+  const lang=($("#aiLang").value||"").trim()||"英語";
+  const src=$("#aiSrc").value.trim();
+  return `次の日本語の文を、日本語学習者のために処理してください。1行が1文です。\n各文について:\n・文を文節（私は／日本語を／勉強しています…）に分ける\n・各文節を「日本語 | よみ | ローマ字 | 翻訳」の形で、1行に1文節ずつ出力する\n・よみ＝その文節の読み（ひらがな）、ローマ字＝ヘボン式、翻訳は「${lang}」で\n・その文の最後に2行付ける：\n    「説明: …」＝文法や使い方をやさしく1〜2文で説明（「${lang}」で）\n    「和訳: …」＝その説明の日本語訳\n・文と文の間は必ず空行で区切る\n番号や前置き・余計な説明は付けないでください。\n\n文:\n${src||"（ここに①で貼った文が入ります）"}`;
+}
+function updateAiPrompt(){ $("#aiPrompt").textContent=aiPromptText(); }
+function openAi(){
+  $("#aiLang").value=cfg.lang||"英語"; $("#aiSrc").value=""; $("#aiResult").value="";
+  updateAiPrompt(); $("#aiOverlay").hidden=false; setTimeout(()=>$("#aiSrc").focus(),30);
+}
+function parseAiPhrases(text){
+  const lines=String(text).replace(/\r/g,"").split("\n");
+  const phrases=[]; let cur=null, boundary=false;         // boundary＝空行/説明のあと。次に文節が来たら新しい文
+  const flush=()=>{ if(cur && cur.segs.length) phrases.push(cur); cur=null; boundary=false; };
+  // 説明（学習者の言語）／和訳（日本語）。区切りはコロンのみ（「|」は文節用なので混同しない）。ラベルの（言語）や太字にも対応
+  const noteRe=/^(?:説明|解説|文法|意味|メモ|ノート|note)\s*(?:[（(][^）)]*[）)])?\s*[:：]\s*(.+)$/i;
+  const jaRe  =/^(?:和訳|日本語訳|日本語|訳)\s*(?:[（(][^）)]*[）)])?\s*[:：]\s*(.+)$/;
+  const ensure=()=>{ if(!cur) cur={segs:[],note:"",noteJa:""}; return cur; };
+  lines.forEach(raw=>{
+    let line=raw.trim().replace(/^(?:[-*•]\s+|・\s+|>\s+|#{1,6}\s+)/,"").replace(/\*\*/g,"").trim(); // 箇条書き・太字を除去
+    if(!line){ boundary=true; return; }                    // 空行＝区切り候補（まだ確定しない）
+    let m=line.match(jaRe);
+    if(m){ const c=ensure(); c.noteJa=(c.noteJa?c.noteJa+"\n":"")+m[1].trim(); boundary=true; return; }
+    m=line.match(noteRe);
+    if(m){ const c=ensure(); c.note=(c.note?c.note+"\n":"")+m[1].trim(); boundary=true; return; }
+    const norm=line.replace(/｜/g,"|");
+    if(norm.indexOf("|")<0){ boundary=true; return; }      // 見出し等 → 区切り扱い
+    const parts=norm.split("|").map(s=>s.trim());
+    if(!parts[0]) return;
+    if(cur && cur.segs.length && boundary) flush();        // 区切りの後に文節＝新しい文
+    ensure().segs.push({jp:parts[0]||"", kana:parts[1]||"", romaji:parts[2]||"", tr:parts[3]||""});
+    boundary=false;
+  });
+  flush();
+  return phrases;
+}
+$("#aiBtn").onclick=openAi;
+$("#aiSrc").addEventListener("input",updateAiPrompt);
+$("#aiLang").addEventListener("input",()=>{ cfg.lang=$("#aiLang").value.trim(); saveCfg(); updateAiPrompt(); });
+$("#aiCancel").onclick=()=>{ $("#aiOverlay").hidden=true; };
+$("#aiOverlay").onclick=e=>{ if(e.target===$("#aiOverlay")) $("#aiOverlay").hidden=true; };
+$("#aiCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText($("#aiPrompt").textContent); showToast("📋 プロンプトをコピーしました"); }catch(e){ const r=document.createRange(); r.selectNodeContents($("#aiPrompt")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); showToast("手動でコピーしてください（選択しました）"); } };
+$("#aiAdd").onclick=()=>{
+  const phrases=parseAiPhrases($("#aiResult").value);
+  if(!phrases.length){ alert("フレーズが読み取れませんでした。「日本語 | よみ | ローマ字 | 翻訳」の行を並べ、文の最後に「説明: …」、文と文の間は空行で区切って貼り付けてください。"); return; }
+  data.phrases.push(...phrases);
+  saveData(); $("#aiOverlay").hidden=true; renderEdit(); showToast(`✅ ${phrases.length}フレーズを追加しました`);
+};
+$("#langInput").addEventListener("input",function(){ cfg.lang=this.value.trim(); saveCfg(); });
+
+$("#prevBtn").onclick=()=>go(-1);
+$("#nextBtn").onclick=()=>go(1);
+$("#tgFuri").onclick=()=>{ cfg.furi=!cfg.furi; saveCfg(); applyToggles(); };
+$("#tgRomaji").onclick=()=>{ cfg.romaji=!cfg.romaji; saveCfg(); applyToggles(); };
+$("#tgTr").onclick=()=>{ showTr=!showTr; applyToggles(); };
+$("#tgNote").onclick=()=>{ showNote=!showNote; applyToggles(); };
+$("#fsBtn").onclick=function(){ if(!document.fullscreenElement){(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen||function(){}).call(document.documentElement);} else {(document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);} };
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){ if(!$("#aiOverlay").hidden){ $("#aiOverlay").hidden=true; return; } if(navPanel.classList.contains("open")){ closeNav(); return; } }
+  const tag=(document.activeElement&&document.activeElement.tagName)||"";
+  if(!$("#present").hidden && tag!=="INPUT" && tag!=="TEXTAREA"){
+    if(e.key==="ArrowLeft"){ if(idx>0) go(-1); }
+    else if(e.key==="ArrowRight"){ if(idx<data.phrases.length-1) go(1); }
+  }
+});
+
+renderPhrase();
+</script>
+<script src="intro.js"></script>
+<script>ClassIntro.init({key:"phrases",icon:"📖",title:"今日のフレーズ",desc:"今日おぼえるフレーズ（文）を1つずつ見ていきます。\nまず日本語で読んで、それから意味や使い方をいっしょに確認しましょう。"});</script>
+</body>
+</html>

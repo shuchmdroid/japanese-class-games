@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>書き順（かきじゅん） — 日本語クラス</title>
+<meta name="description" content="新しい字を覚えるための書き順アニメ。正しい書き順で1画ずつ色を変えて自動で書かれます。上には黒い見本。ひらがな・カタカナ・漢字、最大3字同時。ページ（レッスン）ごとに整理。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✍️</text></svg>">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;font-family:"Segoe UI","Yu Gothic UI",Meiryo,"Hiragino Kaku Gothic ProN","Malgun Gothic",system-ui,sans-serif;color:#fff;
+  background:radial-gradient(1200px 700px at 20% -10%,#3b2a6b 0%,rgba(59,42,107,0) 60%),
+             radial-gradient(1100px 700px at 100% 0%,#1d4ed8 0%,rgba(29,78,216,0) 55%),
+             linear-gradient(160deg,#1a1140,#2b1a5e 55%,#11103a);
+  min-height:100vh;-webkit-font-smoothing:antialiased}
+:root{--gold:#ffd34e;--ok:#43d9ad}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;max-width:1100px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
+.brand .logo{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#ec6f9e,#2563eb);box-shadow:0 6px 16px rgba(234,95,147,.4);font-size:20px}
+.brand small{display:block;font-size:11px;font-weight:600;color:#c9c2e8}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.chip-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:9px 15px;font-size:14px;font-weight:700;backdrop-filter:blur(6px);transition:background .15s,transform .12s}
+.chip-btn:hover{background:rgba(255,255,255,.2)}
+.chip-btn:active{transform:scale(.95)}
+
+.wrap{max-width:1100px;margin:0 auto;padding:6px 16px 50px}
+.screen{animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+
+.pagebar{display:flex;align-items:center;justify-content:center;gap:8px;margin:6px 0 2px;font-weight:800;color:#cfc8f0;font-size:14px}
+.pagebar select{border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.95);color:#241552;border-radius:9px;padding:7px 12px;font:inherit;font-weight:700;max-width:72vw}
+.counter{text-align:center;color:#c9c2e8;font-weight:800;font-size:14px;margin:4px 0 8px}
+.counter b{color:var(--gold);font-size:17px}
+
+.stage{display:flex;gap:26px;justify-content:center;align-items:flex-start;flex-wrap:wrap;min-height:40vh;padding:6px 0}
+.charcol{display:flex;flex-direction:column;gap:10px;flex:1 1 0;max-width:300px;min-width:0}
+.cap{font-size:12px;font-weight:800;color:#bcb2e6;text-align:center;letter-spacing:.04em}
+.cell{position:relative;background:#fff;border:2px solid #cdbd92;border-radius:12px;aspect-ratio:1/1;overflow:hidden;box-shadow:0 10px 26px rgba(0,0,0,.28)}
+.cell::before{content:"";position:absolute;left:50%;top:5%;bottom:5%;border-left:1.6px dashed #e6d8af;transform:translateX(-50%)}
+.cell::after{content:"";position:absolute;top:50%;left:5%;right:5%;border-top:1.6px dashed #e6d8af;transform:translateY(-50%)}
+.cell svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.sample-svg text{font-family:"Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif}
+.writebox .nodata{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#9a6;font-size:13px;font-weight:700;padding:8px}
+.writebox .loading{position:absolute;inset:0;display:grid;place-items:center;color:#bbb;font-size:26px}
+.stage .empty-page{color:#a99fd6;font-size:15px;padding:30px;text-align:center}
+
+.legend{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:14px 0 2px;min-height:24px}
+.legend .lg{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:#d9d2ff}
+.legend .dot{width:16px;height:16px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:10px;font-weight:900}
+
+.controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:18px}
+.navbtn{border:0;border-radius:14px;padding:14px 22px;font-size:17px;font-weight:900;color:#3a2400;background:linear-gradient(135deg,#ffe27a,#ffb43b);box-shadow:0 8px 22px rgba(255,170,40,.35)}
+.navbtn:disabled{filter:grayscale(.5) brightness(.85);cursor:default}
+.navbtn:active{transform:scale(.97)}
+.ctr-mid{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
+.seg{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.18);border-radius:12px;padding:6px 10px;font-weight:800;font-size:13px;color:#cfc8f0}
+.seg button{background:transparent;border:0;color:#cfc8f0;border-radius:8px;padding:5px 9px;font-weight:800;font-size:14px}
+.seg button.on{background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff}
+.speed{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.18);border-radius:12px;padding:6px 12px;font-weight:800;font-size:13px;color:#cfc8f0}
+.speed input{accent-color:#ec6f9e;width:110px}
+.speed b{color:var(--gold);min-width:38px;text-align:right}
+.tg{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);color:#e7e2ff;border-radius:999px;padding:9px 15px;font-weight:800;font-size:13.5px}
+.tg.on{background:var(--gold);color:#3a2a00;border-color:var(--gold)}
+.tg:active{transform:scale(.96)}
+.empty-note{text-align:center;color:#a99fd6;margin-top:30px;font-size:15px;line-height:1.8}
+
+/* edit */
+h1.title{font-size:clamp(22px,5vw,30px);margin:8px 0 2px;text-align:center}
+p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
+.pg{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:16px;padding:16px;margin-bottom:14px}
+.pg-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.pg-head b{font-size:15px}
+.pg-actions{display:flex;gap:6px}
+.psm{width:36px;height:36px;border-radius:10px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-weight:800}
+.psm:disabled{opacity:.35}
+.psm.del{color:#ff9aa8;border-color:rgba(255,107,133,.4)}
+.pg .ttl{width:100%;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:9px;padding:9px 12px;font:inherit;font-weight:700;margin-bottom:8px}
+.pg .chs{width:100%;min-height:70px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:9px;padding:10px 12px;font:inherit;font-size:21px;line-height:1.5;letter-spacing:.06em;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chips .c{width:36px;height:36px;display:grid;place-items:center;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.18);border-radius:8px;font-size:20px;font-weight:700}
+.add-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.add-row button{background:transparent;border:1.5px dashed rgba(255,255,255,.32);color:#cfc8f0;border-radius:10px;padding:9px 14px;font-weight:800;font-size:13px}
+.add-row button:hover{border-color:#fff;color:#fff}
+.note{font-size:12.5px;color:#a99fd6;margin:2px 2px 14px;line-height:1.7}
+.editbar{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:4px}
+.mini{border-radius:10px;padding:11px 18px;font-weight:800;font-size:15px;border:0}
+.mini.save{background:linear-gradient(135deg,#7af0c4,#2bbf8e);color:#063b2c}
+.mini.primary{background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);background:#43d9ad;color:#063b2c;font-weight:800;font-size:15px;padding:12px 26px;border-radius:999px;box-shadow:0 12px 34px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:100}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a class="brand" href="games.html">
+    <span class="logo">✍️</span>
+    <span>書き順<small>日本語クラス・授業ツール</small></span>
+  </a>
+  <div class="top-actions">
+    <button class="chip-btn" id="modeBtn">✏️ 編集</button>
+    <button class="chip-btn" id="fsBtn">⛶ 全画面</button>
+    <a class="chip-btn" href="games.html">🎮 ゲーム集</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ============ PRESENT ============ -->
+  <section id="present" class="screen">
+    <div class="pagebar" id="pagebar">📄 ページ <select id="pageSel"></select></div>
+    <div class="counter" id="counter">– / –</div>
+    <div class="stage" id="stage"></div>
+    <div class="legend" id="legend"></div>
+    <div class="empty-note" id="emptyNote" hidden>まだ字が登録されていません。<br>右上の「✏️ 編集」から、覚えさせたい字を登録してください。</div>
+    <div class="controls" id="controls">
+      <button class="navbtn" id="prevBtn">◀ 前へ</button>
+      <div class="ctr-mid">
+        <div class="seg" id="simulSeg">同時 <button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button></div>
+        <label class="speed">スピード <input type="range" id="speed" min="0.4" max="2.5" step="0.1"><b id="speedVal">×1.0</b></label>
+        <button class="tg" id="loopBtn">🔁 くりかえし</button>
+        <button class="tg" id="replayBtn">▶ もう一度</button>
+      </div>
+      <button class="navbtn" id="nextBtn">次へ ▶</button>
+    </div>
+  </section>
+
+  <!-- ============ EDIT ============ -->
+  <section id="edit" class="screen" hidden>
+    <h1 class="title">✏️ 覚えさせる字の登録</h1>
+    <p class="sub">ひらがな・カタカナ・漢字、どれでもOK。ページ（レッスン）ごとに分けられます。</p>
+    <div id="editList"></div>
+    <div class="add-row">
+      <button data-add="empty">＋ 空のページ</button>
+      <button data-add="hira">＋ ひらがなのページ</button>
+      <button data-add="kata">＋ カタカナのページ</button>
+      <button data-add="num">＋ 漢数字のページ</button>
+    </div>
+    <div class="note">💡 各ページに字を打つ／貼り付けるだけ（スペース・改行は無視）。書き順データは <b>KanjiVG</b> から自動取得します（インターネット接続が必要）。</div>
+    <div class="editbar">
+      <button class="mini save" id="saveBtn">💾 保存</button>
+      <button class="mini primary" id="doneBtn">▶ 発表する</button>
+    </div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast">✅ 保存しました</div>
+
+<script src="kana-strokes.js"></script>
+<script>/* 漢字データ（約0.8MB）は描画をブロックしないよう非同期で読み込む */
+window.KANJI_READY=new Promise(res=>{ const s=document.createElement("script"); s.src="kanji-strokes.js"; s.onload=res; s.onerror=res; document.head.appendChild(s); });</script>
+<script>
+const $=s=>document.querySelector(s);
+function load(k,d){ try{const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v}catch(e){return d} }
+function save(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+const SVGNS="http://www.w3.org/2000/svg";
+// 1画目=赤、2画目=橙、3画目=ピンク、4画目=緑、5画目=青…（全文字共通。隣どうしが見分けやすい色）
+const STROKE_COLORS=["#e53935","#fb8c00","#ec407a","#43a047","#1e88e5","#8e24aa","#00897b","#6d4c41","#00bcd4","#5c6bc0","#7cb342","#ef6c00","#ad1457","#546e7a","#2e7d32","#4527a0"];
+
+const HIRA="あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん";
+const KATA="アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン";
+const NUM="一二三四五六七八九十";
+
+/* ====== データ（ページ制） ====== */
+let data = load("strokes.data.v1", null);
+if(Array.isArray(data)) data={pages:[{title:"レッスン1",chars:data}]};         // 旧フラット形式を移行
+if(!data || !Array.isArray(data.pages) || !data.pages.length) data={pages:[{title:"ひらがな",chars:[...("あいうえお")]}]};
+data.pages.forEach(p=>{ if(!Array.isArray(p.chars)) p.chars=[]; if(typeof p.title!=="string") p.title=""; });
+save("strokes.data.v1",data);
+let cfg = load("strokes.cfg.v1", {simul:1, speed:1, loop:true});
+function saveData(){ save("strokes.data.v1",data); }
+function saveCfg(){ save("strokes.cfg.v1",cfg); }
+
+/* ====== 書き順データ取得（KanjiVG・メモリキャッシュ） ====== */
+const cache={};
+// KanjiVG の取得元（1つ落ちても次を試す）
+const SVG_SOURCES=[
+  h=>`https://cdn.jsdelivr.net/gh/KanjiVG/kanjivg@master/kanji/${h}.svg`,
+  h=>`https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji/${h}.svg`,
+  h=>`https://cdn.statically.io/gh/KanjiVG/kanjivg/master/kanji/${h}.svg`,
+];
+async function fetchTimeout(url,ms){
+  const c=new AbortController(); const t=setTimeout(()=>c.abort(),ms);
+  try{ return await fetch(url,{signal:c.signal}); } finally{ clearTimeout(t); }
+}
+async function getStrokes(ch){
+  const cp=ch.codePointAt(0); const hex=cp.toString(16).padStart(5,"0");
+  if(cache[hex]) return cache[hex];
+  // まずサイト内同梱のかなデータ（ネット/CDN 不要で必ず出る）
+  if(window.KANA_STROKES && window.KANA_STROKES[hex]) return (cache[hex]={paths:window.KANA_STROKES[hex].slice()});
+  // 次に同梱の教育漢字（小1〜6）。読み込み完了を待つ
+  if(window.KANJI_READY){ try{ await window.KANJI_READY; }catch(e){} if(window.KANJI_STROKES && window.KANJI_STROKES[hex]) return (cache[hex]={paths:window.KANJI_STROKES[hex].slice()}); }
+  let hadError=false;   // 教育漢字外の漢字だけCDNへ
+  for(const src of SVG_SOURCES){
+    try{
+      const r=await fetchTimeout(src(hex),7000);
+      if(r.ok){
+        const txt=await r.text();
+        const paths=[...new DOMParser().parseFromString(txt,"image/svg+xml").querySelectorAll("path")].map(p=>p.getAttribute("d")).filter(Boolean);
+        if(paths.length) return (cache[hex]={paths});   // 成功だけキャッシュ
+      } // 404等は次のソースへ
+    }catch(e){ hadError=true; }                          // 通信エラー/中断→あとでリトライ可
+  }
+  const res={paths:[]};
+  if(!hadError) cache[hex]=res;                          // 全ソースが「確実に無い」時だけ負を記憶（通信エラー時はキャッシュせずリトライ）
+  return res;
+}
+
+/* ====== 状態 ====== */
+let pi=0, idx=0, writers=[];
+
+/* ====== 1マスに自動で字を書く ====== */
+function makeWriter(host, ch){
+  let cancelled=false, pathEls=[], timers=[];
+  host.innerHTML='<div class="loading">…</div>';
+  const svg=document.createElementNS(SVGNS,"svg"); svg.setAttribute("viewBox","0 0 109 109");
+  function clearTimers(){ timers.forEach(t=>clearTimeout(t)); timers=[]; }
+  getStrokes(ch).then(d=>{
+    if(cancelled) return;
+    host.innerHTML="";
+    if(!d.paths.length){ const n=document.createElement("div"); n.className="nodata"; n.textContent="書き順データが見つかりませんでした"; host.appendChild(n); return; }
+    host.appendChild(svg);
+    pathEls=d.paths.map((dd,i)=>{
+      const p=document.createElementNS(SVGNS,"path");
+      p.setAttribute("d",dd); p.setAttribute("fill","none");
+      p.setAttribute("stroke",STROKE_COLORS[i%STROKE_COLORS.length]);
+      p.setAttribute("stroke-width","5.5"); p.setAttribute("stroke-linecap","round"); p.setAttribute("stroke-linejoin","round");
+      svg.appendChild(p); return p;
+    });
+    playLoop();
+  });
+  function reset(){ pathEls.forEach(p=>{ const L=p.getTotalLength(); p.style.transition="none"; p.style.strokeDasharray=L; p.style.strokeDashoffset=L; }); svg.getBoundingClientRect(); }
+  function playLoop(){ if(cancelled) return; reset(); drawStroke(0); }
+  function drawStroke(i){
+    if(cancelled) return;
+    if(i>=pathEls.length){ if(cfg.loop) timers.push(setTimeout(playLoop,1100)); return; }
+    const p=pathEls[i]; const L=p.getTotalLength();
+    const dur=Math.max(0.3, L/(70*cfg.speed));
+    p.style.transition=`stroke-dashoffset ${dur}s linear`;
+    requestAnimationFrame(()=>{ if(!cancelled) p.style.strokeDashoffset="0"; });
+    timers.push(setTimeout(()=>drawStroke(i+1), dur*1000+130));
+  }
+  return { stop(){ cancelled=true; clearTimers(); }, replay(){ if(cancelled)return; clearTimers(); playLoop(); } };
+}
+
+/* ====== 発表（present） ====== */
+const stage=$("#stage"), legendEl=$("#legend");
+function show(id){ ["present","edit"].forEach(s=>$("#"+s).hidden=(s!==id)); }
+function curChars(){ return (data.pages[pi]||{chars:[]}).chars; }
+
+function renderPageBar(){
+  const sel=$("#pageSel"); sel.innerHTML="";
+  data.pages.forEach((p,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=`${i+1}. ${p.title||"（無題）"}（${p.chars.length}字）`; sel.appendChild(o); });
+  sel.value=pi;
+}
+
+function renderStage(){
+  writers.forEach(w=>w.stop()); writers=[];
+  const anyChars=data.pages.some(p=>p.chars.length>0);
+  $("#emptyNote").hidden=anyChars; stage.hidden=!anyChars; $("#controls").hidden=!anyChars; legendEl.hidden=!anyChars; $("#counter").hidden=!anyChars; $("#pagebar").hidden=!anyChars;
+  if(!anyChars) return;
+  if(pi>=data.pages.length) pi=0;
+  renderPageBar();
+  const chars=curChars();
+  if(!chars.length){ stage.innerHTML='<div class="empty-page">このページに字がありません。ページを切り替えるか、編集で追加してください。</div>'; legendEl.innerHTML=""; updateCounter(); return; }
+  if(idx>=chars.length) idx=0;
+  const list=chars.slice(idx, idx+cfg.simul);
+  stage.innerHTML="";
+  list.forEach(ch=>{
+    const col=document.createElement("div"); col.className="charcol";
+    col.innerHTML=`<div class="cap">見本</div>
+      <div class="cell"><svg class="sample-svg" viewBox="0 0 100 100"><text x="50" y="55" text-anchor="middle" dominant-baseline="central" font-size="76" fill="#1a1a1a" font-weight="600">${esc(ch)}</text></svg></div>
+      <div class="cap">書き順（自動で書きます）</div>
+      <div class="cell writebox"></div>`;
+    stage.appendChild(col);
+    writers.push(makeWriter(col.querySelector(".writebox"), ch));
+  });
+  updateCounter();
+  renderLegend(list);
+}
+function updateCounter(){
+  const chars=curChars(), a=idx+1, b=Math.min(idx+cfg.simul, chars.length);
+  $("#counter").innerHTML = chars.length ? `<b>${a}${b>a?'–'+b:''}</b> / ${chars.length}字` : "";
+  $("#prevBtn").disabled = (pi<=0 && idx<=0);
+  $("#nextBtn").disabled = (pi>=data.pages.length-1 && idx+cfg.simul>=chars.length);
+}
+async function renderLegend(list){
+  const arr=await Promise.all(list.map(getStrokes));
+  const max=Math.max(0,...arr.map(d=>d.paths.length));
+  legendEl.innerHTML="";
+  for(let i=0;i<max;i++){
+    const g=document.createElement("span"); g.className="lg";
+    g.innerHTML=`<span class="dot" style="background:${STROKE_COLORS[i%STROKE_COLORS.length]}">${i+1}</span>${i+1}画目`;
+    legendEl.appendChild(g);
+  }
+}
+function go(d){
+  const total=data.pages.length;
+  let p=pi, i=idx+d*cfg.simul, len=()=>data.pages[p].chars.length;
+  if(i>=len()){ if(p<total-1){ p++; i=0; } else return; }
+  else if(i<0){ if(p>0){ p--; const L=data.pages[p].chars.length; i=Math.max(0,(Math.ceil(L/cfg.simul)-1)*cfg.simul); } else return; }
+  pi=p; idx=i; renderStage();
+}
+
+/* ====== 編集（ページ制） ====== */
+const editList=$("#editList");
+function parseChars(text){ return [...text].filter(c=>c.trim()!==""); }
+function chipsHTML(chars){ return chars.map(c=>`<div class="c">${esc(c)}</div>`).join(""); }
+function renderEdit(){
+  editList.innerHTML=data.pages.map((p,i)=>`
+    <div class="pg">
+      <div class="pg-head"><b>ページ ${i+1}</b>
+        <div class="pg-actions">
+          <button class="psm" data-act="up" ${i===0?"disabled":""}>▲</button>
+          <button class="psm" data-act="down" ${i===data.pages.length-1?"disabled":""}>▼</button>
+          <button class="psm del" data-act="del">🗑</button>
+        </div>
+      </div>
+      <input class="ttl" placeholder="ページ名（例：レッスン1 ひらがな）" value="${esc(p.title)}">
+      <textarea class="chs" spellcheck="false" placeholder="字を入力（例：あいうえお ／ 山川火）。スペース・改行は無視されます。">${esc(p.chars.join(""))}</textarea>
+      <div class="chips">${chipsHTML(p.chars)}</div>
+    </div>`).join("");
+}
+editList.addEventListener("input",e=>{
+  const pg=e.target.closest(".pg"); if(!pg) return;
+  const i=[...editList.children].indexOf(pg);
+  if(e.target.classList.contains("ttl")){ data.pages[i].title=e.target.value; saveData(); }
+  else if(e.target.classList.contains("chs")){ data.pages[i].chars=parseChars(e.target.value); saveData(); pg.querySelector(".chips").innerHTML=chipsHTML(data.pages[i].chars); }
+});
+editList.addEventListener("click",e=>{
+  const b=e.target.closest("button[data-act]"); if(!b) return;
+  const i=[...editList.children].indexOf(b.closest(".pg")), act=b.dataset.act;
+  if(act==="del"){ if(data.pages.length<=1){ alert("ページは最低1つ必要です。"); return; } if(!confirm(`ページ ${i+1} を削除しますか？`)) return; data.pages.splice(i,1); }
+  else if(act==="up"&&i>0){ const t=data.pages[i];data.pages[i]=data.pages[i-1];data.pages[i-1]=t; }
+  else if(act==="down"&&i<data.pages.length-1){ const t=data.pages[i];data.pages[i]=data.pages[i+1];data.pages[i+1]=t; }
+  else return;
+  saveData(); renderEdit();
+});
+$(".add-row").addEventListener("click",e=>{
+  const b=e.target.closest("[data-add]"); if(!b) return;
+  const m={empty:{title:"",chars:[]}, hira:{title:"ひらがな",chars:[...HIRA]}, kata:{title:"カタカナ",chars:[...KATA]}, num:{title:"漢数字",chars:[...NUM]}};
+  data.pages.push(m[b.dataset.add]); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight);
+});
+
+/* ====== トースト ====== */
+let toastT=null;
+function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); if(toastT)clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),1500); }
+
+/* ====== UIの初期化 ====== */
+function applyCfgUI(){
+  $("#simulSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",+b.dataset.n===cfg.simul));
+  $("#speed").value=cfg.speed; $("#speedVal").textContent="×"+(+cfg.speed).toFixed(1);
+  $("#loopBtn").classList.toggle("on",cfg.loop);
+}
+
+/* ====== イベント ====== */
+$("#modeBtn").onclick=()=>{ writers.forEach(w=>w.stop()); renderEdit(); show("edit"); };
+$("#doneBtn").onclick=()=>{ if(pi>=data.pages.length)pi=0; idx=0; show("present"); renderStage(); };
+$("#saveBtn").onclick=()=>{ saveData(); toast("✅ 保存しました"); };
+
+$("#pageSel").addEventListener("change",function(){ pi=+this.value; idx=0; renderStage(); });
+$("#prevBtn").onclick=()=>go(-1);
+$("#nextBtn").onclick=()=>go(1);
+$("#replayBtn").onclick=()=>writers.forEach(w=>w.replay());
+$("#loopBtn").onclick=function(){ cfg.loop=!cfg.loop; saveCfg(); this.classList.toggle("on",cfg.loop); if(cfg.loop) writers.forEach(w=>w.replay()); };
+$("#simulSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{ cfg.simul=+b.dataset.n; saveCfg(); applyCfgUI(); renderStage(); });
+$("#speed").addEventListener("input",function(){ cfg.speed=+this.value; $("#speedVal").textContent="×"+cfg.speed.toFixed(1); saveCfg(); });
+$("#speed").addEventListener("change",()=>writers.forEach(w=>w.replay()));
+$("#fsBtn").onclick=function(){ if(!document.fullscreenElement){(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen||function(){}).call(document.documentElement);} else {(document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);} };
+document.addEventListener("keydown",e=>{
+  if(!$("#present").hidden && e.target.tagName!=="TEXTAREA" && e.target.tagName!=="SELECT"){
+    if(e.key==="ArrowLeft") go(-1);
+    else if(e.key==="ArrowRight") go(1);
+  }
+});
+
+applyCfgUI();
+renderStage();
+</script>
+<script src="editbar.js"></script>
+<script src="intro.js"></script>
+<script>ClassIntro.init({key:"strokes",icon:"✍️",title:"書き順",desc:"新しい字の書き順をアニメーションで見ます。\n1画ごとに色が変わるので、順番をよく見て、いっしょに書く練習をしましょう。"});</script>
+</body>
+</html>

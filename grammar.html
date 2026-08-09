@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>今日の文法 — 日本語クラス</title>
+<meta name="description" content="文法を視覚的に教えるツール。動詞の活用（た形など）がパターンに付く流れを1ステップずつ表示（変化した読み仮名・ローマ字が色づく）。活用ルールの練習つき。活用表は再利用可能。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2343d9ad'/><text x='50' y='74' font-size='62' text-anchor='middle' fill='%23063b2c' font-family='serif' font-weight='bold'>文</text></svg>">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;font-family:"Segoe UI","Yu Gothic UI",Meiryo,"Hiragino Kaku Gothic ProN","Malgun Gothic",system-ui,sans-serif;color:#fff;
+  background:radial-gradient(1200px 700px at 20% -10%,#3b2a6b 0%,rgba(59,42,107,0) 60%),
+             radial-gradient(1100px 700px at 100% 0%,#1d4ed8 0%,rgba(29,78,216,0) 55%),
+             linear-gradient(160deg,#1a1140,#2b1a5e 55%,#11103a);
+  min-height:100vh;-webkit-font-smoothing:antialiased}
+:root{--gold:#ffd34e;--tr:#7af0c4;--chg:#ffcf3f;--strike:#ff8fb0}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;max-width:1000px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
+.brand .logo{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#43d9ad,#2563eb);box-shadow:0 6px 16px rgba(67,217,173,.4);font-size:21px;font-family:"Yu Mincho",serif;font-weight:900;color:#063b2c}
+.brand small{display:block;font-size:11px;font-weight:600;color:#c9c2e8}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.chip-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:9px 15px;font-size:14px;font-weight:700;backdrop-filter:blur(6px);transition:background .15s,transform .12s}
+.chip-btn:hover{background:rgba(255,255,255,.2)}
+.chip-btn:active{transform:scale(.95)}
+
+.wrap{max-width:880px;margin:0 auto;padding:6px 16px 50px}
+.screen{animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+.counter{text-align:center;color:#c9c2e8;font-weight:800;font-size:15px;margin:4px 0 8px}
+/* グループ・メニュー */
+.gmenu-h{text-align:center;font-size:clamp(20px,4vw,28px);font-weight:900;margin:8px 0 4px}
+.gmenu-sub{text-align:center;color:#c9c2e8;font-size:14px;margin-bottom:16px}
+.crumbs{text-align:center;margin:2px 0 12px}
+.crumbs button{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:7px 14px;font-weight:800;font-size:13px;cursor:pointer}
+.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;max-width:820px;margin:0 auto}
+.gcard{text-align:left;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:16px;padding:16px;cursor:pointer;transition:transform .12s,background .15s;color:#fff}
+.gcard:hover{background:rgba(255,255,255,.13);transform:translateY(-2px)}
+.gcard .gn{font-size:19px;font-weight:900;margin-bottom:4px;line-height:1.25}
+.gcard .gm{font-size:13px;color:#c9c2e8;font-weight:700;line-height:1.6}
+.gcard .go{display:inline-block;margin-top:10px;background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff;border-radius:999px;padding:6px 14px;font-size:13px;font-weight:800}
+.counter b{color:var(--gold);font-size:18px}
+
+/* ---- lesson header ---- */
+.lhead{text-align:center;margin-bottom:12px}
+.lhead .lt{font-size:clamp(24px,5vw,38px);font-weight:900;line-height:1.25}
+.lhead .lm{margin-top:6px;font-size:clamp(15px,2.6vw,20px);font-weight:800}
+.lhead .lm .tr{color:var(--tr)}
+.lhead .lm .tr::before{content:" / "}
+.lhead .ln{margin-top:5px;color:#c9c2e8;font-size:13.5px;font-weight:700}
+.lhead .ln .tr{color:var(--tr)}
+.viewtabs{display:flex;gap:8px;justify-content:center;margin:6px 0 16px}
+.viewtabs button{background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.18);color:#e7e2ff;border-radius:999px;padding:8px 16px;font-weight:800;font-size:13.5px}
+.viewtabs button.on{background:var(--gold);color:#3a2a00;border-color:var(--gold)}
+
+/* ---- verb display (romaji / furigana / kanji) ---- */
+.verb{display:inline-flex;flex-direction:column;align-items:center;text-align:center;line-height:1.15;transition:opacity .2s}
+.verb .vro{font-size:clamp(13px,2.2vw,18px);color:#b9d0ff;font-weight:800;letter-spacing:.02em;min-height:1.2em}
+.verb .vfu{font-size:clamp(14px,2.4vw,20px);color:#bcb2ec;font-weight:800;min-height:1.3em}
+.verb .vjp{font-size:clamp(34px,8vw,64px);font-weight:900;color:#fff;font-family:"Yu Mincho","Hiragino Mincho ProN",serif}
+.verb .chg{color:var(--chg)}
+.verb.strike .vjp{text-decoration:line-through;text-decoration-color:var(--strike);text-decoration-thickness:4px;opacity:.85}
+.verb.strike .vro,.verb.strike .vfu{opacity:.5}
+
+/* ---- flow stage ---- */
+.flow{background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.13);border-radius:20px;padding:26px 18px;min-height:34vh;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px}
+.flowrow{display:flex;align-items:flex-end;justify-content:center;gap:14px;flex-wrap:wrap}
+.plus{font-size:clamp(24px,5vw,40px);font-weight:900;color:#8f86bf}
+.pat{font-size:clamp(28px,6vw,52px);font-weight:900;color:#fff;font-family:"Yu Mincho",serif}
+.flowrow .vjp.plusmark{color:#8f86bf;display:inline-block;transform:scale(.72);transform-origin:center bottom}
+.flowrow .vjp.patword{color:#fff}
+.combined{font-size:clamp(34px,8.5vw,68px);font-weight:900;font-family:"Yu Mincho","Hiragino Mincho ProN",serif;text-align:center;line-height:1.2}
+.combined .chg{color:var(--chg)}
+.combined .vfu{display:block;font-size:.32em;color:#bcb2ec;font-weight:800;margin-bottom:2px}
+.combined .vro{display:block;font-size:.26em;color:#b9d0ff;font-weight:800}
+.result-tr{margin-top:8px;font-size:clamp(16px,3vw,24px);font-weight:800;color:var(--tr);text-align:center}
+.stepdots{display:flex;gap:7px;justify-content:center;margin-top:6px}
+.stepdots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.22)}
+.stepdots i.on{background:var(--gold)}
+.steplbl{color:#a99fd6;font-size:12.5px;font-weight:700;text-align:center;margin-top:2px}
+
+/* ---- rules view ---- */
+.rules{background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.13);border-radius:18px;padding:18px 18px 20px}
+.rules .rt{font-size:clamp(19px,3.5vw,26px);font-weight:900;margin-bottom:2px}
+.rules .ri{color:#c9c2e8;font-size:13.5px;font-weight:700;margin-bottom:12px}
+.rules .ri .tr{color:var(--tr)}
+.rules .rbody{white-space:pre-wrap;line-height:1.85;font-size:clamp(14px,2.4vw,17px);color:#eee8ff}
+.rules .rbody b,.rules .rbody strong{color:var(--gold)}
+.practice{margin-top:18px;border-top:1.5px dashed rgba(255,255,255,.16);padding-top:14px}
+.practice .ph{font-weight:900;color:var(--gold);font-size:15px;margin-bottom:4px}
+.practice .psub{color:#a99fd6;font-size:12.5px;margin-bottom:12px}
+.prow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:rgba(0,0,0,.16);border-radius:14px;padding:12px 14px;margin-bottom:9px}
+.prow .arrow{font-size:26px;color:#8f86bf;font-weight:900}
+.prow .ans{cursor:pointer;position:relative;display:inline-grid;place-items:center;min-width:120px;min-height:62px;padding:0 8px}
+.prow .ans.hide .verb{visibility:hidden}
+.prow .ans.hide::after{content:"❓ タップで答え";position:absolute;inset:0;display:grid;place-items:center;font-size:13px;color:#e7e2ff;font-weight:800;background:linear-gradient(135deg,#3a2c6e,#251e50);border:1.6px dashed rgba(255,255,255,.32);border-radius:12px;box-shadow:inset 0 0 22px rgba(0,0,0,.25)}
+.prow .tr{margin-left:auto;color:var(--tr);font-weight:800;font-size:14px}
+.prow .ans.hide ~ .tr{visibility:hidden}
+.reveal-all{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);color:#e7e2ff;border-radius:999px;padding:8px 16px;font-weight:800;font-size:13px;margin-bottom:12px}
+/* rule groups / cards (prominent) */
+.rgroup{margin-bottom:16px}
+.rgroup-h{font-size:clamp(15px,2.9vw,20px);font-weight:900;color:#fff;margin:2px 0 9px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;border-left:5px solid var(--gold);padding-left:11px}
+.rgroup-h .rgn{font-size:12.5px;font-weight:700;color:#bcb2ec}
+.rcard{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.16);border-radius:14px;padding:12px 14px;margin-bottom:9px}
+.rcard-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rbadge{flex:0 0 auto;min-width:30px;height:30px;padding:0 9px;border-radius:9px;display:inline-grid;place-items:center;background:linear-gradient(135deg,#43d9ad,#2563eb);color:#fff;font-weight:900;font-size:17px;box-shadow:0 4px 12px rgba(37,99,235,.4)}
+.rpat{font-size:clamp(20px,4.4vw,31px);font-weight:900;color:#fff;font-family:"Yu Mincho","Hiragino Mincho ProN",serif}
+.rarrow{font-size:clamp(18px,3.6vw,26px);color:#8f86bf;font-weight:900}
+.rres{font-size:clamp(20px,4.4vw,31px);font-weight:900;color:var(--gold);font-family:"Yu Mincho","Hiragino Mincho ProN",serif;background:rgba(255,211,78,.16);padding:1px 11px;border-radius:10px;border:1px solid rgba(255,211,78,.35)}
+.rnote{color:#cfc8f0;font-size:13px;font-weight:700;margin-top:7px}
+.rex{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.rexi{background:rgba(0,0,0,.2);border-radius:9px;padding:5px 11px;font-size:clamp(13px,2.5vw,17px);font-weight:800;font-family:"Yu Mincho","Hiragino Mincho ProN",serif;color:#efeaff}
+.rexi i{color:#8f86bf;font-style:normal;margin:0 5px}
+.rexi .chg{color:var(--chg)}
+/* rules editor */
+.ged{border:1.5px solid rgba(255,255,255,.16);border-radius:13px;padding:11px;margin-bottom:10px;background:rgba(0,0,0,.13)}
+.ged-h{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.ged-h input{border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:8px;padding:7px 9px;font:inherit;font-weight:700;font-size:13px}
+.ged-h .gtitle{flex:1;min-width:120px}
+.ged-h .gnote{flex:1;min-width:110px;font-weight:600}
+.red{display:grid;grid-template-columns:44px 1fr 22px 1fr auto;gap:5px;align-items:center;margin-bottom:5px}
+.red input{border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:8px;padding:7px 8px;font:inherit;font-weight:700;font-size:13px;min-width:0}
+.red .rar{text-align:center;color:#8f86bf;font-weight:900;font-size:17px}
+.red-ex{display:grid;grid-template-columns:44px 1fr auto;gap:5px;margin:0 0 8px}
+.red-ex input{border:1.5px solid rgba(255,255,255,.18);background:rgba(255,255,255,.9);color:#241552;border-radius:8px;padding:6px 8px;font:inherit;font-weight:600;font-size:12px;grid-column:2}
+.gedbtns{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px}
+.gedbtns button{background:transparent;border:1.5px dashed rgba(255,255,255,.3);color:#cfc8f0;border-radius:9px;padding:6px 11px;font-weight:800;font-size:12px}
+@media(max-width:620px){ .red{grid-template-columns:38px 1fr 18px 1fr;gap:4px} .red .rdel{grid-column:1 / -1;justify-self:end} .red-ex{grid-template-columns:38px 1fr}.red-ex input{grid-column:2} }
+
+.controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:20px}
+.navbtn{border:0;border-radius:14px;padding:14px 22px;font-size:17px;font-weight:900;color:#3a2400;background:linear-gradient(135deg,#ffe27a,#ffb43b);box-shadow:0 8px 22px rgba(255,170,40,.35)}
+.navbtn:disabled{filter:grayscale(.5) brightness(.85);cursor:default;opacity:.6}
+.navbtn:active{transform:scale(.97)}
+.navbtn.ghost{background:rgba(255,255,255,.12);color:#fff;box-shadow:none}
+.empty-note{text-align:center;color:#a99fd6;margin-top:34px;font-size:15px;line-height:1.9}
+
+/* ---- list panel ---- */
+.navpanel{position:fixed;top:0;right:0;height:100%;width:min(88vw,340px);background:rgba(24,16,58,.97);backdrop-filter:blur(10px);border-left:1.5px solid rgba(255,255,255,.16);box-shadow:-14px 0 44px rgba(0,0,0,.5);z-index:80;display:flex;flex-direction:column;padding:16px;transform:translateX(100%);transition:transform .26s ease;pointer-events:none}
+.navpanel.open{transform:translateX(0);pointer-events:auto}
+.np-head{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:17px;margin-bottom:12px}
+.np-close{background:rgba(255,255,255,.12);border:0;color:#fff;width:34px;height:34px;border-radius:9px;font-weight:800;font-size:15px}
+.np-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch}
+.np-item{display:flex;gap:10px;align-items:center;text-align:left;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:12px;padding:11px 13px;color:#e7e2ff;font-weight:700;font-size:15px;cursor:pointer;width:100%}
+.np-item:hover{background:rgba(255,255,255,.13)}
+.np-item .num{flex:0 0 auto;min-width:24px;height:24px;border-radius:7px;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:13px;font-weight:800}
+.np-item.cur{background:linear-gradient(135deg,rgba(67,217,173,.4),rgba(37,99,235,.4));border-color:var(--gold)}
+.np-empty{color:#a99fd6;padding:10px 4px;font-size:14px}
+
+/* ---- edit ---- */
+h1.title{font-size:clamp(22px,5vw,30px);margin:8px 0 2px;text-align:center}
+p.sub{margin:0 0 14px;color:#c9c2e8;font-size:14px;text-align:center}
+.edtabs{display:flex;gap:8px;justify-content:center;margin-bottom:14px}
+.edtabs button{background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.18);color:#e7e2ff;border-radius:999px;padding:9px 18px;font-weight:800;font-size:14px}
+.edtabs button.on{background:linear-gradient(135deg,#43d9ad,#2563eb);color:#fff;border-color:transparent}
+.blk{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:16px;padding:16px;margin-bottom:14px}
+.blk-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.blk-head .num{width:24px;height:24px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:12px;background:linear-gradient(135deg,#43d9ad,#2563eb)}
+.blk-head input.ttl{flex:1;min-width:150px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:9px;padding:9px 12px;font:inherit;font-weight:800}
+.psm{width:34px;height:34px;border-radius:9px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-weight:800;flex:0 0 auto}
+.psm:disabled{opacity:.35}
+.psm.del{color:#ff9aa8;border-color:rgba(255,107,133,.4)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+@media(max-width:560px){ .grid2{grid-template-columns:1fr} }
+.fld{display:flex;flex-direction:column;gap:3px}
+.fld label{font-size:11.5px;font-weight:800;color:#a99fd6}
+.fld input,.fld select,.fld textarea{border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:9px;padding:9px 11px;font:inherit;font-weight:600;font-size:14px}
+.fld textarea{min-height:120px;line-height:1.6;resize:vertical}
+.vlabel{font-size:11.5px;font-weight:800;color:#a99fd6;margin:10px 0 6px}
+.vrow{display:grid;grid-template-columns:repeat(7,1fr) auto;gap:5px;margin-bottom:6px}
+.vrow input{border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:8px;padding:7px 8px;font:inherit;font-weight:600;font-size:12.5px;min-width:0}
+.vrow .del{grid-column:auto}
+@media(max-width:760px){ .vrow{grid-template-columns:repeat(3,1fr) auto} }
+.addbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.addbtns button{background:transparent;border:1.5px dashed rgba(255,255,255,.32);color:#cfc8f0;border-radius:11px;padding:8px 13px;font-weight:800;font-size:13px}
+.addbtns button:hover{border-color:#fff;color:#fff}
+.addbtns button.ai{border-style:solid;border-color:rgba(122,240,196,.5);color:#7af0c4}
+.addtop{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.addtop button{background:transparent;border:1.5px dashed rgba(255,255,255,.32);color:#cfc8f0;border-radius:12px;padding:9px 14px;font-weight:800;font-size:14px}
+.note{font-size:12.5px;color:#a99fd6;margin:2px 2px 14px;line-height:1.7}
+.editbar{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:4px}
+.mini{border-radius:10px;padding:11px 18px;font-weight:800;font-size:15px;border:0}
+.mini.save{background:linear-gradient(135deg,#7af0c4,#2bbf8e);color:#063b2c}
+.mini.primary{background:linear-gradient(135deg,#43d9ad,#2563eb);color:#fff}
+.mini.plain{background:rgba(255,255,255,.14);color:#fff}
+
+/* AI modal */
+.overlay{position:fixed;inset:0;background:rgba(10,6,30,.66);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow:auto;z-index:120}
+.ai-panel{background:#1c1346;border:1.5px solid rgba(255,255,255,.16);border-radius:18px;max-width:640px;width:100%;padding:20px;box-shadow:0 30px 70px rgba(0,0,0,.55)}
+.ai-panel h3{margin:0 0 6px;font-size:19px}
+.ai-panel .step{font-weight:800;color:var(--gold);font-size:13px;margin:14px 0 6px}
+.ai-panel textarea{width:100%;min-height:74px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:10px;padding:11px;font:inherit;line-height:1.6;resize:vertical}
+.ai-prompt{background:rgba(255,255,255,.95);color:#241552;border-radius:8px;padding:10px;margin:6px 0;font-size:12px;line-height:1.55;white-space:pre-wrap;font-weight:600;max-height:150px;overflow:auto}
+.ai-lang{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:#e7e2ff;margin-bottom:6px}
+.ai-lang input{flex:1;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.95);color:#241552;border-radius:8px;padding:7px 10px;font:inherit;font-weight:700}
+.ai-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);background:#43d9ad;color:#063b2c;font-weight:800;font-size:15px;padding:12px 26px;border-radius:999px;box-shadow:0 12px 34px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:130}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a class="brand" href="games.html">
+    <span class="logo">文</span>
+    <span>今日の文法<small>日本語クラス・授業ツール</small></span>
+  </a>
+  <div class="top-actions">
+    <button class="chip-btn" id="listBtn">📋 一覧</button>
+    <button class="chip-btn" id="modeBtn">✏️ 編集</button>
+    <button class="chip-btn" id="fsBtn">⛶ 全画面</button>
+    <a class="chip-btn" href="games.html">🎮 ゲーム集</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <section id="present" class="screen">
+    <div class="counter" id="counter"></div>
+    <div id="stage"></div>
+    <div class="empty-note" id="emptyNote" hidden>まだ文法がありません。<br>右上の「✏️ 編集」から登録してください。</div>
+  </section>
+
+  <!-- ============ EDIT ============ -->
+  <section id="edit" class="screen" hidden>
+    <h1 class="title">✏️ 今日の文法の編集</h1>
+    <p class="sub">文法と、動詞の活用表（た形など・再利用可能）を登録します。</p>
+    <div class="edtabs">
+      <button data-tab="lessons" class="on">📖 文法</button>
+      <button data-tab="tables">🔤 活用表</button>
+    </div>
+    <div id="editLessons"></div>
+    <div id="editTables" hidden></div>
+    <div class="addtop">
+      <button id="addLessonBtn">＋ 文法を追加</button>
+      <button id="addTableBtn" hidden>＋ 活用表を追加</button>
+    </div>
+    <div class="note" id="editNote"></div>
+    <div class="editbar">
+      <button class="mini save" id="saveBtn">💾 保存</button>
+      <button class="mini primary" id="doneBtn">▶ 発表する</button>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast">✅ 保存しました</div>
+
+<div class="navpanel" id="navPanel">
+  <div class="np-head"><span>📋 文法一覧</span><button class="np-close" id="npClose">✕</button></div>
+  <div class="np-list" id="npList"></div>
+</div>
+
+<div class="overlay" id="aiOverlay" hidden>
+  <div class="ai-panel">
+    <h3 id="aiTitle">🤖 AIで動詞の活用を一括作成</h3>
+    <div class="ai-lang" id="aiLangRow">🌐 翻訳の言語：<input type="text" id="aiLang" placeholder="例：English / ドイツ語"></div>
+    <div class="ai-lang" style="margin-top:2px">🔤 活用の形：<input type="text" id="aiForm" placeholder="例：た形"></div>
+    <div class="step" id="aiStep1">① 動詞（辞書形）を貼り付け</div>
+    <textarea id="aiSrc" placeholder="例：行く 食べる 見る する 来る 読む 書く 泳ぐ 話す"></textarea>
+    <div class="step" id="aiStep2">② このプロンプトをコピーして ChatGPT などに貼る</div>
+    <div class="ai-prompt" id="aiPrompt"></div>
+    <button class="mini plain" id="aiCopy">プロンプトをコピー</button>
+    <div class="step" id="aiStep3">③ AIの結果を貼り付け（辞書形 | よみ | ローマ字 | 活用形 | よみ | ローマ字 | 翻訳）</div>
+    <textarea id="aiResult" placeholder="例：&#10;行く | いく | iku | 行った | いった | itta | went&#10;食べる | たべる | taberu | 食べた | たべた | tabeta | ate"></textarea>
+    <div class="ai-actions">
+      <button class="mini plain" id="aiCancel">やめる</button>
+      <button class="mini primary" id="aiAdd">追加する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+function load(k,d){ try{const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v}catch(e){return d} }
+function save(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function fmt(s){ return esc(s).replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").replace(/^[*・]\s?/gm,"・"); }
+
+/* ====== データ ====== */
+// 旧バージョン（自由文ルール）を構造化へ自動移行するための判定用テキスト
+const LEGACY_TA_RULES=`【グループ1（五段動詞）】辞書形の最後の文字で4パターン。
+①「う・つ・る」→「った」
+・例：洗う→洗った、勝つ→勝った、切る→切った
+②「む・ぶ・ぬ」→「んだ」（濁るのがポイント）
+・例：読む→読んだ、遊ぶ→遊んだ、死ぬ→死んだ
+③「く・ぐ」→「いた・いだ」
+・例：書く→書いた、泳ぐ→泳いだ　※例外：行く→行った
+④「す」→「した」
+・例：話す→話した、出す→出した
+
+【グループ2（一段動詞）】最後の「る」をとって「た」。
+・例：食べる→食べた、見る→見た、起きる→起きた
+
+【グループ3（不規則）】2つだけ、そのまま覚える。
+・する→した（勉強する→勉強した）
+・来る（くる）→来た（きた）`;
+
+const TA_GROUPS=[
+  {title:"グループ1（五段動詞）", note:"辞書形の最後の文字で4パターン", rules:[
+    {badge:"①", pattern:"う・つ・る", result:"った", note:"", ex:[{a:"洗う",b:"洗った"},{a:"勝つ",b:"勝った"},{a:"切る",b:"切った"}]},
+    {badge:"②", pattern:"む・ぶ・ぬ", result:"んだ", note:"濁るのがポイント", ex:[{a:"読む",b:"読んだ"},{a:"遊ぶ",b:"遊んだ"},{a:"死ぬ",b:"死んだ"}]},
+    {badge:"③", pattern:"く・ぐ", result:"いた・いだ", note:"※例外：行く→行った", ex:[{a:"書く",b:"書いた"},{a:"泳ぐ",b:"泳いだ"}]},
+    {badge:"④", pattern:"す", result:"した", note:"", ex:[{a:"話す",b:"話した"},{a:"出す",b:"出した"}]},
+  ]},
+  {title:"グループ2（一段動詞）", note:"最後の「る」をとって「た」", rules:[
+    {badge:"", pattern:"る", result:"た", note:"", ex:[{a:"食べる",b:"食べた"},{a:"見る",b:"見た"},{a:"起きる",b:"起きた"}]},
+  ]},
+  {title:"グループ3（不規則）", note:"2つだけ、そのまま覚える", rules:[
+    {badge:"", pattern:"する", result:"した", note:"", ex:[{a:"勉強する",b:"勉強した"}]},
+    {badge:"", pattern:"来る", result:"来た", note:"読み：くる→きた", ex:[]},
+  ]},
+];
+const SEED_TABLES=[
+  {name:"た形", nameTr:"past (plain)", intro:"過去や経験を表す形。", introTr:"plain past form", groups:TA_GROUPS, verbs:[
+    {dict:"行く",dRead:"いく",dRoma:"iku",conj:"行った",cRead:"いった",cRoma:"itta",tr:"went"},
+    {dict:"食べる",dRead:"たべる",dRoma:"taberu",conj:"食べた",cRead:"たべた",cRoma:"tabeta",tr:"ate"},
+    {dict:"見る",dRead:"みる",dRoma:"miru",conj:"見た",cRead:"みた",cRoma:"mita",tr:"saw"},
+    {dict:"読む",dRead:"よむ",dRoma:"yomu",conj:"読んだ",cRead:"よんだ",cRoma:"yonda",tr:"read"},
+    {dict:"書く",dRead:"かく",dRoma:"kaku",conj:"書いた",cRead:"かいた",cRoma:"kaita",tr:"wrote"},
+    {dict:"する",dRead:"する",dRoma:"suru",conj:"した",cRead:"した",cRoma:"shita",tr:"did"},
+    {dict:"来る",dRead:"くる",dRoma:"kuru",conj:"来た",cRead:"きた",cRoma:"kita",tr:"came"},
+  ]},
+];
+const SEED_LESSONS=[
+  {title:"～たことがある（経験）", cat:"～たことがある", meaning:"過去の経験を表す。", meaningTr:"expresses an experience (have done ~)",
+   pattern:"ことがある", patternTr:"have the experience of ~", tableName:"た形",
+   note:"「た形」に「ことがある」をつける。", noteTr:"attach ことがある to the た-form",
+   verbs:[
+     {dict:"行く",dRead:"いく",dRoma:"iku",conj:"行った",cRead:"いった",cRoma:"itta",tr:"have been (there)"},
+     {dict:"食べる",dRead:"たべる",dRoma:"taberu",conj:"食べた",cRead:"たべた",cRoma:"tabeta",tr:"have eaten (it)"},
+     {dict:"見る",dRead:"みる",dRoma:"miru",conj:"見た",cRead:"みた",cRoma:"mita",tr:"have seen (it)"},
+   ]},
+];
+function normV(v){ ["dict","dRead","dRoma","conj","cRead","cRoma","tr"].forEach(f=>{ if(typeof v[f]!=="string") v[f]=v[f]==null?"":String(v[f]); }); return v; }
+function cloneGroups(gs){ return (Array.isArray(gs)?gs:[]).map(g=>({title:(g&&g.title)||"",note:(g&&g.note)||"",rules:((g&&g.rules)||[]).map(r=>({badge:r.badge||"",pattern:r.pattern||"",result:r.result||"",note:r.note||"",ex:(r.ex||[]).map(e=>({a:(e&&e.a)||"",b:(e&&e.b)||""}))}))})); }
+function parseExText(s){ return String(s==null?"":s).split(/[、,，\n]+/).map(x=>x.trim()).filter(Boolean).map(x=>{ const p=x.split(/→|->|⇒|=>|＝|:|：/).map(y=>y.trim()); return {a:p[0]||"",b:p[1]||""}; }).filter(e=>e.a||e.b); }
+function exToText(ex){ return (ex||[]).map(e=>`${e.a}→${e.b}`).join("、"); }
+function parseRulesAI(txt){
+  const groups=[]; let cur=null;
+  String(txt||"").split(/\r?\n/).forEach(raw=>{ const line=raw.trim(); if(!line) return;
+    if(/^#/.test(line)){ const p=line.replace(/^#+\s*/,"").split(/::|｜|\|/).map(s=>s.trim()); cur={title:p[0]||"",note:p[1]||"",rules:[]}; groups.push(cur); return; }
+    const m=line.match(/^(.*?)(?:=>|⇒|→)(.*)$/); if(!m) return;
+    let left=m[1].trim(); const bm=left.match(/^([①-⑳0-9０-９]+[\.．、\)）]?)\s+(.*)$/); let badge=""; if(bm){ badge=bm[1]; left=bm[2].trim(); }
+    const rp=m[2].trim().split(/::|｜|\|/).map(s=>s.trim());
+    if(!cur){ cur={title:"",note:"",rules:[]}; groups.push(cur); }
+    cur.rules.push({badge,pattern:left.replace(/^「|」$/g,""),result:(rp[0]||"").replace(/^「|」$/g,""),note:rp[1]||"",ex:parseExText(rp[2]||"")});
+  });
+  return groups;
+}
+function parseRulesText(txt){
+  const groups=[]; let cur=null, rule=null; const G=()=>{ if(!cur){cur={title:"",note:"",rules:[]};groups.push(cur);} return cur; };
+  String(txt||"").split(/\r?\n/).forEach(raw=>{ const line=raw.trim(); if(!line) return; let m;
+    if(m=line.match(/^【(.+?)】(.*)$/)){ cur={title:m[1].trim(),note:m[2].replace(/。\s*$/,"").trim(),rules:[]}; groups.push(cur); rule=null; return; }
+    if(m=line.match(/^([①-⑳])?\s*「(.+?)」\s*→\s*「(.+?)」\s*(.*)$/)){ rule={badge:m[1]||"",pattern:m[2],result:m[3],note:(m[4]||"").replace(/[（(](.+?)[)）]/,"$1").trim(),ex:[]}; G().rules.push(rule); return; }
+    if(m=line.match(/^・?例[：:]\s*(.+)$/)){ if(!rule){rule={badge:"",pattern:"",result:"",note:"",ex:[]};G().rules.push(rule);} rule.ex.push(...parseExText(m[1].replace(/\s*※.*$/,""))); return; }
+    if(m=line.match(/^・(.+)$/)){ const body=m[1]; let em;
+      if(em=body.match(/^(.+?)→(.+?)[（(](.+?)→(.+?)[)）]/)){ G().rules.push({badge:"",pattern:em[1].trim(),result:em[2].trim(),note:"",ex:[{a:em[3].trim(),b:em[4].trim()}]}); }
+      else if(em=body.match(/^(.+?)→(.+)$/)){ G().rules.push({badge:"",pattern:em[1].replace(/[（(].*?[)）]/g,"").trim(),result:em[2].replace(/[（(].*?[)）]/g,"").trim(),note:"",ex:[]}); }
+      else { G().rules.push({badge:"",pattern:"",result:"",note:body,ex:[]}); } return; }
+  });
+  return groups;
+}
+function migrateTable(t){
+  ["name","nameTr","intro","introTr"].forEach(f=>{ if(typeof t[f]!=="string")t[f]=""; });
+  if(!Array.isArray(t.groups)){
+    if(typeof t.rules==="string" && t.rules.trim()){
+      const seed=SEED_TABLES.find(s=>s.name===t.name);
+      t.groups = (seed && t.rules.trim()===LEGACY_TA_RULES.trim()) ? cloneGroups(seed.groups) : parseRulesText(t.rules);
+    } else t.groups=[];
+  }
+  delete t.rules; t.groups=cloneGroups(t.groups);
+  if(!Array.isArray(t.verbs))t.verbs=[]; t.verbs.forEach(normV);
+}
+let tables=load("grammar.conj.v1",null); if(!tables||!Array.isArray(tables.tables)) tables={tables:SEED_TABLES.map(t=>({...t,groups:cloneGroups(t.groups),verbs:t.verbs.map(v=>({...v}))}))};
+let data=load("grammar.data.v1",null); if(!data||!Array.isArray(data.lessons)) data={lessons:SEED_LESSONS.map(l=>({...l,verbs:l.verbs.map(v=>({...v}))}))};
+tables.tables.forEach(migrateTable);
+data.lessons.forEach(l=>{ ["title","meaning","meaningTr","pattern","patternTr","tableName","note","noteTr","cat"].forEach(f=>{ if(typeof l[f]!=="string")l[f]=""; }); if(!Array.isArray(l.verbs))l.verbs=[]; l.verbs.forEach(normV); });
+// グループ未設定の文法は、まず自分のタイトルを自分のグループにする（一度だけ）
+if(!data._grouped){ data.lessons.forEach(l=>{ if(!l.cat) l.cat=l.title||"（未分類）"; }); data._grouped=true; saveData(); }
+let cfg=load("grammar.cfg.v1",{lang:"English"});
+function saveData(){ save("grammar.data.v1",data); }
+function saveTables(){ save("grammar.conj.v1",tables); }
+function saveCfg(){ save("grammar.cfg.v1",cfg); }
+function tableByName(n){ return tables.tables.find(t=>t.name===n); }
+
+/* ====== 発表 ====== */
+const stage=$("#stage");
+let li=0, vi=0, step=0, view="flow", revealAll=false, revealed={};
+let gphase="menu", curGroup=null;   // menu（グループ一覧）/ list（そのグループの文法一覧）/ lesson（発表）
+function clampLi(){ if(li<0)li=0; if(li>data.lessons.length-1)li=data.lessons.length-1; if(!data.lessons.length)li=0; }
+
+// 共通接頭辞の差分を色付け
+function diffColor(base, changed){ let i=0; while(i<base.length&&i<changed.length&&base[i]===changed[i]) i++; while(i>0&&i<changed.length&&changed[i]===changed[i-1]) i--; return esc(changed.slice(0,i))+(changed.length>i?`<span class="chg">${esc(changed.slice(i))}</span>`:""); }
+function verbHTML(v, form, opts){
+  opts=opts||{};
+  const kanji=form==="dict"?v.dict:v.conj, reading=form==="dict"?v.dRead:v.cRead, romaji=form==="dict"?v.dRoma:v.cRoma;
+  const rH=(form==="conj"&&opts.color)?diffColor(v.dRoma,v.cRoma):esc(romaji);
+  const fH=(form==="conj"&&opts.color)?diffColor(v.dRead,v.cRead):esc(reading);
+  return `<span class="verb${opts.strike?" strike":""}"><span class="vro">${rH}</span><span class="vfu">${fH}</span><span class="vjp">${esc(kanji)}</span></span>`;
+}
+// 動詞と同じ段組み（上にローマ字・ふりがなの空きライン）で、大きい文字を同じ行・同じ高さに揃える
+function stackHTML(text, cls){ return `<span class="verb"><span class="vro"></span><span class="vfu"></span><span class="vjp ${cls||""}">${esc(text)}</span></span>`; }
+
+function lessonGroups(){ const order=[], map={}; data.lessons.forEach((l,i)=>{ const g=l.cat||"（未分類）"; if(!map[g]){ map[g]=[]; order.push(g); } map[g].push(i); }); return {order,map}; }
+function renderGroupMenu(){
+  const {order,map}=lessonGroups();
+  stage.innerHTML=`<div class="gmenu-h">今日の文法</div><div class="gmenu-sub">グループを選んでください</div>
+    <div class="ggrid">${order.map(g=>`<button class="gcard" data-g="${esc(g)}"><div class="gn">${esc(g)}</div><div class="gm">${map[g].length}個の文法</div><span class="go">▶ ひらく</span></button>`).join("")}</div>`;
+  stage.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{ curGroup=b.dataset.g; gphase="list"; renderPresent(); window.scrollTo(0,0); });
+}
+function renderLessonList(){
+  const {map}=lessonGroups(); const arr=map[curGroup]||[];
+  stage.innerHTML=`<div class="crumbs"><button id="toMenu">← グループ一覧</button></div>
+    <div class="gmenu-h">${esc(curGroup||"")}</div><div class="gmenu-sub">文法を選んでください</div>
+    <div class="ggrid">${arr.map(i=>{ const l=data.lessons[i]; return `<button class="gcard" data-li="${i}"><div class="gn">${esc(l.title||"（無題）")}</div><div class="gm">${esc(l.meaning||"")}</div><span class="go">▶ はじめる</span></button>`; }).join("")}</div>`;
+  $("#toMenu").onclick=()=>{ gphase="menu"; renderPresent(); window.scrollTo(0,0); };
+  stage.querySelectorAll("[data-li]").forEach(b=>b.onclick=()=>{ li=+b.dataset.li; vi=0; step=0; view="flow"; gphase="lesson"; renderPresent(); window.scrollTo(0,0); });
+}
+function renderPresent(){
+  const has=data.lessons.length>0;
+  $("#emptyNote").hidden=has;
+  if(!has){ stage.hidden=true; $("#counter").hidden=true; return; }
+  stage.hidden=false;
+  if(gphase==="menu"){ $("#counter").hidden=true; renderGroupMenu(); return; }
+  if(gphase==="list"){ $("#counter").hidden=true; renderLessonList(); return; }
+  clampLi();
+  $("#counter").hidden=false;
+  const L=data.lessons[li];
+  const {map:gm}=lessonGroups(); const garr=gm[L.cat||"（未分類）"]||[li]; const gpos=garr.indexOf(li);
+  $("#counter").innerHTML=`<b>${gpos+1}</b> / ${garr.length}`;
+  const tbl=tableByName(L.tableName);
+  let head=`<div class="crumbs"><button id="toList">← ${esc(L.cat||"（未分類）")}</button></div><div class="lhead"><div class="lt">${esc(L.title||"（無題）")}</div>`
+    +((L.meaning||L.meaningTr)?`<div class="lm">${esc(L.meaning)}${L.meaningTr?`<span class="tr">${esc(L.meaningTr)}</span>`:""}</div>`:"")
+    +((L.note||L.noteTr)?`<div class="ln">📝 ${esc(L.note)}${L.noteTr?`<span class="tr"> / ${esc(L.noteTr)}</span>`:""}</div>`:"")+`</div>`;
+  let tabs=`<div class="viewtabs"><button data-view="flow" class="${view==="flow"?"on":""}">文法の流れ</button>`
+    +(tbl?`<button data-view="rules" class="${view==="rules"?"on":""}">📏 活用ルール（${esc(tbl.name)}）</button>`:"")+`</div>`;
+  let body = (view==="rules"&&tbl) ? rulesHTML(tbl) : flowHTML(L);
+  stage.innerHTML=head+tabs+body;
+  wireStage(L,tbl);
+  { const tl=$("#toList"); if(tl) tl.onclick=()=>{ curGroup=L.cat||"（未分類）"; gphase="list"; renderPresent(); window.scrollTo(0,0); }; }
+  if($("#navPanel").classList.contains("open")) renderNavList();
+}
+function flowHTML(L){
+  const vs=L.verbs.filter(v=>v.dict); if(!vs.length) return `<div class="flow"><div class="steplbl">この文法にはまだ例（動詞）がありません。</div></div>`;
+  if(vi>vs.length-1) vi=0;
+  const v=vs[vi], pat=L.pattern||"";
+  let inner;
+  if(step<3){
+    const form = step>=2 ? "conj" : "dict";
+    inner=`<div class="flowrow">${verbHTML(v,form,{strike:step===1,color:step>=2})}${stackHTML("＋","plusmark")}${stackHTML(pat,"patword")}</div>`;
+  } else {
+    inner=`<div class="combined"><span class="vro">${diffColor(v.dRoma,v.cRoma)}</span><span class="vfu">${diffColor(v.dRead,v.cRead)}${esc(pat)}</span>${esc(v.conj)}${esc(pat)}</div>`
+      +(v.tr?`<div class="result-tr">${esc(v.tr)}</div>`:"");
+  }
+  const dots=[0,1,2,3].map(s=>`<i class="${s<=step?"on":""}"></i>`).join("");
+  const labels=["辞書形＋"+esc(pat),"辞書形は変化する…","た形に変化（活用）","完成！＋翻訳"];
+  return `<div class="flow">${inner}<div class="stepdots">${dots}</div><div class="steplbl">${labels[step]}　（動詞 ${vi+1}/${vs.length}）</div></div>
+    <div class="controls">
+      <button class="navbtn ghost" id="fPrev">◀ もどす</button>
+      <button class="navbtn" id="fNext">${step<3?"▶ 次へ":(vi<vs.length-1?"▶ 次の動詞":"▶ 次の文法")}</button>
+    </div>`;
+}
+function rulesHTML(t){
+  let pr=`<div class="practice"><div class="ph">✏️ 練習（辞書形 → ${esc(t.name)}）</div><div class="psub">辞書形を見て、生徒が活用を言う → タップ／ボタンで答えを表示</div>`
+    +`<button class="reveal-all" id="revealAllBtn">${revealAll?"答えをかくす":"全部の答えを表示"}</button>`;
+  t.verbs.filter(v=>v.dict).forEach((v,i)=>{
+    const shown=revealAll||revealed[i];
+    pr+=`<div class="prow"><div>${verbHTML(v,"dict",{})}</div><span class="arrow">→</span><div class="ans${shown?"":" hide"}" data-ri="${i}">${verbHTML(v,"conj",{color:true})}</div>${shown&&v.tr?`<span class="tr">${esc(v.tr)}</span>`:""}</div>`;
+  });
+  pr+=`</div>`;
+  let gr="";
+  (t.groups||[]).forEach(g=>{
+    let cards="";
+    (g.rules||[]).forEach(r=>{
+      const head=(r.badge||r.pattern||r.result)
+        ? `<div class="rcard-h">${r.badge?`<span class="rbadge">${esc(r.badge)}</span>`:""}${(r.pattern||r.result)?`<span class="rpat">${esc(r.pattern)}</span><span class="rarrow">→</span><span class="rres">${esc(r.result)}</span>`:""}</div>`:"";
+      const note=r.note?`<div class="rnote">${esc(r.note)}</div>`:"";
+      const exs=(r.ex||[]).filter(e=>e.a||e.b);
+      const ex=exs.length?`<div class="rex">`+exs.map(e=>`<span class="rexi">${esc(e.a)}<i>→</i>${e.b?diffColor(e.a,e.b):""}</span>`).join("")+`</div>`:"";
+      cards+=`<div class="rcard">${head}${note}${ex}</div>`;
+    });
+    gr+=`<div class="rgroup">${(g.title||g.note)?`<div class="rgroup-h">${esc(g.title)}${g.note?`<span class="rgn">${esc(g.note)}</span>`:""}</div>`:""}${cards}</div>`;
+  });
+  if(!gr) gr=`<div class="rnote" style="text-align:center;padding:18px 6px">ルールがまだありません。<br>編集画面の「🤖 ルールをAIで作成」で作れます。</div>`;
+  return `<div class="rules"><div class="rt">${esc(t.name)}${t.nameTr?` <span style="font-size:.55em;color:var(--tr)">${esc(t.nameTr)}</span>`:""}</div>`
+    +((t.intro||t.introTr)?`<div class="ri">${esc(t.intro)}${t.introTr?`<span class="tr"> / ${esc(t.introTr)}</span>`:""}</div>`:"")
+    +`${gr}${pr}</div>
+    <div class="controls"><button class="navbtn ghost" id="backFlow">← 流れにもどる</button></div>`;
+}
+function wireStage(L,tbl){
+  stage.querySelectorAll(".viewtabs [data-view]").forEach(b=>b.onclick=()=>{ view=b.dataset.view; renderPresent(); });
+  const fn=$("#fNext"); if(fn) fn.onclick=()=>{ const vs=L.verbs.filter(v=>v.dict); if(step<3){ step++; } else if(vi<vs.length-1){ vi++; step=0; } else { const {map}=lessonGroups(); const arr=map[L.cat||"（未分類）"]||[li]; const pos=arr.indexOf(li); if(pos>=0 && pos<arr.length-1){ li=arr[pos+1]; vi=0; step=0; } else { curGroup=L.cat||"（未分類）"; gphase="list"; } } renderPresent(); window.scrollTo(0,0); };
+  const fp=$("#fPrev"); if(fp) fp.onclick=()=>{ if(step>0){ step--; } else if(vi>0){ vi--; step=3; } else if(li>0){ li--; vi=0; step=0; } renderPresent(); };
+  const bf=$("#backFlow"); if(bf) bf.onclick=()=>{ view="flow"; renderPresent(); };
+  const ra=$("#revealAllBtn"); if(ra) ra.onclick=()=>{ revealAll=!revealAll; revealed={}; renderPresent(); };
+  stage.querySelectorAll(".ans[data-ri]").forEach(a=>a.onclick=()=>{ revealed[+a.dataset.ri]=true; renderPresent(); });
+}
+
+/* ====== 一覧 ====== */
+const navPanel=$("#navPanel"), npList=$("#npList");
+function jumpTo(i){ if(i<0||i>=data.lessons.length) return; li=i; vi=0; step=0; view="flow"; gphase="lesson"; renderPresent(); }
+function renderNavList(){
+  npList.innerHTML="";
+  if(!data.lessons.length){ npList.innerHTML='<div class="np-empty">文法がありません。</div>'; return; }
+  data.lessons.forEach((l,i)=>{ const b=document.createElement("button"); b.className="np-item"+(i===li?" cur":""); b.innerHTML=`<span class="num">${i+1}</span><span>${esc(l.title||"（無題）")}</span>`; b.onclick=()=>{ jumpTo(i); closeNav(); }; npList.appendChild(b); });
+}
+function openNav(){ renderNavList(); navPanel.classList.add("open"); }
+function closeNav(){ navPanel.classList.remove("open"); }
+$("#listBtn").onclick=()=>{ closeNav(); gphase="menu"; renderPresent(); window.scrollTo(0,0); };
+$("#npClose").onclick=closeNav;
+
+/* ====== 編集 ====== */
+let etab="lessons";
+function renderEdit(){
+  $("#editLessons").hidden=etab!=="lessons"; $("#editTables").hidden=etab!=="tables";
+  $("#addLessonBtn").hidden=etab!=="lessons"; $("#addTableBtn").hidden=etab!=="tables";
+  $("#editNote").innerHTML = etab==="lessons"
+    ? '💡 文法（例「～たことがある」）に、意味・パターン（例「ことがある」）・添付する活用表を設定。<b>例の動詞</b>は辞書形と活用形を両方入れると、発表で変化の流れが出ます（<b>🤖AIで一括</b>が便利）。'
+    : '💡 活用表（た形・ば形…）は一度作れば、どの文法にも添付できます。<b>ルール</b>は「グループ → パターン枠（もとの形→変化後）→ 例」で登録。各枠の中身は<b>🤖ルールをAIで作成</b>でまとめて作れます。<b>動詞</b>は練習に使われます。';
+  document.querySelectorAll(".edtabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===etab));
+  if(etab==="lessons") $("#editLessons").innerHTML=data.lessons.map((l,i)=>lessonHTML(l,i)).join("");
+  else $("#editTables").innerHTML=tables.tables.map((t,i)=>tableHTML(t,i)).join("");
+}
+function tableOptions(sel){ return `<option value="">（活用表なし）</option>`+tables.tables.map(t=>`<option value="${esc(t.name)}" ${t.name===sel?"selected":""}>${esc(t.name)}</option>`).join(""); }
+function verbRows(list, kind, ownerIdx){
+  return list.map((v,vi)=>`<div class="vrow">
+    <input data-kind="${kind}" data-oi="${ownerIdx}" data-vi="${vi}" data-vf="dict" placeholder="辞書形" value="${esc(v.dict)}">
+    <input data-kind="${kind}" data-oi="${ownerIdx}" data-vi="${vi}" data-vf="dRead" placeholder="よみ" value="${esc(v.dRead)}">
+    <input data-kind="${kind}" data-oi="${ownerIdx}" data-vi="${vi}" data-vf="dRoma" placeholder="ローマ字" value="${esc(v.dRoma)}">
+    <input data-kind="${kind}" data-oi="${ownerIdx}" data-vi="${vi}" data-vf="conj" placeholder="活用形" value="${esc(v.conj)}">
+    <input data-kind="${kind}" data-oi="${ownerIdx}" data-vi="${vi}" data-vf="cRead" placeholder="よみ" value="${esc(v.cRead)}">
+    <input data-kind="${kind}" data-oi="${ownerIdx}" data-vi="${vi}" data-vf="cRoma" placeholder="ローマ字" value="${esc(v.cRoma)}">
+    <input data-kind="${kind}" data-oi="${ownerIdx}" data-vi="${vi}" data-vf="tr" placeholder="翻訳" value="${esc(v.tr)}">
+    <button class="psm del" data-act="vdel" data-kind="${kind}" data-oi="${ownerIdx}" data-vi="${vi}">✕</button>
+  </div>`).join("");
+}
+function lessonHTML(l,i){
+  return `<div class="blk" data-i="${i}">
+    <div class="blk-head"><span class="num">${i+1}</span>
+      <input class="ttl" data-kind="lesson" data-oi="${i}" data-f="title" placeholder="文法（例：～たことがある）" value="${esc(l.title)}">
+      <button class="psm" data-act="up" data-kind="lesson" data-oi="${i}" ${i===0?"disabled":""}>▲</button>
+      <button class="psm" data-act="down" data-kind="lesson" data-oi="${i}" ${i===data.lessons.length-1?"disabled":""}>▼</button>
+      <button class="psm del" data-act="ldel" data-kind="lesson" data-oi="${i}">🗑</button>
+    </div>
+    <div class="grid2">
+      <div class="fld"><label>グループ（例：～たことがある）</label><input data-kind="lesson" data-oi="${i}" data-f="cat" placeholder="グループ名" value="${esc(l.cat||"")}"></div>
+      <div class="fld"><label>意味（日本語）</label><input data-kind="lesson" data-oi="${i}" data-f="meaning" value="${esc(l.meaning)}"></div>
+      <div class="fld"><label>意味の翻訳</label><input data-kind="lesson" data-oi="${i}" data-f="meaningTr" value="${esc(l.meaningTr)}"></div>
+      <div class="fld"><label>パターン（動詞の後に付く語）</label><input data-kind="lesson" data-oi="${i}" data-f="pattern" placeholder="ことがある" value="${esc(l.pattern)}"></div>
+      <div class="fld"><label>パターンの翻訳</label><input data-kind="lesson" data-oi="${i}" data-f="patternTr" value="${esc(l.patternTr)}"></div>
+      <div class="fld"><label>一言メモ（任意）</label><input data-kind="lesson" data-oi="${i}" data-f="note" value="${esc(l.note)}"></div>
+      <div class="fld"><label>メモの翻訳</label><input data-kind="lesson" data-oi="${i}" data-f="noteTr" value="${esc(l.noteTr)}"></div>
+      <div class="fld"><label>添付する活用表</label><select data-kind="lesson" data-oi="${i}" data-f="tableName">${tableOptions(l.tableName)}</select></div>
+    </div>
+    <div class="vlabel">例の動詞（辞書形 → 活用形 ／ 発表で変化の流れになります）</div>
+    ${verbRows(l.verbs,"lesson",i)}
+    <div class="addbtns">
+      <button data-act="vadd" data-kind="lesson" data-oi="${i}">＋ 動詞を追加</button>
+      <button class="ai" data-act="ai" data-kind="lesson" data-oi="${i}">🤖 AIで一括</button>
+    </div>
+  </div>`;
+}
+function tableHTML(t,i){
+  return `<div class="blk" data-i="${i}">
+    <div class="blk-head"><span class="num">${i+1}</span>
+      <input class="ttl" data-kind="table" data-oi="${i}" data-f="name" placeholder="活用の名前（例：た形）" value="${esc(t.name)}">
+      <button class="psm" data-act="up" data-kind="table" data-oi="${i}" ${i===0?"disabled":""}>▲</button>
+      <button class="psm" data-act="down" data-kind="table" data-oi="${i}" ${i===tables.tables.length-1?"disabled":""}>▼</button>
+      <button class="psm del" data-act="tdel" data-kind="table" data-oi="${i}">🗑</button>
+    </div>
+    <div class="grid2">
+      <div class="fld"><label>名前の翻訳</label><input data-kind="table" data-oi="${i}" data-f="nameTr" placeholder="past form 等" value="${esc(t.nameTr)}"></div>
+      <div class="fld"><label>一言説明（任意）</label><input data-kind="table" data-oi="${i}" data-f="intro" value="${esc(t.intro)}"></div>
+      <div class="fld"><label>説明の翻訳</label><input data-kind="table" data-oi="${i}" data-f="introTr" value="${esc(t.introTr)}"></div>
+    </div>
+    <div class="vlabel">活用ルール（グループ → パターン枠 → 例）</div>
+    ${rulesEditorHTML(t,i)}
+    <div class="gedbtns">
+      <button data-act="gadd" data-kind="table" data-oi="${i}">＋ グループを追加</button>
+      <button class="ai" data-act="airules" data-kind="table" data-oi="${i}" style="border-style:solid;border-color:rgba(122,240,196,.5);color:#7af0c4">🤖 ルールをAIで作成</button>
+    </div>
+    <div class="vlabel" style="margin-top:14px">練習の動詞（辞書形 → 活用形）</div>
+    ${verbRows(t.verbs,"table",i)}
+    <div class="addbtns">
+      <button data-act="vadd" data-kind="table" data-oi="${i}">＋ 動詞を追加</button>
+      <button class="ai" data-act="ai" data-kind="table" data-oi="${i}">🤖 動詞をAIで作成</button>
+    </div>
+  </div>`;
+}
+function rulesEditorHTML(t,ti){
+  return (t.groups||[]).map((g,gi)=>`
+    <div class="ged">
+      <div class="ged-h">
+        <input class="gtitle" data-kind="table" data-oi="${ti}" data-gi="${gi}" data-gf="title" placeholder="グループ名（例：グループ1（五段動詞））" value="${esc(g.title)}">
+        <input class="gnote" data-kind="table" data-oi="${ti}" data-gi="${gi}" data-gf="note" placeholder="ひとこと説明" value="${esc(g.note)}">
+        <button class="psm" data-act="gup" data-kind="table" data-oi="${ti}" data-gi="${gi}" ${gi===0?"disabled":""}>▲</button>
+        <button class="psm" data-act="gdown" data-kind="table" data-oi="${ti}" data-gi="${gi}" ${gi===(t.groups.length-1)?"disabled":""}>▼</button>
+        <button class="psm del" data-act="gdel" data-kind="table" data-oi="${ti}" data-gi="${gi}">🗑</button>
+      </div>
+      ${(g.rules||[]).map((r,ri)=>`
+        <div class="red">
+          <input data-kind="table" data-oi="${ti}" data-gi="${gi}" data-ri="${ri}" data-rf="badge" placeholder="①" value="${esc(r.badge)}">
+          <input data-kind="table" data-oi="${ti}" data-gi="${gi}" data-ri="${ri}" data-rf="pattern" placeholder="う・つ・る" value="${esc(r.pattern)}">
+          <span class="rar">→</span>
+          <input data-kind="table" data-oi="${ti}" data-gi="${gi}" data-ri="${ri}" data-rf="result" placeholder="った" value="${esc(r.result)}">
+          <button class="psm del rdel" data-act="rdel" data-kind="table" data-oi="${ti}" data-gi="${gi}" data-ri="${ri}">✕</button>
+        </div>
+        <div class="red-ex"><input data-kind="table" data-oi="${ti}" data-gi="${gi}" data-ri="${ri}" data-rf="note" placeholder="メモ（任意）" value="${esc(r.note)}"></div>
+        <div class="red-ex"><input data-kind="table" data-oi="${ti}" data-gi="${gi}" data-ri="${ri}" data-rf="exText" placeholder="例：洗う→洗った、勝つ→勝った" value="${esc(exToText(r.ex))}"></div>
+      `).join("")}
+      <div class="gedbtns"><button data-act="radd" data-kind="table" data-oi="${ti}" data-gi="${gi}">＋ パターンを追加</button></div>
+    </div>
+  `).join("");
+}
+function ownerList(kind){ return kind==="lesson"?data.lessons:tables.tables; }
+function saveKind(kind){ if(kind==="lesson") saveData(); else saveTables(); }
+function editInput(e){
+  const t=e.target, kind=t.dataset.kind, oi=+t.dataset.oi; if(!kind||isNaN(oi)) return;
+  const owner=ownerList(kind)[oi]; if(!owner) return;
+  if(t.dataset.vf){ const vi=+t.dataset.vi; if(owner.verbs[vi]){ owner.verbs[vi][t.dataset.vf]=t.value; saveKind(kind); } return; }
+  if(t.dataset.rf){ const g=owner.groups&&owner.groups[+t.dataset.gi]; const r=g&&g.rules[+t.dataset.ri]; if(r){ if(t.dataset.rf==="exText"){ r.ex=parseExText(t.value); } else { r[t.dataset.rf]=t.value; } saveKind(kind); } return; }
+  if(t.dataset.gf){ const g=owner.groups&&owner.groups[+t.dataset.gi]; if(g){ g[t.dataset.gf]=t.value; saveKind(kind); } return; }
+  if(t.dataset.f){ owner[t.dataset.f]=t.value; saveKind(kind); }
+}
+$("#editLessons").addEventListener("input",editInput);
+$("#editTables").addEventListener("input",editInput);
+$("#editLessons").addEventListener("change",e=>{ if(e.target.tagName==="SELECT") editInput(e); });
+function editClick(e){
+  const b=e.target.closest("[data-act]"); if(!b) return;
+  const act=b.dataset.act, kind=b.dataset.kind, oi=+b.dataset.oi;
+  if(act==="ai"){ openAi(kind,oi,"verbs"); return; }
+  if(act==="airules"){ openAi(kind,oi,"rules"); return; }
+  const owner=ownerList(kind)[oi]; if(!owner) return;
+  if(act==="vadd"){ owner.verbs.push({dict:"",dRead:"",dRoma:"",conj:"",cRead:"",cRoma:"",tr:""}); saveKind(kind); renderEdit(); return; }
+  if(act==="vdel"){ owner.verbs.splice(+b.dataset.vi,1); saveKind(kind); renderEdit(); return; }
+  if(act==="ldel"){ if(!confirm("この文法を削除しますか？")) return; data.lessons.splice(oi,1); saveData(); renderEdit(); return; }
+  if(act==="tdel"){ if(!confirm("この活用表を削除しますか？")) return; tables.tables.splice(oi,1); saveTables(); renderEdit(); return; }
+  if(act==="up"||act==="down"){ const arr=ownerList(kind); const j=act==="up"?oi-1:oi+1; if(j>=0&&j<arr.length){ [arr[oi],arr[j]]=[arr[j],arr[oi]]; saveKind(kind); renderEdit(); } return; }
+  if(act==="gadd"){ if(!Array.isArray(owner.groups))owner.groups=[]; owner.groups.push({title:"",note:"",rules:[{badge:"",pattern:"",result:"",note:"",ex:[]}]}); saveKind(kind); renderEdit(); return; }
+  if(act==="gdel"){ if(!confirm("このグループを削除しますか？")) return; owner.groups.splice(+b.dataset.gi,1); saveKind(kind); renderEdit(); return; }
+  if(act==="gup"||act==="gdown"){ const arr=owner.groups,gi=+b.dataset.gi,j=act==="gup"?gi-1:gi+1; if(j>=0&&j<arr.length){ [arr[gi],arr[j]]=[arr[j],arr[gi]]; saveKind(kind); renderEdit(); } return; }
+  if(act==="radd"){ owner.groups[+b.dataset.gi].rules.push({badge:"",pattern:"",result:"",note:"",ex:[]}); saveKind(kind); renderEdit(); return; }
+  if(act==="rdel"){ owner.groups[+b.dataset.gi].rules.splice(+b.dataset.ri,1); saveKind(kind); renderEdit(); return; }
+}
+$("#editLessons").addEventListener("click",editClick);
+$("#editTables").addEventListener("click",editClick);
+document.querySelectorAll(".edtabs button").forEach(b=>b.onclick=()=>{ etab=b.dataset.tab; renderEdit(); });
+$("#addLessonBtn").onclick=()=>{ data.lessons.push({title:"",meaning:"",meaningTr:"",pattern:"",patternTr:"",tableName:(tables.tables[0]&&tables.tables[0].name)||"",note:"",noteTr:"",verbs:[{dict:"",dRead:"",dRoma:"",conj:"",cRead:"",cRoma:"",tr:""}]}); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
+$("#addTableBtn").onclick=()=>{ tables.tables.push({name:"",nameTr:"",intro:"",introTr:"",groups:[{title:"",note:"",rules:[{badge:"",pattern:"",result:"",note:"",ex:[]}]}],verbs:[{dict:"",dRead:"",dRoma:"",conj:"",cRead:"",cRoma:"",tr:""}]}); saveTables(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
+
+/* ====== AI一括 ====== */
+let aiKind="lesson", aiOi=0, aiMode="verbs";
+function aiPromptText(){
+  const lang=($("#aiLang").value||"").trim()||"英語", form=($("#aiForm").value||"").trim()||"た形", src=$("#aiSrc").value.trim();
+  if(aiMode==="rules"){
+    return `日本語の動詞の【${form}】の活用ルールを、授業で教える用にまとめてください。グループ／パターンごとに、次の1行フォーマットだけで出力してください（番号や前置き・説明文は不要）。\n`
+      +`・グループ見出しの行：  #グループ名 :: ひとこと説明\n`
+      +`・パターンの行：  記号 もとの形 => 変化後 :: メモ(任意) :: 例1, 例2, 例3\n`
+      +`  ※「変化後」との区切りは半角の => 。例は「辞書形→活用形」の形（矢印は → ）。\n\n`
+      +`出力例（${form}なら）：\n`
+      +`#グループ1（五段動詞） :: 辞書形の最後の文字で変化\n`
+      +`① う・つ・る => った ::  :: 洗う→洗った, 勝つ→勝った, 切る→切った\n`
+      +`② む・ぶ・ぬ => んだ :: 濁るのがポイント :: 読む→読んだ, 遊ぶ→遊んだ\n`
+      +`#グループ2（一段動詞） :: 最後の「る」をとって「た」\n`
+      +` る => た ::  :: 食べる→食べた, 見る→見た`;
+  }
+  return `次の動詞について、日本語の【${form}】の活用と情報を作ってください。1行に1動詞、次の形式で出力：\n辞書形 | 辞書形のよみ | 辞書形のローマ字 | ${form} | ${form}のよみ | ${form}のローマ字 | 意味（${lang}）\n・よみはひらがな、ローマ字はヘボン式\n・番号や前置きは付けない\n\n動詞:\n${src||"（ここに①で入れた動詞が入ります）"}`;
+}
+function updateAiPrompt(){ $("#aiPrompt").textContent=aiPromptText(); }
+function openAi(kind,oi,mode){ aiKind=kind; aiOi=oi; aiMode=mode||"verbs"; $("#aiLang").value=cfg.lang||"英語";
+  const owner=ownerList(kind)[oi]; $("#aiForm").value = kind==="table"?(owner.name||"た形"):((tableByName(owner.tableName)||{}).name||"た形");
+  const rules=aiMode==="rules";
+  $("#aiTitle").textContent = rules?"🤖 AIで活用ルールを作成":"🤖 AIで動詞の活用を一括作成";
+  $("#aiLangRow").hidden = rules; $("#aiStep1").hidden = rules; $("#aiSrc").hidden = rules;
+  $("#aiStep2").textContent = rules?"① このプロンプトをコピーして ChatGPT などに貼る":"② このプロンプトをコピーして ChatGPT などに貼る";
+  $("#aiStep3").textContent = rules?"② AIの結果（#グループ … / パターン => 変化後 :: メモ :: 例）を貼り付け":"③ AIの結果を貼り付け（辞書形 | よみ | ローマ字 | 活用形 | よみ | ローマ字 | 翻訳）";
+  $("#aiResult").placeholder = rules?"例：\n#グループ1（五段動詞） :: 辞書形の最後の文字で変化\n① う・つ・る => った ::  :: 洗う→洗った, 勝つ→勝った":"例：\n行く | いく | iku | 行った | いった | itta | went";
+  $("#aiSrc").value=""; $("#aiResult").value=""; updateAiPrompt(); $("#aiOverlay").hidden=false; setTimeout(()=>{ (rules?$("#aiResult"):$("#aiSrc")).focus(); },30); }
+$("#aiSrc").addEventListener("input",updateAiPrompt);
+$("#aiForm").addEventListener("input",updateAiPrompt);
+$("#aiLang").addEventListener("input",()=>{ cfg.lang=$("#aiLang").value.trim(); saveCfg(); updateAiPrompt(); });
+$("#aiCancel").onclick=()=>{ $("#aiOverlay").hidden=true; };
+$("#aiOverlay").onclick=e=>{ if(e.target===$("#aiOverlay")) $("#aiOverlay").hidden=true; };
+$("#aiCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText($("#aiPrompt").textContent); showToast("📋 コピーしました"); }catch(e){ const r=document.createRange(); r.selectNodeContents($("#aiPrompt")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); showToast("手動でコピーしてください"); } };
+$("#aiAdd").onclick=()=>{
+  const owner=ownerList(aiKind)[aiOi]; if(!owner) return;
+  if(aiMode==="rules"){
+    const groups=parseRulesAI($("#aiResult").value);
+    const total=groups.reduce((n,g)=>n+g.rules.length,0);
+    if(!total){ alert("読み取れませんでした。「#グループ名」と「パターン => 変化後 :: メモ :: 例」の形で貼り付けてください。"); return; }
+    const has=(owner.groups||[]).some(g=>(g.rules||[]).some(r=>r.pattern||r.result||(r.ex&&r.ex.length)));
+    if(has && !confirm("今のルールを、作成したルールに置き換えますか？")) return;
+    owner.groups=cloneGroups(groups); saveKind(aiKind); $("#aiOverlay").hidden=true; renderEdit();
+    showToast(`✅ ${groups.length}グループ・${total}パターンを作成しました`); return;
+  }
+  const lines=$("#aiResult").value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean); const added=[];
+  lines.forEach(line=>{ const p=line.replace(/｜/g,"|").split("|").map(s=>s.trim()); if(!p[0]||!p[3]) return;
+    added.push({dict:p[0],dRead:p[1]||"",dRoma:p[2]||"",conj:p[3],cRead:p[4]||"",cRoma:p[5]||"",tr:p[6]||""}); });
+  if(!added.length){ alert("読み取れませんでした。「辞書形 | よみ | ローマ字 | 活用形 | よみ | ローマ字 | 翻訳」の形で貼り付けてください。"); return; }
+  owner.verbs.push(...added); saveKind(aiKind); $("#aiOverlay").hidden=true; renderEdit(); showToast(`✅ ${added.length}語を追加しました`);
+};
+
+/* ====== トースト・モード ====== */
+let toastTimer=null;
+function showToast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); if(toastTimer)clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),1600); }
+function showEdit(){ $("#aiOverlay").hidden=true; closeNav(); $("#listBtn").hidden=true; $("#present").hidden=true; $("#edit").hidden=false; renderEdit(); }
+function showPresent(){ $("#edit").hidden=true; $("#present").hidden=false; $("#listBtn").hidden=false; gphase="menu"; renderPresent(); }
+$("#modeBtn").onclick=showEdit;
+$("#doneBtn").onclick=showPresent;
+$("#saveBtn").onclick=()=>{ saveData(); saveTables(); showToast("✅ 保存しました"); };
+$("#fsBtn").onclick=function(){ if(!document.fullscreenElement){(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen||function(){}).call(document.documentElement);} else {(document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);} };
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){ if(!$("#aiOverlay").hidden){ $("#aiOverlay").hidden=true; return; } if(navPanel.classList.contains("open")){ closeNav(); return; } }
+  const tag=(document.activeElement&&document.activeElement.tagName)||"";
+  if(!$("#present").hidden && tag!=="INPUT"&&tag!=="TEXTAREA"&&tag!=="SELECT"){
+    if((e.key==="ArrowRight"||e.key===" ")&&$("#fNext")){ e.preventDefault(); $("#fNext").click(); }
+    else if(e.key==="ArrowLeft"&&$("#fPrev")) $("#fPrev").click();
+  }
+});
+
+renderPresent();
+</script>
+<script src="editbar.js"></script>
+<script src="intro.js"></script>
+<script>ClassIntro.init({key:"grammar",icon:"📖",title:"今日の文法",desc:"今日の文法を、動詞の変化の流れで見ていきます。\n「次へ」を押すと1ステップずつ進みます。活用ルールの練習もできます。"});</script>
+</body>
+</html>

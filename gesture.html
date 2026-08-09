@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ジェスチャーゲーム — 日本語クラス</title>
+<meta name="description" content="お題を見た出題者がジェスチャー、みんなで当てる！動物・乗り物などグループを選んで出題。タイマー・正解音・パス・点数つき。スマホ出題／物理カードの2モード。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎭</text></svg>">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}   /* .play-pane{display:flex} などに hidden 属性が負けないように */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;font-family:"Segoe UI","Yu Gothic UI",Meiryo,"Hiragino Kaku Gothic ProN","Malgun Gothic",system-ui,sans-serif;color:#fff;
+  background:radial-gradient(1200px 700px at 20% -10%,#3b2a6b 0%,rgba(59,42,107,0) 60%),
+             radial-gradient(1100px 700px at 100% 0%,#1d4ed8 0%,rgba(29,78,216,0) 55%),
+             linear-gradient(160deg,#1a1140,#2b1a5e 55%,#11103a);
+  min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+:root{--gold:#ffd34e;--ok:#43d9ad;--bad:#ff6b85}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;max-width:1000px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
+.brand .logo{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#ec6f9e,#2563eb);box-shadow:0 6px 16px rgba(234,95,147,.4);font-size:20px}
+.brand small{display:block;font-size:11px;font-weight:600;color:#c9c2e8}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.chip-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:9px 15px;font-size:14px;font-weight:700;backdrop-filter:blur(6px);transition:background .15s,transform .12s}
+.chip-btn:hover{background:rgba(255,255,255,.2)}
+.chip-btn:active{transform:scale(.95)}
+.chip-btn.on{background:var(--gold);color:#3a2a00;border-color:var(--gold)}
+
+.wrap{max-width:760px;margin:0 auto;padding:6px 18px 60px}
+.screen{animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+
+/* ---------- setup ---------- */
+h1.title{font-size:clamp(24px,6vw,34px);margin:8px 0 2px;text-align:center}
+p.sub{margin:0 0 18px;color:#c9c2e8;font-size:14px;text-align:center}
+.pane{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.13);border-radius:18px;padding:18px;margin-bottom:16px}
+.pane h2{margin:0 0 12px;font-size:16px}
+.pane h2 .n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#ec6f9e,#2563eb);font-size:13px;margin-right:8px}
+.group-list{display:flex;flex-wrap:wrap;gap:8px}
+.gchip{background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.18);color:#e7e2ff;border-radius:12px;padding:9px 14px;font-size:15px;font-weight:800;display:inline-flex;align-items:center;gap:7px;transition:all .14s}
+.gchip .cnt{font-size:11px;font-weight:700;background:rgba(255,255,255,.16);border-radius:999px;padding:1px 8px;color:#cfc8f0}
+.gchip.on{background:linear-gradient(135deg,#ec6f9e,#2563eb);border-color:transparent;color:#fff}
+.gchip.on .cnt{background:rgba(0,0,0,.2);color:#fff}
+.gchip:active{transform:scale(.96)}
+.empty{color:#a99fd6;font-size:14px;padding:6px 2px}
+.ghost-btn{background:transparent;border:1.5px dashed rgba(255,255,255,.32);color:#cfc8f0;border-radius:12px;padding:9px 14px;font-weight:800;font-size:14px;margin-top:10px}
+.ghost-btn:hover{border-color:#fff;color:#fff}
+.note{font-size:12px;color:#a99fd6;margin-top:10px;line-height:1.6}
+.addform{margin-top:12px;background:rgba(0,0,0,.18);border-radius:12px;padding:12px}
+.addform input,.addform textarea{width:100%;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.95);color:#241552;border-radius:10px;padding:9px 11px;font:inherit;margin-bottom:8px}
+.addform textarea{min-height:90px;resize:vertical;line-height:1.6}
+.addform .row{display:flex;gap:8px;justify-content:flex-end}
+.mini{border-radius:10px;padding:8px 14px;font-weight:800;font-size:14px;border:0}
+.mini.primary{background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff}
+.mini.plain{background:rgba(255,255,255,.14);color:#fff}
+
+.row-set{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.row-set:last-child{margin-bottom:0}
+.row-set label{font-weight:800;font-size:15px}
+.seg{display:inline-flex;background:rgba(0,0,0,.2);border-radius:12px;padding:4px;gap:4px}
+.seg button{background:transparent;border:0;color:#cfc8f0;border-radius:9px;padding:9px 13px;font-weight:800;font-size:13.5px}
+.seg button.on{background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff}
+input[type=range]{width:100%;accent-color:#ec6f9e;margin-top:6px}
+.rangeval{font-size:15px;font-weight:800}
+.rangeval b{color:var(--gold);font-size:20px}
+select{border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.95);color:#241552;border-radius:10px;padding:9px 12px;font:inherit;font-weight:700}
+
+.big-btn{display:block;width:100%;border:0;border-radius:16px;padding:18px;font-size:22px;font-weight:900;color:#3a2400;
+  background:linear-gradient(135deg,#ffe27a,#ffb43b);box-shadow:0 12px 30px rgba(255,170,40,.4),inset 0 2px 0 rgba(255,255,255,.6);transition:transform .12s,filter .15s}
+.big-btn:hover{transform:translateY(-2px)}
+.big-btn:active{transform:translateY(1px) scale(.99)}
+
+/* ---------- play ---------- */
+.hud{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 14px}
+.hud .box{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:8px 14px;font-weight:800;font-size:15px}
+.hud .box b{color:var(--gold);font-size:18px}
+/* 全体の残り時間：1問の秒数より小さいが、目立つように */
+.hud #hudOverall{padding:7px 18px;font-size:16px;background:rgba(255,211,78,.14);border-color:rgba(255,211,78,.45);box-shadow:0 4px 14px rgba(255,211,78,.2)}
+.hud #hudOverall b{font-size:30px;display:inline-block;line-height:1;vertical-align:middle}
+.hud #hudOverall.low{background:rgba(255,107,133,.18);border-color:rgba(255,107,133,.55);box-shadow:0 4px 16px rgba(255,107,133,.32)}
+.hud #hudOverall.low b{color:var(--bad);animation:pulse .6s ease infinite}
+.endbtn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:12px;padding:9px 14px;font-weight:800;font-size:14px}
+
+.play-pane{display:flex;flex-direction:column;align-items:center;text-align:center;gap:18px;min-height:58vh;justify-content:center}
+
+.cover{width:min(80vw,340px);aspect-ratio:1/1;border-radius:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  background:repeating-linear-gradient(45deg,#5a3f9e,#5a3f9e 18px,#4a3186 18px,#4a3186 36px);border:3px solid rgba(255,255,255,.3);
+  font-size:26px;font-weight:900;box-shadow:0 16px 40px rgba(0,0,0,.4);cursor:pointer;transition:transform .12s}
+.cover small{font-size:14px;font-weight:700;color:#e7dcff}
+.cover:active{transform:scale(.97)}
+.secret-note{background:var(--bad);color:#fff;font-weight:800;border-radius:999px;padding:7px 16px;font-size:14px}
+.word{font-weight:900;line-height:1.15;background:radial-gradient(circle at 50% 35%,#fff,#f3eeff);color:#241552;border-radius:22px;
+  padding:26px 24px;min-width:min(80vw,340px);box-shadow:0 16px 40px rgba(0,0,0,.35);font-size:clamp(30px,9vw,56px)}
+.word .emo{display:block;font-size:1.4em;line-height:1.1}
+.word .wpic{display:block;margin:0 auto 8px;max-width:70%;max-height:160px;object-fit:contain;border-radius:10px}
+.word .wflag{height:.82em;width:auto;vertical-align:-.08em;border-radius:3px;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
+.word.small{font-size:clamp(26px,7vw,44px);padding:14px 24px;min-width:0;background:rgba(255,255,255,.92)}
+.big-emoji{font-size:84px;line-height:1}
+.play-pane p{margin:0;font-size:17px;color:#e7e2ff;font-weight:700}
+
+/* timer ring */
+.ring-wrap{position:relative;width:min(74vw,330px);aspect-ratio:1/1}
+.ring-wrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring-wrap .track{fill:none;stroke:rgba(255,255,255,.12);stroke-width:10}
+.ring-wrap .prog{fill:none;stroke:var(--ok);stroke-width:10;stroke-linecap:round;transition:stroke .3s}
+.ring-wrap.low .prog{stroke:var(--bad)}
+.count{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(72px,24vw,150px);font-weight:900;letter-spacing:-.02em}
+.ring-wrap.low .count{color:var(--bad);animation:pulse .5s ease infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+
+.answer-btns{display:flex;gap:12px;width:100%;max-width:420px}
+.ok-btn{flex:2;border:0;border-radius:16px;padding:20px;font-size:22px;font-weight:900;color:#063b2c;background:linear-gradient(135deg,#7af0c4,#2bbf8e);box-shadow:0 12px 28px rgba(43,191,142,.4)}
+.ok-btn:active{transform:scale(.98)}
+.pass-btn{flex:1;border:0;border-radius:16px;padding:20px;font-size:17px;font-weight:900;color:#fff;background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.22)}
+.pass-btn:active{transform:scale(.98)}
+.flash{position:fixed;inset:0;pointer-events:none;z-index:60;opacity:0}
+.flash.ok{background:radial-gradient(circle,rgba(67,217,173,.55),transparent 70%);animation:flash .5s ease}
+.flash.bad{background:radial-gradient(circle,rgba(255,107,133,.5),transparent 70%);animation:flash .5s ease}
+@keyframes flash{0%{opacity:1}100%{opacity:0}}
+
+/* ---------- result ---------- */
+#result{text-align:center}
+.score-big{font-size:clamp(40px,13vw,76px);font-weight:900;margin:10px 0}
+.score-big b{color:var(--gold)}
+.score-sub{color:#c9c2e8;font-size:16px;margin-bottom:8px}
+.score-detail{display:flex;justify-content:center;gap:14px;margin:18px 0 26px;flex-wrap:wrap}
+.score-detail .s{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:14px 20px;min-width:96px}
+.score-detail .s .v{font-size:30px;font-weight:900}
+.score-detail .s .l{font-size:12px;color:#a99fd6;font-weight:700}
+
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden}
+.cf{position:absolute;top:-20px;width:10px;height:14px;opacity:.95;will-change:transform}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a class="brand" href="games.html">
+    <span class="logo">🎭</span>
+    <span>ジェスチャーゲーム<small>日本語クラス・ゲーム</small></span>
+  </a>
+  <div class="top-actions">
+    <button class="chip-btn on" id="soundBtn">🔊 音</button>
+    <button class="chip-btn" id="fsBtn">⛶ 全画面</button>
+    <a class="chip-btn" href="games.html">🎮 ゲーム集</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ============ SETUP ============ -->
+  <section id="setup" class="screen">
+    <h1 class="title">🎭 ジェスチャーゲーム</h1>
+    <p class="sub">お題を見た出題者がジェスチャー！みんなで当てよう。</p>
+
+    <div class="pane" id="groupPane">
+      <h2><span class="n">1</span>グループを選ぶ（複数OK）</h2>
+      <div class="group-list" id="groupList"></div>
+      <button class="ghost-btn" id="addGroupBtn">＋ 新しいグループを追加</button>
+      <div class="addform" id="addForm" hidden>
+        <input type="text" id="ngName" placeholder="グループ名（例：🚗 乗り物）">
+        <textarea id="ngWords" spellcheck="false" placeholder="お題を1行に1つ（例）&#10;🚗 くるま&#10;🚌 バス&#10;✈️ ひこうき"></textarea>
+        <div class="row">
+          <button class="mini plain" id="ngCancel">やめる</button>
+          <button class="mini primary" id="ngSave">追加する</button>
+        </div>
+      </div>
+      <div class="note" id="groupNote">💡 単語グループは<b>ビンゴと共通</b>です。くわしい編集はビンゴの⚙設定でもできます。</div>
+    </div>
+
+    <div class="pane">
+      <h2><span class="n">2</span>ルール</h2>
+      <div class="row-set">
+        <label>お題の出し方</label>
+        <div class="seg" id="modeSeg">
+          <button data-mode="phone" class="on">📱 スマホで見せる</button>
+          <button data-mode="card">🃏 物理カード</button>
+        </div>
+      </div>
+      <div class="row-set" style="display:block">
+        <label>1問の答え時間：<span class="rangeval"><b id="ansLabel">30</b>秒</span></label>
+        <input type="range" id="ansTime" min="10" max="120" step="5" value="30">
+      </div>
+      <div class="row-set">
+        <label>全体の制限時間</label>
+        <select id="overall">
+          <option value="0">なし（自分で終了）</option>
+          <option value="60">1分</option>
+          <option value="120">2分</option>
+          <option value="180" selected>3分</option>
+          <option value="300">5分</option>
+          <option value="600">10分</option>
+        </select>
+      </div>
+      <div class="note" id="modeNote"></div>
+    </div>
+
+    <button class="big-btn" id="startBtn">▶ スタート</button>
+  </section>
+
+  <!-- ============ PLAY ============ -->
+  <section id="play" class="screen" hidden>
+    <div class="hud">
+      <div class="box">✅ <b id="hudScore">0</b></div>
+      <div class="box" id="hudOverall">⏱ <b>--:--</b></div>
+      <button class="endbtn" id="endBtn">🏁 おわり</button>
+    </div>
+
+    <!-- ready -->
+    <div class="play-pane" id="ready">
+      <!-- phone -->
+      <div id="readyPhone" style="display:flex;flex-direction:column;align-items:center;gap:18px">
+        <div class="cover" id="cover">🙈<span>お題（タップで表示）</span><small>出題者だけ見てね！</small></div>
+        <div id="revealed" style="display:none;flex-direction:column;align-items:center;gap:16px">
+          <div class="secret-note">🤫 あなただけ！まわりに見せないで</div>
+          <div class="word" id="readyWord"></div>
+          <button class="big-btn" id="goBtn" style="max-width:340px">▶ ジェスチャー開始</button>
+          <button class="ghost-btn" id="passReady">このお題をパス（別のお題）</button>
+        </div>
+      </div>
+      <!-- card -->
+      <div id="readyCard" style="display:none;flex-direction:column;align-items:center;gap:16px">
+        <div class="big-emoji">🃏</div>
+        <p>カードを1枚引いて、出題者だけ見たら<br>スタートしてください</p>
+        <button class="big-btn" id="goBtnCard" style="max-width:340px">▶ ジェスチャー開始</button>
+      </div>
+    </div>
+
+    <!-- active -->
+    <div class="play-pane" id="active" hidden>
+      <div class="word small" id="activeWord" style="display:none"></div>
+      <p id="activeHint" style="display:none">🎭 ジェスチャー中！みんなで当てて！</p>
+      <div class="ring-wrap" id="ringWrap">
+        <svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="54"/><circle class="prog" id="ringProg" cx="60" cy="60" r="54"/></svg>
+        <div class="count" id="count">30</div>
+      </div>
+      <div class="answer-btns">
+        <button class="ok-btn" id="correctBtn">⭕ 正解！</button>
+        <button class="pass-btn" id="passBtn">⏭ パス</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RESULT ============ -->
+  <section id="result" class="screen" hidden>
+    <h1 class="title">🎉 けっか</h1>
+    <div class="score-big"><b id="finalCorrect">0</b> 問せいかい！</div>
+    <div class="score-detail">
+      <div class="s"><div class="v" style="color:var(--ok)" id="finalCorrect2">0</div><div class="l">正解</div></div>
+      <div class="s"><div class="v" style="color:#cfc8f0" id="finalPass">0</div><div class="l">パス</div></div>
+      <div class="s"><div class="v" style="color:var(--bad)" id="finalMiss">0</div><div class="l">時間切れ</div></div>
+    </div>
+    <button class="big-btn" id="againBtn">▶ もう一回（同じ設定）</button>
+    <button class="ghost-btn" id="backSetup" style="display:block;width:100%;text-align:center;margin-top:12px">⚙ 設定にもどる</button>
+  </section>
+
+</div>
+
+<div class="flash" id="flash"></div>
+<div id="confetti"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+function load(k,d){ try{const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v}catch(e){return d} }
+function save(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+// 国旗絵文字はWindowsでは文字（JP等）にしか見えないため、画像（Twemoji）に置き換える
+function flagToImg(escaped){
+  return escaped.replace(/[\u{1F1E6}-\u{1F1FF}]{2}/gu, m=>{
+    const cps=[...m].map(c=>c.codePointAt(0).toString(16)).join("-");
+    return `<img class="wflag" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/72x72/${cps}.png" alt="${m}" onerror="this.replaceWith(this.alt)">`;
+  });
+}
+
+/* ====== グループ（ビンゴと共通の単語ライブラリ） ====== */
+const LS_GROUPS="bingo.groups.v2";
+// ビンゴを一度も開いていない場合の初期グループ（ジェスチャー向け）
+const SEED=[
+  {key:"animal", label:"🐶 動物", type:"list", cells:"word", items:["🐶 いぬ","🐱 ねこ","🐰 うさぎ","🐘 ぞう","🦒 きりん","🦁 ライオン","🐻 くま","🐵 さる","🐍 へび","🐸 かえる","🐦 とり","🐧 ペンギン","🐟 さかな","🦀 かに","🐝 はち","🦋 ちょうちょ"]},
+  {key:"vehicle", label:"🚗 乗り物", type:"list", cells:"word", items:["🚗 くるま","🚌 バス","🚆 でんしゃ","✈️ ひこうき","🚲 じてんしゃ","🚢 ふね","🚁 ヘリコプター","🏍️ バイク","🚕 タクシー","🚑 きゅうきゅうしゃ","🚒 しょうぼうしゃ","🚀 ロケット"]},
+  {key:"food", label:"🍙 食べ物", type:"list", cells:"word", items:["🍣 すし","🍜 ラーメン","🍙 おにぎり","🍕 ピザ","🍔 ハンバーガー","🍦 アイス","🍰 ケーキ","🍌 バナナ","🍎 りんご","🍳 たまごやき","🍢 おでん","🍵 おちゃ"]},
+  {key:"action", label:"🏃 動作", type:"list", cells:"word", items:["🏊 およぐ","🏃 はしる","😴 ねる","🍳 りょうりする","📖 ほんをよむ","🎸 ギターをひく","⚽ サッカーをする","🦷 はをみがく","🧹 そうじする","📞 でんわする","🎤 うたう","💃 おどる","😂 わらう","😭 なく","📸 しゃしんをとる"]},
+];
+function cloneGroup(g){ const c={...g}; if(c.items) c.items=c.items.slice(); return c; }
+let allGroups = load(LS_GROUPS, null);
+if(!Array.isArray(allGroups) || !allGroups.length){ allGroups = SEED.map(cloneGroup); save(LS_GROUPS, allGroups); }
+function saveGroups(){ save(LS_GROUPS, allGroups); }
+function genKey(){ let k; do{ k="g"+Math.random().toString(36).slice(2,7); }while(allGroups.some(g=>g.key===k)); return k; }
+function listGroups(){ return allGroups.filter(g=>g.type==="list"); }
+
+/* ====== 設定（保存） ====== */
+let cfg = load("gesture.cfg.v1", {sound:true, selected:null, ansTime:30, overall:180, mode:"phone"});
+if(!Array.isArray(cfg.selected) || !cfg.selected.length){
+  cfg.selected = listGroups().filter(g=>g.cells!=="kana").map(g=>g.key); // 初回はことばグループを選択
+}
+function saveCfg(){ save("gesture.cfg.v1", cfg); }
+
+/* ====== 状態 ====== */
+let score={correct:0,pass:0,miss:0};
+let queue=[], current=null, totalRemain=0, qRemain=0, qTotal=0, loop=null, phase="setup";
+const RING_C = 2*Math.PI*54;
+$("#ringProg").style.strokeDasharray = RING_C;
+
+/* ====== サウンド ====== */
+let actx=null;
+function audio(){ if(!cfg.sound) return null; if(!actx){try{actx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return null}} if(actx.state==="suspended")actx.resume(); return actx; }
+function tone(f,s,d,type="triangle",v=.22){ const a=audio(); if(!a)return; const t=a.currentTime+s,o=a.createOscillator(),g=a.createGain();
+  o.type=type; o.frequency.setValueAtTime(f,t); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(v,t+0.012); g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t+d+0.02); }
+function sCorrect(){ tone(987.8,0,0.18,"sine",0.28); tone(1318.5,0.16,0.38,"sine",0.26); }      // ピンポーン
+function sWrong(){ tone(196,0,0.28,"sawtooth",0.22); tone(146.8,0.26,0.45,"sawtooth",0.22); }   // ブッブー
+function sPass(){ tone(523,0,0.1,"triangle",0.16); tone(392,0.09,0.16,"triangle",0.14); }
+function sTick(){ tone(1100,0,0.04,"square",0.09); }
+function sFanfare(){ [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone(f,i*0.12,0.5,"triangle",0.22)); tone(1318.5,0.5,0.5,"sine",0.16); }
+
+/* ====== 画面切替 ====== */
+function show(id){
+  ["setup","play","result"].forEach(s=>$("#"+s).hidden = (s!==id));
+  phase=id;
+}
+
+/* ====== SETUP 描画 ====== */
+function renderGroups(){
+  const lists=listGroups(), box=$("#groupList");
+  box.innerHTML="";
+  if(!lists.length){ box.innerHTML='<div class="empty">まだ単語グループがありません。下の「＋」で追加してください。</div>'; return; }
+  lists.forEach(g=>{
+    const on=cfg.selected.includes(g.key);
+    const b=document.createElement("button");
+    b.className="gchip"+(on?" on":"");
+    b.innerHTML=`${esc(g.label)} <span class="cnt">${(g.items||[]).length}</span>`;
+    b.onclick=()=>{ const i=cfg.selected.indexOf(g.key); if(i>=0)cfg.selected.splice(i,1); else cfg.selected.push(g.key); saveCfg(); renderGroups(); };
+    box.appendChild(b);
+  });
+}
+function applyModeUI(){
+  $("#modeSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.mode===cfg.mode));
+  const card=cfg.mode==="card";
+  $("#groupPane").style.opacity=card?.5:1;
+  $("#groupPane").style.pointerEvents=card?"none":"auto";
+  $("#modeNote").innerHTML = card
+    ? "🃏 <b>カードモード</b>：お題は画面に出ません。出題者は物理カード（単語カードメーカーで作成）を引いてジェスチャー。プロジェクターにはタイマーと点数を映せます。"
+    : "📱 <b>スマホモード</b>：このスマホ／タブレットを<b>出題者に手渡し</b>てください。タップでお題が出るので、自分だけ見て隠してジェスチャー。スクリーンには映さないでね。";
+}
+
+/* ====== ゲーム進行 ====== */
+function buildPool(){ const w=[]; cfg.selected.forEach(k=>{const g=allGroups.find(x=>x.key===k); if(g&&g.items)w.push(...g.items);}); return w; }
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); const t=a[i];a[i]=a[j];a[j]=t;} return a; }
+function nextWord(){ if(!queue.length) queue=shuffle(buildPool()); return queue.pop(); }
+
+function startGame(){
+  if(cfg.mode==="phone"){
+    if(!buildPool().length){ alert("グループを1つ以上えらんでください（お題になる単語が必要です）。"); return; }
+    queue=shuffle(buildPool());
+  }
+  audio();
+  score={correct:0,pass:0,miss:0};
+  totalRemain = cfg.overall>0 ? cfg.overall : 0;
+  updateHud();
+  show("play");
+  firstRound();
+}
+
+function updateHud(){
+  $("#hudScore").textContent=score.correct;
+  const ov=$("#hudOverall");
+  if(cfg.overall>0){
+    const s=Math.max(0,Math.ceil(totalRemain));
+    const mm=Math.floor(s/60), ss=String(s%60).padStart(2,"0");
+    ov.innerHTML=`⏱ <b>${mm}:${ss}</b>`;
+    ov.classList.toggle("low", totalRemain<=15);
+    ov.style.display="";
+  } else { ov.style.display="none"; }
+}
+
+// ゲーム最初の1問だけ：準備画面（出題者にスマホを渡す／カードを引く）を表示
+function firstRound(){
+  stopTimer();
+  $("#active").hidden=true; $("#ready").hidden=false;
+  updateHud();
+  if(cfg.mode==="phone"){
+    current=nextWord();
+    $("#readyPhone").style.display="flex"; $("#readyCard").style.display="none";
+    $("#cover").style.display="flex"; $("#revealed").style.display="none";
+    setWord($("#readyWord"), current);
+  } else {
+    current=null;
+    $("#readyPhone").style.display="none"; $("#readyCard").style.display="flex";
+  }
+}
+// 2問目以降：準備画面を出さず、止めずに次の問題へ（秒数だけリセットして継続）
+function advance(){
+  if(cfg.mode==="phone"){ current=nextWord(); setWord($("#activeWord"), current); }
+  startTimer();
+}
+// 最初の準備画面で「パス」したとき：お題を差し替える（まだ開始しない）
+function redrawFirst(){ if(cfg.mode!=="phone") return; current=nextWord(); setWord($("#readyWord"), current); }
+
+// 選択中グループの「単語→画像」対応（今日の単語から同期した画像）
+function imgOf(w){ let img=null; cfg.selected.forEach(k=>{ const g=allGroups.find(x=>x.key===k); if(g&&g.imgs&&g.imgs[w]) img=g.imgs[w]; }); return img; }
+function setWord(el,v){
+  if(!v){ el.textContent=""; return; }
+  const img=imgOf(v);
+  const sp=v.split(" "); const emo=/\p{Emoji}/u.test(sp[0])?sp[0]:"";
+  const txt=emo?sp.slice(1).join(" "):v;
+  el.innerHTML = (img?`<img class="wpic" src="${img}" alt="">`:(emo?`<span class="emo">${emo}</span>`:""))+flagToImg(esc(txt));
+}
+
+function enterActive(){
+  $("#ready").hidden=true; $("#active").hidden=false;
+  if(cfg.mode==="phone"){
+    $("#activeWord").style.display=""; setWord($("#activeWord"), current); $("#activeHint").style.display="none";
+  } else {
+    $("#activeWord").style.display="none"; $("#activeHint").style.display="";
+  }
+  startTimer();
+}
+
+function startTimer(){
+  qRemain=qTotal=cfg.ansTime;
+  updateRing();
+  $("#count").textContent=Math.ceil(cfg.ansTime);   // 開始時に即正しい秒数を表示（チラつき防止）
+  loop=setInterval(()=>{
+    qRemain-=0.1;
+    if(cfg.overall>0) totalRemain-=0.1;
+    const wholeNow=Math.ceil(qRemain-0.0001);
+    if(qRemain>0 && qRemain<=5.05 && Math.abs(qRemain-wholeNow)<0.06) sTick();
+    updateRing(); updateHud();
+    $("#count").textContent=Math.max(0,wholeNow);
+    if(cfg.overall>0 && totalRemain<=0){ endGame(); return; }
+    if(qRemain<=0){ timeUp(); return; }
+  },100);
+}
+function stopTimer(){ if(loop){ clearInterval(loop); loop=null; } }
+function updateRing(){
+  const r=Math.max(0,qRemain)/qTotal;
+  $("#ringProg").style.strokeDashoffset = RING_C*(1-r);
+  $("#ringWrap").classList.toggle("low", qRemain<=5);
+}
+
+function flash(kind){ const f=$("#flash"); f.className="flash "+kind; void f.offsetWidth; }
+
+function correct(){ stopTimer(); score.correct++; sCorrect(); flash("ok"); confetti(); updateHud(); advance(); }
+function pass(){ stopTimer(); score.pass++; sPass(); advance(); }
+function timeUp(){ stopTimer(); score.miss++; sWrong(); flash("bad"); advance(); }
+
+function endGame(){
+  stopTimer();
+  sFanfare(); confetti();
+  $("#finalCorrect").textContent=score.correct;
+  $("#finalCorrect2").textContent=score.correct;
+  $("#finalPass").textContent=score.pass;
+  $("#finalMiss").textContent=score.miss;
+  show("result");
+}
+
+function confetti(){
+  const box=$("#confetti"), colors=["#ffd34e","#ec6f9e","#43d9ad","#7aa9ff","#ff8a5c","#c08bff","#fff"];
+  for(let i=0;i<40;i++){ const c=document.createElement("div"); c.className="cf";
+    c.style.left=Math.random()*100+"vw"; c.style.background=colors[i%colors.length];
+    c.style.borderRadius=Math.random()<.5?"2px":"50%";
+    const d=1.3+Math.random()*1.3; c.style.animation=`fall ${d}s cubic-bezier(.3,.6,.5,1) forwards`;
+    c.style.transform=`translateY(-20px) rotate(${Math.random()*360}deg)`;
+    box.appendChild(c); setTimeout(()=>c.remove(),d*1000+100);
+  }
+}
+
+/* ====== イベント ====== */
+renderGroups();
+applyModeUI();
+$("#ansTime").value=cfg.ansTime; $("#ansLabel").textContent=cfg.ansTime;
+$("#overall").value=String(cfg.overall);
+
+$("#modeSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{ cfg.mode=b.dataset.mode; saveCfg(); applyModeUI(); });
+$("#ansTime").oninput=function(){ cfg.ansTime=parseInt(this.value); $("#ansLabel").textContent=cfg.ansTime; saveCfg(); };
+$("#overall").onchange=function(){ cfg.overall=parseInt(this.value); saveCfg(); };
+
+$("#addGroupBtn").onclick=()=>{ const f=$("#addForm"); f.hidden=!f.hidden; if(!f.hidden) $("#ngName").focus(); };
+$("#ngCancel").onclick=()=>{ $("#addForm").hidden=true; $("#ngName").value=""; $("#ngWords").value=""; };
+$("#ngSave").onclick=()=>{
+  const name=$("#ngName").value.trim();
+  const items=$("#ngWords").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  if(!name){ alert("グループ名を入れてください。"); return; }
+  if(!items.length){ alert("お題を1つ以上入れてください。"); return; }
+  const g={key:genKey(), label:name, type:"list", cells:"word", items};
+  allGroups.push(g); saveGroups();
+  cfg.selected.push(g.key); saveCfg();
+  $("#ngName").value=""; $("#ngWords").value=""; $("#addForm").hidden=true;
+  renderGroups();
+};
+
+$("#startBtn").onclick=startGame;
+
+// phone ready
+$("#cover").onclick=()=>{ $("#cover").style.display="none"; $("#revealed").style.display="flex"; };
+$("#goBtn").onclick=enterActive;
+$("#passReady").onclick=redrawFirst;
+// card ready
+$("#goBtnCard").onclick=enterActive;
+// active
+$("#correctBtn").onclick=correct;
+$("#passBtn").onclick=pass;
+// hud
+$("#endBtn").onclick=()=>{ if(confirm("ゲームを終わって結果を見ますか？")) endGame(); };
+// result
+$("#againBtn").onclick=startGame;
+$("#backSetup").onclick=()=>{ stopTimer(); renderGroups(); applyModeUI(); show("setup"); };
+
+$("#soundBtn").onclick=function(){ cfg.sound=!cfg.sound; saveCfg(); this.classList.toggle("on",cfg.sound); this.textContent=cfg.sound?"🔊 音":"🔇 音"; if(cfg.sound)audio(); };
+$("#soundBtn").classList.toggle("on",cfg.sound); $("#soundBtn").textContent=cfg.sound?"🔊 音":"🔇 音";
+$("#fsBtn").onclick=function(){ if(!document.fullscreenElement){(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen||function(){}).call(document.documentElement);} else {(document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);} };
+
+show("setup");
+</script>
+<script src="intro.js"></script>
+<script>ClassIntro.init({key:"gesture",icon:"🎭",title:"ジェスチャーゲーム",desc:"出題者だけがお題を見て、ことばを使わずにジェスチャーで表現します。\nまわりのみんなは、それが何かを当てましょう！\n時間内に当てられたら正解です。"});</script>
+</body>
+</html>

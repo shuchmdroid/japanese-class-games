@@ -1,0 +1,870 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ビンゴマシン — 日本語クラス</title>
+<meta name="description" content="授業でみんなで遊べるビンゴマシン。数字1-100・ひらがな・カタカナ・動物・果物など。ボタンを押すとゴロゴロ回って、音つきでランダムに出ます。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎱</text></svg>">
+<style>
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;font-family:"Segoe UI","Yu Gothic UI",Meiryo,"Hiragino Kaku Gothic ProN","Malgun Gothic",system-ui,sans-serif;color:#fff;
+  background:radial-gradient(1200px 700px at 20% -10%,#3b2a6b 0%,rgba(59,42,107,0) 60%),
+             radial-gradient(1100px 700px at 100% 0%,#1d4ed8 0%,rgba(29,78,216,0) 55%),
+             linear-gradient(160deg,#1a1140,#2b1a5e 55%,#11103a);
+  min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+:root{--pink:#f5a9c4;--pink-deep:#ea5f93;--blue:#2563eb;--gold:#ffd34e;--ink:#1f2430}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer}
+
+/* top bar */
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;max-width:1100px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
+.brand .logo{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#ec6f9e,#2563eb);box-shadow:0 6px 16px rgba(234,95,147,.4);font-size:20px}
+.brand small{display:block;font-size:11px;font-weight:600;color:#c9c2e8}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.chip-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:9px 15px;font-size:14px;font-weight:700;backdrop-filter:blur(6px);transition:background .15s,transform .12s}
+.chip-btn:hover{background:rgba(255,255,255,.2)}
+.chip-btn:active{transform:scale(.95)}
+.chip-btn.on{background:var(--gold);color:#3a2a00;border-color:var(--gold)}
+
+.wrap{max-width:1100px;margin:0 auto;padding:0 18px 60px}
+
+/* mode tabs */
+.modes{display:flex;gap:7px;overflow-x:auto;padding:6px 2px 8px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.28) transparent;cursor:grab}
+.modes::-webkit-scrollbar{height:6px}
+.modes::-webkit-scrollbar-thumb{background:rgba(255,255,255,.24);border-radius:3px}
+.modes::-webkit-scrollbar-track{background:transparent}
+.mode{flex:0 0 auto;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.16);color:#e7e2ff;border-radius:12px;padding:8px 14px;font-size:14px;font-weight:800;white-space:nowrap;transition:all .15s}
+.mode:active{transform:scale(.96)}
+.mode.active{background:linear-gradient(135deg,#ec6f9e,#2563eb);border-color:transparent;color:#fff;box-shadow:0 8px 20px rgba(234,95,147,.35)}
+.mode.add{background:transparent;border:1.5px dashed rgba(255,255,255,.4);color:#cfc8f0;font-weight:800}
+.mode.add:hover{border-color:#fff;color:#fff}
+
+/* machine */
+.stage{display:flex;flex-direction:column;align-items:center;gap:18px;margin-top:8px}
+.machine{position:relative;width:min(78vw,340px);aspect-ratio:1/1}
+.ring{position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from 0deg,#ec6f9e,#ffd34e,#2563eb,#43d9ad,#ec6f9e);
+  filter:blur(2px);opacity:.85;box-shadow:0 0 60px rgba(120,90,255,.5)}
+.ring.spin{animation:spin .55s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.glass{position:absolute;inset:10px;border-radius:50%;
+  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.55),rgba(255,255,255,.06) 40%,rgba(20,12,50,.5) 100%);
+  border:3px solid rgba(255,255,255,.35);overflow:hidden;backdrop-filter:blur(2px)}
+.balls{position:absolute;inset:0}
+.balls i{position:absolute;width:13%;height:13%;border-radius:50%;left:43%;top:43%;
+  background:radial-gradient(circle at 35% 30%,#fff,var(--c,#ffd34e) 60%,#0006);box-shadow:0 2px 6px #0005}
+.machine.rolling .balls i{animation:orbit var(--d,1.4s) linear infinite}
+@keyframes orbit{from{transform:rotate(0) translateX(var(--r,80px)) rotate(0)}to{transform:rotate(360deg) translateX(var(--r,80px)) rotate(-360deg)}}
+
+/* center display */
+.display{position:absolute;inset:18%;border-radius:50%;display:grid;place-items:center;text-align:center;
+  background:radial-gradient(circle at 50% 38%,#fff,#f3eeff 70%,#e7dcff);color:#241552;
+  box-shadow:inset 0 -8px 22px rgba(120,80,200,.25),0 10px 30px rgba(0,0,0,.35);padding:6%}
+.display .val{font-weight:900;line-height:1.0;letter-spacing:-.01em}
+.display.num .val{font-size:min(26vw,120px)}
+.display.kana .val{font-size:min(24vw,110px)}
+.display.word .val{font-size:min(11vw,46px);line-height:1.1}
+.display .val .emo{display:block;font-size:1.5em;line-height:1}
+.display.idle .val{font-size:min(7vw,30px);color:#9a8fc4;font-weight:800}
+.machine.rolling .display{animation:shake .09s linear infinite}
+@keyframes shake{0%{transform:translate(0,0)}25%{transform:translate(-2px,1px)}50%{transform:translate(2px,-1px)}75%{transform:translate(-1px,-1px)}100%{transform:translate(1px,1px)}}
+.pop{animation:pop .5s cubic-bezier(.2,1.5,.4,1)}
+@keyframes pop{0%{transform:scale(.3);opacity:.2}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+
+/* spin button */
+.spin-btn{border:0;border-radius:999px;padding:20px 46px;font-size:24px;font-weight:900;color:#3a2400;
+  background:linear-gradient(135deg,#ffe27a,#ffb43b);box-shadow:0 12px 30px rgba(255,170,40,.45),inset 0 2px 0 rgba(255,255,255,.6);
+  transition:transform .12s,box-shadow .12s,filter .15s;letter-spacing:.02em}
+.spin-btn:hover{transform:translateY(-2px)}
+.spin-btn:active{transform:translateY(1px) scale(.98)}
+.spin-btn:disabled{filter:grayscale(.4) brightness(.85);cursor:default;transform:none}
+.spin-btn .sub{display:block;font-size:12px;font-weight:700;opacity:.7;margin-top:2px}
+
+.counter{font-size:15px;color:#d9d2ff;font-weight:700}
+.counter b{color:var(--gold);font-size:18px}
+.alldone{color:var(--gold);font-weight:900;font-size:18px}
+
+/* recent strip */
+.recent{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;min-height:34px;margin-top:2px}
+.recent .r{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:5px 11px;font-weight:800;font-size:16px;color:#fff}
+.recent .r:first-child{background:var(--gold);color:#3a2a00;border-color:var(--gold)}
+
+/* board */
+.board-head{display:flex;align-items:center;justify-content:space-between;margin:30px 0 12px}
+.board-head h2{margin:0;font-size:17px;font-weight:800;color:#e7e2ff}
+.board-head .hint{font-size:12px;color:#a99fd6}
+.board-head .bh-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}
+.clr-btn{background:rgba(255,107,107,.16);border:1.5px solid rgba(255,107,107,.5);color:#ff9aa8;border-radius:999px;padding:7px 15px;font-size:13px;font-weight:800;cursor:pointer;flex:0 0 auto}
+.clr-btn:hover{background:rgba(255,107,107,.28)}
+.clr-btn:active{transform:scale(.95)}
+.board{display:grid;gap:7px}
+.board.num{grid-template-columns:repeat(10,1fr)}
+.board.kana{grid-template-columns:repeat(auto-fill,minmax(46px,1fr))}
+.board.word{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}
+.cell{background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.13);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;text-align:center;font-weight:800;color:#cfc8f0;
+  aspect-ratio:1/1;font-size:clamp(13px,3.4vw,18px);transition:all .18s;user-select:none;cursor:pointer;padding:3px;line-height:1.1}
+.board.word .cell{aspect-ratio:auto;min-height:54px;font-size:14px;flex-direction:column;gap:2px}
+.board.word .cell .ce{font-size:22px}
+.board.word .cell .ci{max-width:86%;max-height:50%;object-fit:contain;border-radius:4px}
+.display .val .dimg{display:block;margin:0 auto 6px;max-width:min(30vw,150px);max-height:min(22vw,120px);object-fit:contain;border-radius:8px}
+.wflag{height:.9em;width:auto;vertical-align:-.1em;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
+.display .val .wflag{height:.72em;margin-left:.06em}
+.cell.hit{background:linear-gradient(135deg,#ec6f9e,#2563eb);border-color:transparent;color:#fff;box-shadow:0 6px 16px rgba(120,90,255,.4);transform:scale(1.02)}
+.cell.hit::after{content:"●";position:absolute}
+.cell{position:relative}
+.cell.last{outline:3px solid var(--gold);outline-offset:1px}
+
+/* settings panel */
+.overlay{position:fixed;inset:0;background:rgba(10,6,30,.6);backdrop-filter:blur(3px);display:none;z-index:50;align-items:flex-start;justify-content:center;padding:30px 16px;overflow:auto}
+.overlay.open{display:flex}
+.cardpanel{max-width:560px}
+.cardopts{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin:6px 0 14px;font-weight:700;font-size:14px}
+.cardopts label{display:inline-flex;align-items:center;gap:6px}
+.cardopts select,.cardopts input{border:1.5px solid #cfc7ea;border-radius:8px;padding:7px 9px;font:inherit;font-weight:700;color:#241552;background:#fff}
+.cardopts input[type=number]{width:60px}
+.cardopts .mini-note{font-weight:600;color:#8a83ad;font-size:12px}
+.cardprev-wrap{display:flex;justify-content:center;background:#efeaff;border-radius:12px;padding:16px}
+.bcard{background:#fff;border-radius:10px;padding:14px 14px 16px;width:100%;max-width:360px;box-shadow:0 6px 18px rgba(0,0,0,.15)}
+.bcard .btitle{text-align:center;font-weight:900;font-size:16px;color:#241552}
+.bcard .bname{font-size:11px;color:#6a6390;margin:2px 0 8px;font-weight:700;text-align:right}
+.bgrid{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:5px}
+.bcell{position:relative;aspect-ratio:1;border:2px solid #241552;border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:3px;overflow:hidden;background:#fff}
+.bcell img{max-width:96%;max-height:58%;object-fit:contain}
+.bcell span{font-weight:800;color:#241552;font-size:clamp(9px,2.3vw,15px);line-height:1.1;word-break:break-word;text-align:center}
+.bcell.free{background:linear-gradient(135deg,#ec6f9e,#2563eb);border-color:#ec6f9e}
+.bcell.free span{color:#fff;font-size:clamp(11px,2.8vw,17px);letter-spacing:1px}
+.panel{background:#fff;color:#241552;border-radius:18px;max-width:480px;width:100%;padding:22px;box-shadow:0 30px 70px rgba(0,0,0,.5)}
+.panel h3{margin:0 0 4px;font-size:20px}
+.panel p.note{margin:0 0 16px;color:#7b71a8;font-size:13px}
+.field{margin-bottom:16px}
+.field label{display:block;font-weight:800;font-size:14px;margin-bottom:6px}
+.field input[type=number],.field input[type=text],.field textarea,.field select{width:100%;border:1.5px solid #d9d2f0;border-radius:10px;padding:10px 12px;font:inherit;color:#241552;background:#fff}
+.field textarea{min-height:140px;resize:vertical;line-height:1.6}
+.range-row{display:flex;gap:10px;align-items:center}
+.range-row input{flex:1}
+.panel-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap}
+.pbtn{border-radius:10px;padding:11px 18px;font-weight:800;border:1.5px solid #d9d2f0;background:#fff;color:#241552}
+.pbtn.primary{background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff;border-color:transparent}
+.pbtn.ghost{background:#f4f1fb}
+.locked-note{background:#f4f1fb;border-radius:10px;padding:10px 12px;font-size:13px;color:#7b71a8}
+.hint2{font-size:12px;color:#9a8fc4;margin-top:5px}
+.grp-manage{margin-top:18px;padding-top:16px;border-top:1.5px dashed #e3def5}
+.manage-label{font-weight:800;font-size:13px;color:#7b71a8;margin-bottom:8px}
+.manage-row{display:flex;gap:8px;flex-wrap:wrap}
+.pbtn:disabled{opacity:.45;cursor:default}
+.pbtn.danger{background:#fff;color:#d6336c;border-color:#f3c2d4}
+.pbtn.danger:disabled{color:#b9a9b2;border-color:#eee}
+.linklike{display:inline-block;margin-top:12px;background:none;border:0;color:#9a8fc4;font-size:12.5px;text-decoration:underline;cursor:pointer;padding:0}
+
+/* confetti */
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:40;overflow:hidden}
+.cf{position:absolute;top:-20px;width:10px;height:14px;opacity:.95;will-change:transform}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+
+@media(max-width:560px){
+  .board.num{gap:5px}
+  .spin-btn{padding:18px 38px;font-size:21px}
+}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a class="brand" href="games.html">
+    <span class="logo">🎱</span>
+    <span>ビンゴマシン<small>日本語クラス・ゲーム</small></span>
+  </a>
+  <div class="top-actions">
+    <button class="chip-btn on" id="soundBtn" title="音 ON/OFF">🔊 音</button>
+    <button class="chip-btn" id="cardBtn" title="ビンゴカードを作る">🎴 カード</button>
+    <button class="chip-btn" id="fsBtn" title="全画面">⛶ 全画面</button>
+    <button class="chip-btn" id="setBtn">⚙ 設定</button>
+    <a class="chip-btn" href="roulette.html">🎡 ルーレット</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="modes" id="modes"></div>
+
+  <div class="stage">
+    <div class="machine" id="machine">
+      <div class="ring" id="ring"></div>
+      <div class="glass">
+        <div class="balls" id="balls"></div>
+      </div>
+      <div class="display idle" id="display"><div class="val">タップして<br>スタート</div></div>
+    </div>
+
+    <button class="spin-btn" id="spinBtn">🎲 まわす！<span class="sub">SPIN</span></button>
+
+    <div class="counter" id="counter"></div>
+    <div class="recent" id="recent"></div>
+  </div>
+
+  <div class="board-head">
+    <h2>📋 出た結果（ビンゴボード）</h2>
+    <div class="bh-right">
+      <span class="hint">マスをタップで手動修正OK</span>
+      <button class="clr-btn" id="clearBtn" title="出た結果を全部消して最初から">🗑 クリア</button>
+    </div>
+  </div>
+  <div class="board num" id="board"></div>
+</div>
+
+<!-- settings -->
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <h3 id="setTitle">設定</h3>
+    <p class="note" id="setNote"></p>
+    <div id="setBody"></div>
+    <div class="panel-actions">
+      <button class="pbtn ghost" id="resetGameBtn">この回をリセット</button>
+      <button class="pbtn" id="setCancel">とじる</button>
+      <button class="pbtn primary" id="setSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ビンゴカード発行 -->
+<div class="overlay" id="cardOverlay">
+  <div class="panel cardpanel">
+    <h3>🎴 ビンゴカードを作る</h3>
+    <p class="note">テーマの内容をランダムに並べたビンゴカードを作ります。中心は「BINGO」（フリー）。画像で保存したり、印刷・PDFにして生徒に配れます。</p>
+    <div class="cardopts">
+      <label>テーマ <select id="cardTheme"></select></label>
+      <label>大きさ <select id="cardSize"></select></label>
+      <label>まい数 <input type="number" id="cardCount" min="1" max="40" value="1"> <span class="mini-note">（印刷用）</span></label>
+    </div>
+    <div class="cardprev-wrap"><div id="cardPreview"></div></div>
+    <p class="note" id="cardMsg"></p>
+    <div class="panel-actions">
+      <button class="pbtn ghost" id="cardShuffle">🔀 シャッフル</button>
+      <button class="pbtn" id="cardPng">🖼 画像で保存</button>
+      <button class="pbtn primary" id="cardPrint">🖨 印刷 / PDF</button>
+      <button class="pbtn" id="cardClose">とじる</button>
+    </div>
+  </div>
+</div>
+
+<div id="confetti"></div>
+
+<script>
+/* ============================ データ定義 ============================ */
+const HIRA = "あ い う え お か き く け こ さ し す せ そ た ち つ て と な に ぬ ね の は ひ ふ へ ほ ま み む め も や ゆ よ ら り る れ ろ わ を ん".split(" ");
+const KATA = "ア イ ウ エ オ カ キ ク ケ コ サ シ ス セ ソ タ チ ツ テ ト ナ ニ ヌ ネ ノ ハ ヒ フ ヘ ホ マ ミ ム メ モ ヤ ユ ヨ ラ リ ル レ ロ ワ ヲ ン".split(" ");
+
+// 単語モードは「絵文字 ことば」の形式（絵文字は任意・なくてもOK）
+const ANIMALS = ["🐶 いぬ","🐱 ねこ","🐰 うさぎ","🐘 ぞう","🦒 きりん","🦁 ライオン","🐯 とら","🐻 くま","🐵 さる","🐴 うま","🐮 うし","🐷 ぶた","🐑 ひつじ","🐐 やぎ","🦌 しか","🦊 きつね","🐼 パンダ","🐨 コアラ","🦛 かば","🦏 さい","🐍 へび","🐢 かめ","🐸 かえる","🐦 とり","🐔 にわとり","🦉 ふくろう","🐧 ペンギン","🐟 さかな","🐬 いるか","🐳 くじら","🦈 さめ","🐙 たこ","🦀 かに","🐝 はち"];
+const FRUITS = ["🍎 りんご","🍊 みかん","🍌 バナナ","🍇 ぶどう","🍓 いちご","🍑 もも","🍒 さくらんぼ","🍉 すいか","🍈 メロン","🍍 パイナップル","🥝 キウイ","🍐 なし","🍋 レモン","🥭 マンゴー","🥥 ココナッツ","🫐 ブルーベリー","🍏 あおりんご"];
+const VEG = ["🥕 にんじん","🥔 じゃがいも","🍅 トマト","🥒 きゅうり","🍆 なす","🌽 とうもろこし","🥬 はくさい","🥦 ブロッコリー","🧅 たまねぎ","🍠 さつまいも","🎃 かぼちゃ","🌶️ とうがらし","🧄 にんにく","🥗 サラダな","🫑 ピーマン","🍄 きのこ"];
+
+// 最初から入っているグループ（あとから名前変更・追加・削除できる）
+const DEFAULT_GROUPS = [
+  {key:"num100", label:"🔢 数字 1–100", type:"number", min:1, max:100},
+  {key:"hira",   label:"あ ひらがな",   type:"list", cells:"kana", items:HIRA},
+  {key:"kata",   label:"ア カタカナ",   type:"list", cells:"kana", items:KATA},
+  {key:"animal", label:"🐶 動物",       type:"list", cells:"word", items:ANIMALS},
+  {key:"fruit",  label:"🍎 果物",       type:"list", cells:"word", items:FRUITS},
+  {key:"veg",    label:"🥕 野菜",       type:"list", cells:"word", items:VEG},
+  {key:"custom", label:"✏️ カスタム",   type:"list", cells:"word", items:["🌸 さくら","🗻 ふじさん","🍣 すし","⛩️ じんじゃ","🎌 にほん"]},
+];
+function cloneGroup(g){ const c={...g}; if(c.items) c.items=c.items.slice(); return c; }
+function freshDefaults(){ return DEFAULT_GROUPS.map(cloneGroup); }
+
+/* ============================ 保存（localStorage） ============================ */
+const LS_GROUPS = "bingo.groups.v2"; // グループ定義（名前・タイプ・内容）すべて
+const LS_STATE  = "bingo.state.v1";  // グループごとの出た結果
+const LS_CFG    = "bingo.cfg.v1";    // 音・現在グループ
+
+function load(k,d){ try{const v=JSON.parse(localStorage.getItem(k)); return (v==null)?d:v}catch(e){return d} }
+function save(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
+
+let drawn = load(LS_STATE, {});      // {key:[...出た値]}
+let cfg   = load(LS_CFG, {sound:true, mode:"num100"});
+
+// グループ定義を読み込み。無ければ既定＋旧バージョン(bingo.lists.v1)の編集内容を引き継ぐ。
+let groups = load(LS_GROUPS, null);
+if(!Array.isArray(groups) || !groups.length){
+  const legacy = load("bingo.lists.v1", {});
+  groups = freshDefaults().map(g=>{
+    const e = legacy[g.key];
+    if(!e) return g;
+    if(g.type==="number") return {...g, min:(e.min!=null?e.min:g.min), max:(e.max!=null?e.max:g.max)};
+    return {...g, items: Array.isArray(e)? e.slice() : g.items};
+  });
+  save(LS_GROUPS, groups);
+}
+function saveGroups(){ save(LS_GROUPS, groups); }
+function groupOf(key){ return groups.find(g=>g.key===key); }
+function genKey(){ let k; do{ k="g"+Math.random().toString(36).slice(2,7); }while(groups.some(g=>g.key===k)); return k; }
+
+/* あるグループの「出題プール（全候補）」 */
+function poolOf(key){
+  const g = groupOf(key); if(!g) return [];
+  if(g.type==="number"){
+    const mn=Math.min(g.min,g.max), mx=Math.max(g.min,g.max);
+    const out=[]; for(let n=mn;n<=mx;n++) out.push(String(n));
+    return out;
+  }
+  return (g.items||[]).slice();
+}
+function calledOf(key){ return new Set(drawn[key]||[]); }
+
+/* ============================ 状態 ============================ */
+let mode = groupOf(cfg.mode) ? cfg.mode : groups[0].key;
+let spinning = false;
+
+const $ = s=>document.querySelector(s);
+const machine=$("#machine"), ring=$("#ring"), display=$("#display"),
+      balls=$("#balls"), spinBtn=$("#spinBtn"), counter=$("#counter"),
+      recent=$("#recent"), board=$("#board"), modesEl=$("#modes");
+
+/* balls 装飾 */
+(function(){
+  const colors=["#ffd34e","#ec6f9e","#43d9ad","#7aa9ff","#ff8a5c","#c08bff"];
+  for(let i=0;i<8;i++){
+    const b=document.createElement("i");
+    const r=60+Math.random()*55, d=1.0+Math.random()*1.4;
+    b.style.setProperty("--r",r+"px");
+    b.style.setProperty("--d",d+"s");
+    b.style.setProperty("--c",colors[i%colors.length]);
+    b.style.animationDelay=(-Math.random()*2)+"s";
+    balls.appendChild(b);
+  }
+})();
+
+/* ============================ 描画 ============================ */
+function renderModes(){
+  modesEl.innerHTML="";
+  groups.forEach(g=>{
+    const b=document.createElement("button");
+    b.className="mode"+(g.key===mode?" active":"");
+    b.textContent=g.label;
+    b.onclick=()=>{ if(spinning) return; mode=g.key; cfg.mode=g.key; save(LS_CFG,cfg); renderAll(); };
+    modesEl.appendChild(b);
+    if(g.key===mode) requestAnimationFrame(()=>b.scrollIntoView({inline:"center",block:"nearest"}));
+  });
+  const add=document.createElement("button");
+  add.className="mode add"; add.textContent="＋ グループ"; add.title="新しいグループを作る";
+  add.onclick=()=>{ if(spinning) return; addGroup(); };
+  modesEl.appendChild(add);
+}
+
+function renderBoard(){
+  const m=groupOf(mode);
+  const pool=poolOf(mode), called=calledOf(mode);
+  const last=(drawn[mode]||[]).slice(-1)[0];
+  board.className="board "+(m.type==="number"?"num":m.cells);
+  board.innerHTML="";
+  pool.forEach(v=>{
+    const c=document.createElement("div");
+    c.className="cell"+(called.has(v)?" hit":"")+(v===last?" last":"");
+    if(m.cells==="word"){
+      const img=(m.imgs||{})[v];
+      const sp=v.split(" "); const emo=/\p{Emoji}/u.test(sp[0])?sp[0]:"";
+      const txt=emo?sp.slice(1).join(" "):v;
+      c.innerHTML = (img?`<img class="ci" src="${img}" alt="">`:(emo?`<span class="ce">${emo}</span>`:""))+`<span>${flagToImg(esc(txt))}</span>`;
+    } else {
+      c.textContent=v;
+    }
+    c.onclick=()=>toggleCell(v);
+    board.appendChild(c);
+  });
+}
+
+function renderCounter(){
+  const pool=poolOf(mode), called=calledOf(mode);
+  const left=pool.length-called.size;
+  if(left<=0 && pool.length>0){
+    counter.innerHTML=`<span class="alldone">🎉 全部出ました！（${pool.length}個）</span>`;
+  } else {
+    counter.innerHTML=`残り <b>${left}</b> / ${pool.length} 個`;
+  }
+}
+
+function renderRecent(){
+  const list=(drawn[mode]||[]).slice(-6).reverse();
+  recent.innerHTML="";
+  list.forEach(v=>{
+    const d=document.createElement("div"); d.className="r";
+    d.textContent=cleanLabel(v);
+    recent.appendChild(d);
+  });
+}
+
+function cleanLabel(v){ // 絵文字+語 → 表示用（そのまま）
+  return v;
+}
+
+function setDisplay(v, cls){
+  const m=groupOf(mode);
+  let dispClass = "display";
+  if(m.type==="number") dispClass+=" num";
+  else if(m.cells==="kana") dispClass+=" kana";
+  else dispClass+=" word";
+  display.className=dispClass+(cls||"");
+  if(m.cells==="word"){
+    const img=(m.imgs||{})[v];
+    const sp=v.split(" "); const emo=/\p{Emoji}/u.test(sp[0])?sp[0]:"";
+    const txt=emo?sp.slice(1).join(" "):v;
+    display.innerHTML=`<div class="val">${img?`<img class="dimg" src="${img}" alt="">`:(emo?`<span class="emo">${emo}</span>`:"")}${flagToImg(esc(txt))}</div>`;
+  } else {
+    display.innerHTML=`<div class="val">${v}</div>`;
+  }
+}
+
+function renderAll(){
+  renderModes(); renderBoard(); renderCounter(); renderRecent();
+  const last=(drawn[mode]||[]).slice(-1)[0];
+  if(last) setDisplay(last);
+  else { display.className="display idle"; display.innerHTML='<div class="val">まわして<br>スタート！</div>'; }
+  updateSpinBtn();
+}
+
+function updateSpinBtn(){
+  const left=poolOf(mode).length-calledOf(mode).size;
+  spinBtn.disabled = spinning || left<=0;
+  spinBtn.innerHTML = left<=0 ? '✅ 全部出ました<span class="sub">DONE</span>'
+                              : '🎲 まわす！<span class="sub">SPIN</span>';
+}
+
+/* ============================ 出た結果の操作 ============================ */
+function toggleCell(v){
+  if(spinning) return;
+  const arr = drawn[mode] || (drawn[mode]=[]);
+  const i=arr.indexOf(v);
+  if(i>=0) arr.splice(i,1); else arr.push(v);
+  save(LS_STATE,drawn);
+  renderBoard(); renderCounter(); renderRecent(); updateSpinBtn();
+}
+
+function resetGame(){
+  drawn[mode]=[]; save(LS_STATE,drawn);
+  renderAll();
+}
+
+/* ============================ サウンド（Web Audio・ファイル不要） ============================ */
+let actx=null;
+function audio(){
+  if(!cfg.sound) return null;
+  if(!actx){ try{actx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){return null} }
+  if(actx.state==="suspended") actx.resume();
+  return actx;
+}
+function tone(freq,start,dur,type="triangle",vol=.2){
+  const a=audio(); if(!a) return;
+  const t=a.currentTime+start;
+  const o=a.createOscillator(), g=a.createGain();
+  o.type=type; o.frequency.setValueAtTime(freq,t);
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(vol,t+0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t+dur+0.02);
+}
+function tick(){ // 回転中のカチカチ
+  const a=audio(); if(!a) return;
+  const t=a.currentTime;
+  const o=a.createOscillator(), g=a.createGain();
+  o.type="square"; o.frequency.value=420+Math.random()*500;
+  g.gain.setValueAtTime(0.13,t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t+0.06);
+}
+let rumbleStop=null;
+function startRumble(){
+  const a=audio(); if(!a){return ()=>{}}
+  const buf=a.createBuffer(1,a.sampleRate*1.2,a.sampleRate);
+  const d=buf.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  const src=a.createBufferSource(); src.buffer=buf; src.loop=true;
+  const lp=a.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=300;
+  const g=a.createGain(); g.gain.value=0.10;
+  const lfo=a.createOscillator(); lfo.type="sine"; lfo.frequency.value=12;
+  const lg=a.createGain(); lg.gain.value=0.07;
+  lfo.connect(lg).connect(g.gain);
+  src.connect(lp).connect(g).connect(a.destination);
+  src.start(); lfo.start();
+  return ()=>{ try{src.stop();lfo.stop();}catch(e){} };
+}
+function fanfare(){
+  [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone(f,i*0.10,0.55,"triangle",0.22));
+  tone(1318.5,0.42,0.5,"sine",0.16);
+}
+
+/* ============================ スピン！ ============================ */
+function spin(){
+  if(spinning) return;
+  const pool=poolOf(mode), called=calledOf(mode);
+  const remaining=pool.filter(v=>!called.has(v));
+  if(!remaining.length) return;
+
+  spinning=true; updateSpinBtn();
+  modesEl.querySelectorAll(".mode").forEach(b=>b.style.pointerEvents="none");
+  ring.classList.add("spin"); machine.classList.add("rolling");
+  rumbleStop=startRumble();
+
+  const final = remaining[Math.floor(Math.random()*remaining.length)];
+  const rnd = ()=>remaining[Math.floor(Math.random()*remaining.length)];
+
+  const total=2100; let elapsed=0, delay=55;
+  function step(){
+    setDisplay(rnd());
+    tick();
+    elapsed+=delay;
+    if(elapsed<total){
+      delay = 55 + Math.pow(elapsed/total,2)*230; // だんだん遅く
+      setTimeout(step,delay);
+    } else {
+      land(final);
+    }
+  }
+  step();
+}
+
+function land(v){
+  ring.classList.remove("spin"); machine.classList.remove("rolling");
+  if(rumbleStop) rumbleStop();
+  setDisplay(v," pop");
+  fanfare();
+  confetti();
+
+  const arr=drawn[mode]||(drawn[mode]=[]);
+  if(!arr.includes(v)) arr.push(v);
+  save(LS_STATE,drawn);
+
+  renderBoard(); renderCounter(); renderRecent();
+  spinning=false;
+  modesEl.querySelectorAll(".mode").forEach(b=>b.style.pointerEvents="");
+  updateSpinBtn();
+}
+
+/* ============================ 紙吹雪 ============================ */
+function confetti(){
+  const box=$("#confetti");
+  const colors=["#ffd34e","#ec6f9e","#43d9ad","#7aa9ff","#ff8a5c","#c08bff","#fff"];
+  for(let i=0;i<46;i++){
+    const c=document.createElement("div");
+    c.className="cf";
+    c.style.left=Math.random()*100+"vw";
+    c.style.background=colors[i%colors.length];
+    c.style.borderRadius=Math.random()<.5?"2px":"50%";
+    const dur=1.4+Math.random()*1.4;
+    c.style.animation=`fall ${dur}s cubic-bezier(.3,.6,.5,1) forwards`;
+    c.style.transform=`translateY(-20px) rotate(${Math.random()*360}deg)`;
+    box.appendChild(c);
+    setTimeout(()=>c.remove(),dur*1000+100);
+  }
+}
+
+/* ============================ 設定パネル ============================ */
+const overlay=$("#overlay"), setBody=$("#setBody"), setTitle=$("#setTitle"), setNote=$("#setNote");
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+// 国旗絵文字はWindowsでは文字（JP等）にしか見えないため、画像（Twemoji）に置き換える
+function flagToImg(escaped){
+  return escaped.replace(/[\u{1F1E6}-\u{1F1FF}]{2}/gu, m=>{
+    const cps=[...m].map(c=>c.codePointAt(0).toString(16)).join("-");
+    return `<img class="wflag" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/72x72/${cps}.png" alt="${m}" onerror="this.replaceWith(this.alt)">`;
+  });
+}
+
+function openSettings(){
+  const g=groupOf(mode); if(!g) return;
+  const idx=groups.findIndex(x=>x.key===mode);
+  const isDefault=DEFAULT_GROUPS.some(d=>d.key===g.key);
+  setTitle.textContent=`⚙ 設定 — ${g.label}`;
+  setNote.textContent="グループ名・タイプ・出題内容を自由に変えられます。";
+  setBody.innerHTML=`
+    <div class="field">
+      <label>グループ名（タブに表示）</label>
+      <input type="text" id="grpName" value="${esc(g.label)}" placeholder="例：🐶 動物">
+      <div class="hint2">先頭に絵文字を付けると見やすいです。</div>
+    </div>
+    <div class="field">
+      <label>タイプ</label>
+      <select id="grpType">
+        <option value="list" ${g.type!=="number"?"selected":""}>📝 ことば・文字のリスト</option>
+        <option value="number" ${g.type==="number"?"selected":""}>🔢 数字の範囲</option>
+      </select>
+    </div>
+    <div id="editList" class="field" ${g.type==="number"?'style="display:none"':""}>
+      <label>出題リスト</label>
+      <textarea id="listArea" spellcheck="false">${g.type==="number"?"":esc((g.items||[]).join("\n"))}</textarea>
+      <div class="field" style="margin:10px 0 0">
+        <label>表示のしかた</label>
+        <select id="grpCells">
+          <option value="word" ${g.cells!=="kana"?"selected":""}>単語（絵文字つき・大きめ）</option>
+          <option value="kana" ${g.cells==="kana"?"selected":""}>1文字ずつ大きく（かな・漢字）</option>
+        </select>
+      </div>
+      <div class="locked-note">💡 1行に1つ。先頭に絵文字を付けると大きく表示されます（例：🐶 いぬ）。</div>
+    </div>
+    <div id="editNum" class="field" ${g.type==="number"?"":'style="display:none"'}>
+      <label>数字の範囲</label>
+      <div class="range-row">
+        <input type="number" id="numMin" value="${g.min!=null?g.min:1}" min="1" max="999">
+        <span>〜</span>
+        <input type="number" id="numMax" value="${g.max!=null?g.max:100}" min="1" max="999">
+      </div>
+    </div>
+    <div class="grp-manage">
+      <div class="manage-label">このグループの操作</div>
+      <div class="manage-row">
+        <button class="pbtn ghost" id="moveLeft" ${idx<=0?"disabled":""}>◀ 左へ</button>
+        <button class="pbtn ghost" id="moveRight" ${idx>=groups.length-1?"disabled":""}>右へ ▶</button>
+        ${isDefault?'<button class="pbtn ghost" id="resetGrp">内容を初期に戻す</button>':""}
+        <button class="pbtn danger" id="delGrp" ${groups.length<=1?"disabled":""}>🗑 このグループを削除</button>
+      </div>
+      <button class="linklike" id="resetAll">すべてのグループを初期構成に戻す</button>
+    </div>`;
+  $("#grpType").onchange=function(){
+    const isNum=this.value==="number";
+    $("#editList").style.display=isNum?"none":"";
+    $("#editNum").style.display=isNum?"":"none";
+  };
+  $("#moveLeft").onclick=()=>moveGroup(-1);
+  $("#moveRight").onclick=()=>moveGroup(1);
+  $("#delGrp").onclick=deleteGroup;
+  if($("#resetGrp")) $("#resetGrp").onclick=resetGroupContent;
+  $("#resetAll").onclick=resetAllGroups;
+  overlay.classList.add("open");
+}
+
+// パネルの入力を現在グループへ反映（保存はするが閉じない）
+function commitFields(){
+  const g=groupOf(mode); if(!g) return;
+  g.label=($("#grpName").value||"").trim()||g.label;
+  g.type=$("#grpType").value==="number"?"number":"list";
+  if(g.type==="number"){
+    const mn=parseInt($("#numMin").value)||1, mx=parseInt($("#numMax").value)||100;
+    g.min=Math.max(1,Math.min(999,mn)); g.max=Math.max(1,Math.min(999,mx));
+  } else {
+    g.items=$("#listArea").value.split("\n").map(s=>s.trim()).filter(Boolean);
+    g.cells=$("#grpCells").value==="kana"?"kana":"word";
+  }
+  saveGroups();
+  const pool=new Set(poolOf(mode));
+  drawn[mode]=(drawn[mode]||[]).filter(v=>pool.has(v)); save(LS_STATE,drawn);
+}
+function saveSettings(){ commitFields(); overlay.classList.remove("open"); renderAll(); }
+
+function addGroup(){
+  const g={key:genKey(), label:"✏️ 新しいグループ", type:"list", cells:"word", items:[]};
+  groups.push(g); saveGroups();
+  mode=g.key; cfg.mode=g.key; save(LS_CFG,cfg);
+  renderAll(); openSettings();
+  setTimeout(()=>{ const el=$("#grpName"); if(el){ el.focus(); el.select(); } },60);
+}
+
+function moveGroup(dir){
+  commitFields();
+  const i=groups.findIndex(x=>x.key===mode), j=i+dir;
+  if(j<0||j>=groups.length) return;
+  const t=groups[i]; groups[i]=groups[j]; groups[j]=t;
+  saveGroups(); renderAll(); openSettings();
+}
+
+function deleteGroup(){
+  if(groups.length<=1){ alert("グループは最低1つ必要です。"); return; }
+  const g=groupOf(mode);
+  if(!confirm(`グループ「${g.label}」を削除しますか？\n（このグループの「出た結果」も消えます）`)) return;
+  const i=groups.findIndex(x=>x.key===mode);
+  groups.splice(i,1); delete drawn[mode]; save(LS_STATE,drawn);
+  mode=groups[Math.max(0,i-1)].key; cfg.mode=mode; save(LS_CFG,cfg);
+  saveGroups(); overlay.classList.remove("open"); renderAll();
+}
+
+function resetGroupContent(){
+  const d=DEFAULT_GROUPS.find(x=>x.key===mode); if(!d) return;
+  if(!confirm("このグループの内容（名前・出題内容）を初期状態に戻しますか？")) return;
+  const i=groups.findIndex(x=>x.key===mode);
+  groups[i]=cloneGroup(d);
+  delete drawn[mode]; save(LS_STATE,drawn); saveGroups();
+  overlay.classList.remove("open"); renderAll();
+}
+
+function resetAllGroups(){
+  if(!confirm("すべてのグループを最初の構成（数字・ひらがな・カタカナ・動物・果物・野菜・カスタム）に戻しますか？\n追加・編集したグループと「出た結果」はすべて消えます。")) return;
+  groups=freshDefaults(); saveGroups();
+  drawn={}; save(LS_STATE,drawn);
+  mode=groups[0].key; cfg.mode=mode; save(LS_CFG,cfg);
+  overlay.classList.remove("open"); renderAll();
+}
+
+/* ============================ イベント ============================ */
+spinBtn.onclick=spin;
+$("#setBtn").onclick=openSettings;
+$("#setCancel").onclick=()=>overlay.classList.remove("open");
+$("#setSave").onclick=saveSettings;
+$("#resetGameBtn").onclick=()=>{ if(confirm("この回の「出た結果」を全部消してやり直しますか？")){ resetGame(); overlay.classList.remove("open"); } };
+$("#clearBtn").onclick=()=>{ if(!(drawn[mode]||[]).length){ return; } if(confirm("出た結果を全部消して、最初からやり直しますか？")){ resetGame(); } };
+overlay.onclick=e=>{ if(e.target===overlay) overlay.classList.remove("open"); };
+
+$("#soundBtn").onclick=function(){
+  cfg.sound=!cfg.sound; save(LS_CFG,cfg);
+  this.classList.toggle("on",cfg.sound);
+  this.textContent=cfg.sound?"🔊 音":"🔇 音";
+  if(cfg.sound) audio(); // ユーザー操作でAudioContext起動
+};
+$("#soundBtn").classList.toggle("on",cfg.sound);
+$("#soundBtn").textContent=cfg.sound?"🔊 音":"🔇 音";
+
+$("#fsBtn").onclick=function(){
+  if(!document.fullscreenElement){ (document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen||function(){}).call(document.documentElement); }
+  else { (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document); }
+};
+
+// グループタブ：マウスでもスライドできるように（ホイール＝横スクロール、ドラッグでもOK）
+(function(){
+  modesEl.addEventListener("wheel",e=>{ if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){ e.preventDefault(); modesEl.scrollLeft+=e.deltaY; } },{passive:false});
+  let down=false, dragged=false, startX=0, startL=0;
+  modesEl.addEventListener("pointerdown",e=>{ if(e.pointerType!=="mouse") return; down=true; dragged=false; startX=e.clientX; startL=modesEl.scrollLeft; });
+  modesEl.addEventListener("pointermove",e=>{ if(!down) return; const dx=e.clientX-startX; if(Math.abs(dx)>6) dragged=true; if(dragged) modesEl.scrollLeft=startL-dx; });
+  ["pointerup","pointercancel","pointerleave"].forEach(t=>modesEl.addEventListener(t,()=>{ down=false; setTimeout(()=>{dragged=false;},0); }));
+  modesEl.addEventListener("click",e=>{ if(dragged){ e.preventDefault(); e.stopPropagation(); } },true); // ドラッグ後の誤タップ防止
+})();
+
+// スペース／Enterでもスピン
+document.addEventListener("keydown",e=>{
+  if((e.code==="Space"||e.code==="Enter") && !overlay.classList.contains("open") && !cardOverlay.classList.contains("open")){
+    e.preventDefault(); spin();
+  }
+});
+
+/* ============================ ビンゴカード発行 ============================ */
+const cardOverlay=$("#cardOverlay");
+function shuffleArr(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+let cardCfg=load("bingo.card.v1",{size:5,count:1});
+let cardKey=mode;                 // カードにするテーマ
+let cardModel=null;               // いま表示中のカード（セル配列）
+function cardNeed(size){ return size%2===1 ? size*size-1 : size*size; }   // 中心フリーは奇数のみ
+function availSizes(poolLen){ return [3,4,5].filter(s=>poolLen>=cardNeed(s)); }
+function makeCard(pool, size){
+  const cells=size*size, centerIdx = size%2===1 ? Math.floor(cells/2) : -1;
+  const picks=shuffleArr(pool).slice(0, cardNeed(size));
+  const arr=[]; let pi=0;
+  for(let i=0;i<cells;i++){ arr.push(i===centerIdx ? {free:true} : {v:picks[pi++]}); }
+  return arr;
+}
+function cardCellHTML(cell, imgs){
+  if(cell.free) return `<div class="bcell free"><span>BINGO</span></div>`;
+  const v=cell.v, im=imgs[v];
+  return `<div class="bcell">${im?`<img src="${im}" alt="">`:""}<span>${esc(v)}</span></div>`;
+}
+function cardHTML(model, size, g){
+  const imgs=g.imgs||{};
+  return `<div class="bcard">
+    <div class="btitle">🎯 ${esc(g.label)} ビンゴ</div>
+    <div class="bname">なまえ：____________</div>
+    <div class="bgrid" style="--n:${size}">${model.map(c=>cardCellHTML(c,imgs)).join("")}</div>
+  </div>`;
+}
+function renderCardOptions(){
+  // テーマ選択肢
+  $("#cardTheme").innerHTML=groups.map(g=>`<option value="${esc(g.key)}"${g.key===cardKey?" selected":""}>${esc(g.label)}</option>`).join("");
+  // 大きさ選択肢（項目数で可能なものだけ）
+  const pool=poolOf(cardKey), sizes=availSizes(pool.length);
+  const sel=$("#cardSize");
+  if(!sizes.length){ sel.innerHTML=`<option>—</option>`; }
+  else {
+    if(!sizes.includes(cardCfg.size)) cardCfg.size=sizes[sizes.length-1];   // 一番大きい可能サイズ
+    sel.innerHTML=sizes.map(s=>`<option value="${s}"${s===cardCfg.size?" selected":""}>${s}×${s}</option>`).join("");
+  }
+  return pool;
+}
+function refreshCard(reshuffle){
+  const g=groupOf(cardKey), pool=poolOf(cardKey);
+  const sizes=availSizes(pool.length);
+  const msg=$("#cardMsg"), prev=$("#cardPreview");
+  if(!sizes.length){
+    cardModel=null; prev.innerHTML="";
+    msg.textContent=`「${g?g.label:""}」は項目が少なすぎます（3×3でも8個以上必要）。設定でことばを増やしてください。`;
+    return;
+  }
+  msg.textContent="";
+  if(reshuffle || !cardModel) cardModel=makeCard(pool, cardCfg.size);
+  prev.innerHTML=cardHTML(cardModel, cardCfg.size, g);
+}
+function openCards(){
+  cardKey=groupOf(mode)?mode:groups[0].key;
+  renderCardOptions();
+  cardModel=null; refreshCard(true);
+  cardOverlay.classList.add("open");
+}
+$("#cardBtn").onclick=openCards;
+$("#cardClose").onclick=()=>cardOverlay.classList.remove("open");
+cardOverlay.onclick=e=>{ if(e.target===cardOverlay) cardOverlay.classList.remove("open"); };
+$("#cardTheme").onchange=e=>{ cardKey=e.target.value; renderCardOptions(); cardModel=null; refreshCard(true); };
+$("#cardSize").onchange=e=>{ const s=+e.target.value; if(s){ cardCfg.size=s; save("bingo.card.v1",cardCfg); cardModel=null; refreshCard(true); } };
+$("#cardCount").onchange=e=>{ cardCfg.count=Math.max(1,Math.min(40,+e.target.value||1)); e.target.value=cardCfg.count; save("bingo.card.v1",cardCfg); };
+$("#cardShuffle").onclick=()=>refreshCard(true);
+
+/* 画像(PNG)で保存：いま表示中のカードをcanvasに描いてダウンロード */
+function loadImg(src){ return new Promise(res=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=()=>res(null); im.src=src; }); }
+function fitFont(ctx,text,maxW,startPx,bold){ let px=startPx; const f=w=>`${bold?"bold ":""}${w}px 'Yu Gothic UI',Meiryo,sans-serif`; ctx.font=f(px); while(px>11 && ctx.measureText(text).width>maxW){ px-=2; ctx.font=f(px); } return px; }
+async function cardToCanvas(model, size, g){
+  const imgs=g.imgs||{}, cell=200, pad=34, titleH=104, W=pad*2+cell*size, H=pad+titleH+cell*size+pad;
+  const uniq=[...new Set(model.filter(c=>!c.free && imgs[c.v]).map(c=>c.v))];
+  const imMap={}; await Promise.all(uniq.map(async v=>{ imMap[v]=await loadImg(imgs[v]); }));
+  const cv=document.createElement("canvas"); cv.width=W; cv.height=H; const ctx=cv.getContext("2d");
+  ctx.fillStyle="#fff"; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="#241552"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.font="bold 40px 'Yu Gothic UI',Meiryo,sans-serif"; ctx.fillText("🎯 "+g.label+" ビンゴ", W/2, pad+30);
+  ctx.textAlign="right"; ctx.font="22px 'Yu Gothic UI',Meiryo,sans-serif"; ctx.fillText("なまえ：________________", W-pad, pad+78);
+  const gx=pad, gy=pad+titleH;
+  for(let i=0;i<model.length;i++){
+    const r=Math.floor(i/size), c=i%size, x=gx+c*cell, y=gy+r*cell, it=model[i];
+    if(it.free){ ctx.fillStyle="#ec6f9e"; ctx.fillRect(x+2,y+2,cell-4,cell-4); ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.font="bold 38px 'Yu Gothic UI',Meiryo,sans-serif"; ctx.fillText("BINGO", x+cell/2, y+cell/2); }
+    else {
+      const im=imMap[it.v];
+      if(im){ const inset=14, capH=30, availW=cell-inset*2, availH=cell-inset-capH, ratio=Math.min(availW/im.width, availH/im.height), w=im.width*ratio, h=im.height*ratio; ctx.drawImage(im, x+(cell-w)/2, y+inset, w, h); ctx.fillStyle="#241552"; ctx.textAlign="center"; ctx.textBaseline="middle"; fitFont(ctx,it.v,cell-20,22,true); ctx.fillText(it.v, x+cell/2, y+cell-16); }
+      else { ctx.fillStyle="#241552"; ctx.textAlign="center"; ctx.textBaseline="middle"; fitFont(ctx,it.v,cell-24,40,true); ctx.fillText(it.v, x+cell/2, y+cell/2); }
+    }
+    ctx.strokeStyle="#241552"; ctx.lineWidth=3; ctx.strokeRect(x,y,cell,cell);
+  }
+  return cv;
+}
+function safeName(s){ return String(s).replace(/[^\w぀-ヿ一-龯]+/g,"_").replace(/^_+|_+$/g,"").slice(0,24)||"bingo"; }
+$("#cardPng").onclick=async()=>{
+  if(!cardModel){ return; }
+  const g=groupOf(cardKey); const cv=await cardToCanvas(cardModel, cardCfg.size, g);
+  const a=document.createElement("a"); a.download="bingo_"+safeName(g.label)+".png"; a.href=cv.toDataURL("image/png"); a.click();
+};
+
+/* 印刷 / PDF：まい数ぶん、それぞれ別配置のカードを1ページ1枚で出力 */
+$("#cardPrint").onclick=()=>{
+  const g=groupOf(cardKey), pool=poolOf(cardKey), size=cardCfg.size;
+  if(availSizes(pool.length).indexOf(size)<0){ return; }
+  const n=Math.max(1,Math.min(40,cardCfg.count||1));
+  const cards=[]; for(let i=0;i<n;i++) cards.push(makeCard(pool,size));
+  const imgs=g.imgs||{};
+  const cellHTML=cell=> cell.free ? `<div class="pc free"><span>BINGO</span></div>` : `<div class="pc">${imgs[cell.v]?`<img src="${imgs[cell.v]}">`:""}<span>${esc(cell.v)}</span></div>`;
+  const pageHTML=model=>`<div class="page"><div class="ph">🎯 ${esc(g.label)} ビンゴ</div><div class="pn">なまえ：____________________</div><div class="pg" style="--n:${size}">${model.map(cellHTML).join("")}</div></div>`;
+  const css=`*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    html,body{margin:0}
+    body{font-family:"Yu Gothic UI",Meiryo,sans-serif;color:#241552}
+    .page{overflow:hidden}
+    .page + .page{page-break-before:always;break-before:page}
+    .ph{text-align:center;font-weight:900;font-size:24px;margin:0 0 2px}
+    .pn{text-align:right;font-weight:700;font-size:14px;margin:0 0 8px}
+    .pg{width:100%;aspect-ratio:1;display:grid;grid-template-columns:repeat(var(--n),1fr);grid-auto-rows:1fr;gap:6px}
+    .pc{border:3px solid #241552;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px;overflow:hidden;text-align:center;min-height:0}
+    .pc img{max-width:92%;max-height:56%;object-fit:contain}
+    .pc span{font-weight:800;font-size:19px;line-height:1.15;word-break:break-word}
+    .pc.free{background:linear-gradient(135deg,#ec6f9e,#2563eb);border-color:#ec6f9e}
+    .pc.free span{color:#fff;font-size:23px;letter-spacing:1px}
+    @page{size:A4 portrait;margin:12mm}`;
+  const w=window.open("","_blank");
+  if(!w){ alert("印刷用の画面を開けませんでした。ブラウザのポップアップを許可してください。"); return; }
+  w.document.write(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>ビンゴカード</title><style>${css}</style></head><body>${cards.map(pageHTML).join("")}<script>window.onload=function(){setTimeout(function(){window.focus();window.print();},250);}<\/script></body></html>`);
+  w.document.close();
+};
+
+renderAll();
+</script>
+<script src="intro.js"></script>
+<script>ClassIntro.init({key:"bingo",icon:"🎱",title:"ビンゴマシン",desc:"先生が「まわす！」を押すと、ことばや数字がランダムに1つ出ます。\n出たものが自分のビンゴカードにあったら、マスをチェック！\nたて・よこ・ななめに1列そろったら「ビンゴ！」と言いましょう。"});</script>
+</body>
+</html>

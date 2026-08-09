@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>単語クイズ — 日本語クラス</title>
+<meta name="description" content="勉強した単語で作る選択式クイズ。問題に合う日本語を番号つきの選択肢から選ぶ。ふりがな・選択肢数・自動/手動の選択肢を設定でき、終わると点数と紙吹雪。AI一括登録つき。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563eb'/><text x='50' y='74' font-size='64' text-anchor='middle' fill='%23fff' font-weight='bold'>?</text></svg>">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;font-family:"Segoe UI","Yu Gothic UI",Meiryo,"Hiragino Kaku Gothic ProN","Malgun Gothic",system-ui,sans-serif;color:#fff;
+  background:radial-gradient(1200px 700px at 20% -10%,#3b2a6b 0%,rgba(59,42,107,0) 60%),
+             radial-gradient(1100px 700px at 100% 0%,#1d4ed8 0%,rgba(29,78,216,0) 55%),
+             linear-gradient(160deg,#1a1140,#2b1a5e 55%,#11103a);
+  min-height:100vh;-webkit-font-smoothing:antialiased}
+:root{--gold:#ffd34e;--tr:#7af0c4;--ok:#43d9ad;--ng:#ff6b6b}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;max-width:1000px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
+.brand .logo{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#ec6f9e,#2563eb);box-shadow:0 6px 16px rgba(234,95,147,.4);font-size:22px;font-weight:900}
+.brand small{display:block;font-size:11px;font-weight:600;color:#c9c2e8}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.chip-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:9px 15px;font-size:14px;font-weight:700;backdrop-filter:blur(6px);transition:background .15s,transform .12s}
+.chip-btn:hover{background:rgba(255,255,255,.2)}
+.chip-btn:active{transform:scale(.95)}
+
+.wrap{max-width:820px;margin:0 auto;padding:8px 16px 50px}
+.screen{animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+
+/* ---------- menu ---------- */
+.menu-h{text-align:center;font-size:clamp(20px,4vw,28px);font-weight:900;margin:8px 0 4px}
+.menu-sub{text-align:center;color:#c9c2e8;font-size:14px;margin-bottom:16px}
+.qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.qcard{text-align:left;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:16px;padding:16px;cursor:pointer;transition:transform .12s,background .15s}
+.qcard:hover{background:rgba(255,255,255,.13);transform:translateY(-2px)}
+.qcard .qn{font-size:19px;font-weight:900;margin-bottom:6px}
+.qcard .qm{font-size:13px;color:#c9c2e8;font-weight:700}
+.qcard .go{display:inline-block;margin-top:10px;background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff;border-radius:999px;padding:6px 14px;font-size:13px;font-weight:800}
+.empty-note{text-align:center;color:#a99fd6;margin-top:34px;font-size:15px;line-height:1.9}
+
+/* ---------- question ---------- */
+.qhead{text-align:center;color:#c9c2e8;font-weight:800;font-size:14px;margin:4px 0 12px}
+.qhead b{color:var(--gold);font-size:17px}
+.prompt{background:linear-gradient(135deg,rgba(236,111,158,.18),rgba(37,99,235,.18));border:1.5px solid rgba(255,255,255,.16);border-radius:18px;padding:20px 18px;text-align:center;margin-bottom:18px}
+.prompt .ask{font-size:13.5px;color:#c9c2e8;font-weight:700;margin-bottom:8px}
+.prompt .pv{font-size:clamp(26px,6vw,48px);font-weight:900;line-height:1.25}
+.choices{display:flex;flex-direction:column;gap:11px}
+.choice{display:flex;align-items:center;gap:14px;text-align:left;background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.16);color:#fff;border-radius:15px;padding:14px 16px;transition:border-color .12s,background .12s,transform .1s}
+.choice:hover{border-color:var(--gold);background:rgba(255,211,78,.12)}
+.choice:active{transform:scale(.99)}
+.choice .num{flex:0 0 auto;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-weight:900;font-size:20px;background:rgba(255,255,255,.14);color:#fff}
+.choice .cv{font-size:clamp(20px,3.6vw,28px);font-weight:800;line-height:1.5;min-width:0}
+.choice .cv rt{font-size:.46em;color:#bcb2ec;font-weight:700}
+.choice .mark{margin-left:auto;font-size:24px;font-weight:900;opacity:0}
+/* 回答後 */
+.choices.answered .choice{cursor:default}
+.choices.answered .choice:hover{border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.07)}
+.choice.correct{border-color:var(--ok);background:rgba(67,217,173,.18)}
+.choice.correct .num{background:var(--ok);color:#063b2c}
+.choice.correct .mark{opacity:1;color:var(--ok)}
+.choice.wrong{border-color:var(--ng);background:rgba(255,107,107,.16)}
+.choice.wrong .num{background:var(--ng);color:#3a0000}
+.choice.wrong .mark{opacity:1;color:var(--ng)}
+.choice.dim{opacity:.5}
+
+.controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:20px}
+.navbtn{border:0;border-radius:14px;padding:14px 24px;font-size:17px;font-weight:900;color:#3a2400;background:linear-gradient(135deg,#ffe27a,#ffb43b);box-shadow:0 8px 22px rgba(255,170,40,.35)}
+.navbtn:disabled{filter:grayscale(.5) brightness(.85);cursor:default;opacity:.6}
+.navbtn:active{transform:scale(.97)}
+.navbtn.ghost{background:rgba(255,255,255,.12);color:#fff;box-shadow:none}
+.hintline{text-align:center;color:#a99fd6;font-size:12.5px;margin-top:10px}
+
+/* ---------- score ---------- */
+.score{text-align:center;padding:30px 10px}
+.score .em{font-size:64px;line-height:1}
+.score .name{font-size:clamp(20px,4vw,28px);font-weight:900;margin:12px 0 6px}
+.score .pts{font-size:clamp(30px,7vw,54px);font-weight:900;color:var(--gold);margin:6px 0}
+.score .msg{color:#c9c2e8;font-weight:700;font-size:15px;margin-bottom:20px}
+.score .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.score .btns button{border-radius:14px;padding:13px 20px;font-weight:800;font-size:15px;border:0}
+.score .btns .again{background:rgba(255,255,255,.14);color:#fff}
+.score .btns .next{background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff}
+.score .btns .menu{background:rgba(255,255,255,.14);color:#fff}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:200}
+
+/* ---------- edit ---------- */
+h1.title{font-size:clamp(22px,5vw,30px);margin:8px 0 2px;text-align:center}
+p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
+.qz{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:16px;padding:16px;margin-bottom:14px}
+.qz-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.qz-head .num{width:24px;height:24px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:12px;background:linear-gradient(135deg,#ec6f9e,#2563eb)}
+.qz-head input.nm{flex:1;min-width:140px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:9px;padding:9px 12px;font:inherit;font-weight:800}
+.psm{width:34px;height:34px;border-radius:9px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-weight:800;flex:0 0 auto}
+.psm:disabled{opacity:.35}
+.psm.del{color:#ff9aa8;border-color:rgba(255,107,133,.4)}
+.settings{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:12px;font-size:13px;font-weight:800;color:#c9c2e8}
+.settings .seg{display:inline-flex;gap:3px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.16);border-radius:10px;padding:3px}
+.settings .seg button{background:transparent;border:0;color:#cfc8f0;border-radius:7px;padding:5px 11px;font-weight:800;font-size:13px}
+.settings .seg button.on{background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff}
+.settings label.tgl{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.settings label.tgl input{width:16px;height:16px}
+.qrow{background:rgba(0,0,0,.16);border-radius:12px;padding:10px;margin-bottom:8px}
+.qrow .main{display:grid;grid-template-columns:1.4fr 1fr 1fr auto;gap:6px;align-items:center}
+@media(max-width:600px){ .qrow .main{grid-template-columns:1fr 1fr auto} }
+.qrow input{border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:8px;padding:8px 10px;font:inherit;font-weight:600;font-size:13.5px;min-width:0}
+.qrow .dist{margin-top:8px;padding-top:8px;border-top:1.5px dashed rgba(255,255,255,.14)}
+.qrow .dist .dl{font-size:11px;font-weight:800;color:#a99fd6;margin-bottom:6px}
+.qrow .drow{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-bottom:6px}
+.dadd{background:transparent;border:1.5px dashed rgba(255,255,255,.3);color:#cfc8f0;border-radius:9px;padding:6px 12px;font-weight:800;font-size:12.5px}
+.addbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.addbtns button{background:transparent;border:1.5px dashed rgba(255,255,255,.32);color:#cfc8f0;border-radius:11px;padding:8px 13px;font-weight:800;font-size:13px}
+.addbtns button:hover{border-color:#fff;color:#fff}
+.addbtns button.ai{border-style:solid;border-color:rgba(122,240,196,.5);color:#7af0c4}
+.addquiz{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.addquiz button{background:transparent;border:1.5px dashed rgba(255,255,255,.32);color:#cfc8f0;border-radius:12px;padding:9px 14px;font-weight:800;font-size:14px}
+.note{font-size:12.5px;color:#a99fd6;margin:2px 2px 14px;line-height:1.7}
+.editbar{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:4px}
+.mini{border-radius:10px;padding:11px 18px;font-weight:800;font-size:15px;border:0}
+.mini.save{background:linear-gradient(135deg,#7af0c4,#2bbf8e);color:#063b2c}
+.mini.primary{background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff}
+.mini.plain{background:rgba(255,255,255,.14);color:#fff}
+
+/* AI modal */
+.overlay{position:fixed;inset:0;background:rgba(10,6,30,.66);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow:auto;z-index:120}
+.ai-panel{background:#1c1346;border:1.5px solid rgba(255,255,255,.16);border-radius:18px;max-width:620px;width:100%;padding:20px;box-shadow:0 30px 70px rgba(0,0,0,.55)}
+.ai-panel h3{margin:0 0 6px;font-size:19px}
+.ai-panel .step{font-weight:800;color:var(--gold);font-size:13px;margin:14px 0 6px}
+.ai-panel textarea{width:100%;min-height:82px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:10px;padding:11px;font:inherit;line-height:1.6;resize:vertical}
+.ai-prompt{background:rgba(255,255,255,.95);color:#241552;border-radius:8px;padding:10px;margin:6px 0;font-size:12.5px;line-height:1.6;white-space:pre-wrap;font-weight:600;max-height:150px;overflow:auto}
+.ai-lang{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:#e7e2ff;margin-bottom:6px}
+.ai-lang input{flex:1;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.95);color:#241552;border-radius:8px;padding:7px 10px;font:inherit;font-weight:700}
+.ai-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);background:#43d9ad;color:#063b2c;font-weight:800;font-size:15px;padding:12px 26px;border-radius:999px;box-shadow:0 12px 34px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:130}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a class="brand" href="games.html">
+    <span class="logo">❓</span>
+    <span>単語クイズ<small>日本語クラス・ゲーム</small></span>
+  </a>
+  <div class="top-actions">
+    <button class="chip-btn" id="menuBtn">☰ 一覧</button>
+    <button class="chip-btn" id="modeBtn">✏️ 編集</button>
+    <button class="chip-btn" id="fsBtn">⛶ 全画面</button>
+    <a class="chip-btn" href="games.html">🎮 ゲーム集</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <section id="present" class="screen"><div id="stage"></div></section>
+
+  <!-- ============ EDIT ============ -->
+  <section id="edit" class="screen" hidden>
+    <h1 class="title">✏️ 単語クイズの編集</h1>
+    <p class="sub">クイズ（名前つき）ごとに、問題（外国語など）と日本語の答えを登録します。選択肢は自動／手動を選べます。</p>
+    <div id="editList"></div>
+    <div class="addquiz"><button data-act="addquiz">＋ クイズを追加</button></div>
+    <div class="note">💡 <b>選択肢＝自動</b>：同じクイズの他の答えからランダムに選択肢を作ります（答えは多めに登録すると良い）。<b>手動</b>：問題ごとにダミー選択肢を自分で入れます。<b>よみ</b>は「ふりがなを表示」ONのとき、漢字の答えに使われます。<b>🤖 AIで一括</b>で問題・答え・よみをまとめて作れます。</div>
+    <div class="editbar">
+      <button class="mini save" id="saveBtn">💾 保存</button>
+      <button class="mini primary" id="doneBtn">▶ クイズ一覧へ</button>
+    </div>
+  </section>
+</div>
+
+<canvas id="confetti" hidden></canvas>
+<div class="toast" id="toast">✅ 保存しました</div>
+
+<div class="overlay" id="aiOverlay" hidden>
+  <div class="ai-panel">
+    <h3>🤖 AIでクイズを一括作成</h3>
+    <div class="ai-lang">🌐 問題の言語：<input type="text" id="aiLang" placeholder="例：ドイツ語 / English / 中文"></div>
+    <div class="step">① 勉強した単語（日本語）を貼り付け</div>
+    <textarea id="aiSrc" placeholder="例：趣味 天気 名前 食べ物 学校 友達"></textarea>
+    <div class="step">② このプロンプトをコピーして ChatGPT などに貼る</div>
+    <div class="ai-prompt" id="aiPrompt"></div>
+    <button class="mini plain" id="aiCopy">プロンプトをコピー</button>
+    <div class="step">③ AIの結果を貼り付け（問題 | 日本語の答え | よみ）</div>
+    <textarea id="aiResult" placeholder="例：&#10;das Hobby | 趣味 | しゅみ&#10;das Wetter | 天気 | てんき"></textarea>
+    <div class="ai-actions">
+      <button class="mini plain" id="aiCancel">やめる</button>
+      <button class="mini primary" id="aiAdd">このクイズに追加</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+function load(k,d){ try{const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v}catch(e){return d} }
+function save(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function hasKanji(s){ return /[㐀-鿿豈-﫿]/.test(s||""); }
+
+/* ====== データ ====== */
+const SEED={quizzes:[
+  {name:"ドイツ語の名詞", lang:"ドイツ語", furigana:true, choices:4, auto:true, questions:[
+    {q:"das Hobby",a:"趣味",kana:"しゅみ",dist:[]},
+    {q:"das Wetter",a:"天気",kana:"てんき",dist:[]},
+    {q:"der Name",a:"名前",kana:"なまえ",dist:[]},
+    {q:"das Essen",a:"食べ物",kana:"たべもの",dist:[]},
+    {q:"die Schule",a:"学校",kana:"がっこう",dist:[]},
+    {q:"der Freund",a:"友達",kana:"ともだち",dist:[]},
+  ]},
+]};
+let data=load("wordquiz.data.v1",null);
+if(!data || !Array.isArray(data.quizzes)){ data={quizzes:SEED.quizzes.map(z=>({...z,questions:z.questions.map(q=>({...q,dist:(q.dist||[]).slice()}))}))}; save("wordquiz.data.v1",data); }
+data.quizzes.forEach(z=>{ if(typeof z.name!=="string")z.name=""; if(typeof z.lang!=="string")z.lang=""; z.furigana=!!z.furigana; z.choices=Math.max(2,Math.min(6,+z.choices||4)); z.auto=z.auto!==false;
+  if(!Array.isArray(z.questions))z.questions=[]; z.questions.forEach(q=>{ q.q=String(q.q||""); q.a=String(q.a||""); q.kana=String(q.kana||""); if(!Array.isArray(q.dist))q.dist=[]; q.dist=q.dist.map(d=>({a:String(d&&d.a||""),kana:String(d&&d.kana||"")})); }); });
+function saveData(){ save("wordquiz.data.v1",data); }
+
+/* ====== 発表（クイズ） ====== */
+const stage=$("#stage");
+let phase="menu", qi=-1, pi=0, score=0, choicesNow=[], chosen=-1;
+
+function ruby(a,kana,furi){ return (furi && hasKanji(a) && kana) ? `<ruby>${esc(a)}<rt>${esc(kana)}</rt></ruby>` : esc(a); }
+
+function buildChoices(){
+  const z=data.quizzes[qi], q=z.questions[pi]; const n=Math.max(2,Math.min(6,z.choices||4));
+  let pool = z.auto
+    ? z.questions.filter((_,i)=>i!==pi).map(x=>({a:x.a,kana:x.kana}))
+    : (q.dist||[]).map(d=>({a:d.a,kana:d.kana}));
+  const seen=new Set([q.a]); pool=pool.filter(x=>x.a && !seen.has(x.a) && seen.add(x.a));
+  const dist=shuffle(pool).slice(0,n-1);
+  choicesNow=shuffle([{a:q.a,kana:q.kana,correct:true},...dist.map(d=>({...d,correct:false}))]);
+  chosen=-1;
+}
+
+function renderPresent(){
+  $("#emptyNote")&&0;
+  if(!data.quizzes.length){ stage.innerHTML=`<div class="empty-note">まだクイズがありません。<br>右上の「✏️ 編集」からクイズを作ってください。</div>`; return; }
+  if(phase==="menu"){ renderMenu(); }
+  else if(phase==="q"){ renderQuestion(); }
+  else if(phase==="score"){ renderScore(); }
+}
+function renderMenu(){
+  qi=-1;
+  stage.innerHTML=`<div class="menu-h">単語クイズ</div><div class="menu-sub">クイズを選んでスタート！</div>
+    <div class="qgrid">${data.quizzes.map((z,i)=>`<button class="qcard" data-start="${i}"><div class="qn">${esc(z.name||("クイズ"+(i+1)))}</div><div class="qm">${z.questions.length}問 ・ 選択肢${z.choices}個${z.furigana?" ・ ふりがな":""}</div><span class="go">▶ スタート</span></button>`).join("")}</div>`;
+  stage.querySelectorAll("[data-start]").forEach(b=>b.onclick=()=>startQuiz(+b.dataset.start));
+}
+function startQuiz(i){ qi=i; pi=0; score=0; phase="q"; if(!data.quizzes[i].questions.length){ phase="score"; } else buildChoices(); renderPresent(); window.scrollTo(0,0); }
+function renderQuestion(){
+  const z=data.quizzes[qi], q=z.questions[pi];
+  const answered=chosen>=0;
+  stage.innerHTML=`
+    <div class="qhead"><b>${pi+1}</b> / ${z.questions.length} ・ ${esc(z.name||"")}</div>
+    <div class="prompt"><div class="ask">合う日本語を選んでください</div><div class="pv">${esc(q.q)}</div></div>
+    <div class="choices${answered?" answered":""}" id="choices">
+      ${choicesNow.map((c,ci)=>{
+        let cls=""; if(answered){ if(c.correct) cls=" correct"; else if(ci===chosen) cls=" wrong"; else cls=" dim"; }
+        const mark = answered ? (c.correct?"◯":(ci===chosen?"✕":"")) : "";
+        return `<button class="choice${cls}" data-ci="${ci}"><span class="num">${ci+1}</span><span class="cv">${ruby(c.a,c.kana,z.furigana)}</span><span class="mark">${mark}</span></button>`;
+      }).join("")}
+    </div>
+    <div class="controls">
+      <button class="navbtn ghost" id="qMenu">☰ 一覧</button>
+      <button class="navbtn" id="qNext" ${answered?"":"disabled"}>${pi>=z.questions.length-1?"結果を見る ▶":"次へ ▶"}</button>
+    </div>
+    ${answered?"":`<div class="hintline">口頭で「1！」のように答えて、先生が選択肢をクリック</div>`}`;
+  if(!answered){ stage.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{ chosen=+b.dataset.ci; if(choicesNow[chosen].correct) score++; renderQuestion(); }); }
+  $("#qMenu").onclick=()=>{ phase="menu"; renderPresent(); };
+  $("#qNext").onclick=()=>{ if(chosen<0) return; pi++; if(pi>=z.questions.length){ phase="score"; renderPresent(); popConfetti(); } else { buildChoices(); renderQuestion(); } };
+}
+function renderScore(){
+  const z=data.quizzes[qi], total=z.questions.length, pct=total?Math.round(score/total*100):0;
+  const em = pct>=80?"🎉":pct>=50?"😄":"💪";
+  const msg = pct>=80?"すばらしい！":pct>=50?"よくできました！":"つぎもがんばろう！";
+  const hasNext = qi+1<data.quizzes.length;
+  stage.innerHTML=`<div class="score">
+    <div class="em">${em}</div>
+    <div class="name">${esc(z.name||"クイズ")} おわり！</div>
+    <div class="pts">${score} / ${total} 正解</div>
+    <div class="msg">${msg}（${pct}点）</div>
+    <div class="btns">
+      <button class="again" id="scAgain">🔁 もう一度</button>
+      ${hasNext?`<button class="next" id="scNext">▶ 次のクイズへ</button>`:""}
+      <button class="menu" id="scMenu">☰ 一覧へ</button>
+    </div>
+  </div>`;
+  $("#scAgain").onclick=()=>startQuiz(qi);
+  if($("#scNext")) $("#scNext").onclick=()=>startQuiz(qi+1);
+  $("#scMenu").onclick=()=>{ phase="menu"; renderPresent(); };
+}
+
+/* ====== 紙吹雪（クラッカー） ====== */
+let confAnim=null;
+function popConfetti(){
+  const cv=$("#confetti"); cv.hidden=false; const ctx=cv.getContext("2d");
+  let W=cv.width=innerWidth, H=cv.height=innerHeight;
+  const colors=["#ec6f9e","#2563eb","#ffd34e","#7af0c4","#ff6b6b","#a78bfa","#43d9ad"];
+  const P=[]; const cx=W/2;
+  for(let i=0;i<160;i++){ const ang=(-Math.PI/2)+(Math.random()-.5)*2.2; const sp=8+Math.random()*15;
+    P.push({x:cx+(Math.random()-.5)*80,y:H*0.42,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,g:0.28+Math.random()*0.18,w:6+Math.random()*8,h:4+Math.random()*7,c:colors[i%colors.length],rot:Math.random()*6,vr:(Math.random()-.5)*0.4,life:1}); }
+  let frames=0; if(confAnim) cancelAnimationFrame(confAnim);
+  (function frame(){ ctx.clearRect(0,0,W,H); let alive=false; frames++;
+    P.forEach(p=>{ p.vy+=p.g; p.vx*=0.99; p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr; if(frames>60)p.life-=0.012;
+      if(p.life>0 && p.y<H+30){ alive=true; ctx.save(); ctx.globalAlpha=Math.max(0,p.life); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillStyle=p.c; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore(); } });
+    if(alive && frames<300){ confAnim=requestAnimationFrame(frame); } else { ctx.clearRect(0,0,W,H); cv.hidden=true; confAnim=null; }
+  })();
+}
+window.addEventListener("resize",()=>{ const cv=$("#confetti"); if(!cv.hidden){ cv.width=innerWidth; cv.height=innerHeight; } });
+
+/* ====== 編集 ====== */
+const editList=$("#editList");
+function renderEdit(){ editList.innerHTML=data.quizzes.map((z,zi)=>quizEditHTML(z,zi)).join(""); }
+function quizEditHTML(z,zi){
+  const qrows=z.questions.map((q,qq)=>`
+    <div class="qrow">
+      <div class="main">
+        <input data-zi="${zi}" data-qq="${qq}" data-f="q" placeholder="問題（例：das Hobby）" value="${esc(q.q)}">
+        <input data-zi="${zi}" data-qq="${qq}" data-f="a" placeholder="答え（日本語）" value="${esc(q.a)}">
+        <input data-zi="${zi}" data-qq="${qq}" data-f="kana" placeholder="よみ" value="${esc(q.kana)}">
+        <button class="psm del" data-act="qdel" data-zi="${zi}" data-qq="${qq}">✕</button>
+      </div>
+      ${z.auto?"":`<div class="dist">
+        <div class="dl">ダミー選択肢（不正解の候補）</div>
+        ${(q.dist||[]).map((d,di)=>`<div class="drow">
+          <input data-zi="${zi}" data-qq="${qq}" data-di="${di}" data-df="a" placeholder="ダミーの日本語" value="${esc(d.a)}">
+          <input data-zi="${zi}" data-qq="${qq}" data-di="${di}" data-df="kana" placeholder="よみ" value="${esc(d.kana)}">
+          <button class="psm del" data-act="ddel" data-zi="${zi}" data-qq="${qq}" data-di="${di}">✕</button>
+        </div>`).join("")}
+        ${(q.dist||[]).length<(z.choices-1)?`<button class="dadd" data-act="dadd" data-zi="${zi}" data-qq="${qq}">＋ ダミーを追加</button>`:""}
+      </div>`}
+    </div>`).join("");
+  return `<div class="qz" data-zi="${zi}">
+    <div class="qz-head">
+      <span class="num">${zi+1}</span>
+      <input class="nm" data-zi="${zi}" data-f="name" placeholder="クイズ名（例：6/24 ドイツ語の名詞）" value="${esc(z.name)}">
+      <button class="psm" data-act="zup" data-zi="${zi}" ${zi===0?"disabled":""}>▲</button>
+      <button class="psm" data-act="zdown" data-zi="${zi}" ${zi===data.quizzes.length-1?"disabled":""}>▼</button>
+      <button class="psm del" data-act="zdel" data-zi="${zi}">🗑</button>
+    </div>
+    <div class="settings">
+      <span>選択肢の数
+        <span class="seg" data-seg="choices" data-zi="${zi}">${[2,3,4,5,6].map(n=>`<button data-n="${n}" class="${z.choices===n?"on":""}">${n}</button>`).join("")}</span>
+      </span>
+      <label class="tgl"><input type="checkbox" data-act="furi" data-zi="${zi}" ${z.furigana?"checked":""}>ふりがなを表示</label>
+      <span>選択肢
+        <span class="seg" data-seg="auto" data-zi="${zi}"><button data-v="1" class="${z.auto?"on":""}">自動</button><button data-v="0" class="${z.auto?"":"on"}">手動</button></span>
+      </span>
+    </div>
+    ${qrows}
+    <div class="addbtns">
+      <button data-act="qadd" data-zi="${zi}">＋ 問題を追加</button>
+      <button class="ai" data-act="ai" data-zi="${zi}">🤖 AIで一括</button>
+    </div>
+  </div>`;
+}
+editList.addEventListener("input",e=>{
+  const t=e.target, zi=+t.dataset.zi; if(isNaN(zi)||!data.quizzes[zi]) return;
+  const z=data.quizzes[zi];
+  if(t.dataset.f==="name"){ z.name=t.value; saveData(); return; }
+  const qq=+t.dataset.qq; if(isNaN(qq)||!z.questions[qq]) return;
+  if(t.dataset.df){ const di=+t.dataset.di; if(z.questions[qq].dist[di]) z.questions[qq].dist[di][t.dataset.df]=t.value; saveData(); return; }
+  if(t.dataset.f){ z.questions[qq][t.dataset.f]=t.value; saveData(); }
+});
+editList.addEventListener("change",e=>{
+  const t=e.target; if(t.dataset.act!=="furi") return; const zi=+t.dataset.zi; if(data.quizzes[zi]){ data.quizzes[zi].furigana=t.checked; saveData(); }
+});
+editList.addEventListener("click",e=>{
+  const seg=e.target.closest(".seg button");
+  if(seg){ const box=seg.parentElement; const zi=+box.dataset.zi; const z=data.quizzes[zi];
+    if(box.dataset.seg==="choices"){ z.choices=+seg.dataset.n; } else if(box.dataset.seg==="auto"){ z.auto=seg.dataset.v==="1"; }
+    saveData(); renderEdit(); return; }
+  const b=e.target.closest("[data-act]"); if(!b) return;
+  const act=b.dataset.act, zi=+b.dataset.zi, z=data.quizzes[zi];
+  if(act==="qadd"){ z.questions.push({q:"",a:"",kana:"",dist:[]}); }
+  else if(act==="qdel"){ z.questions.splice(+b.dataset.qq,1); }
+  else if(act==="dadd"){ z.questions[+b.dataset.qq].dist.push({a:"",kana:""}); }
+  else if(act==="ddel"){ z.questions[+b.dataset.qq].dist.splice(+b.dataset.di,1); }
+  else if(act==="ai"){ openAi(zi); return; }
+  else if(act==="zdel"){ if(!confirm(`「${z.name||"クイズ"}」を削除しますか？`)) return; data.quizzes.splice(zi,1); }
+  else if(act==="zup"){ if(zi>0){ [data.quizzes[zi-1],data.quizzes[zi]]=[data.quizzes[zi],data.quizzes[zi-1]]; } }
+  else if(act==="zdown"){ if(zi<data.quizzes.length-1){ [data.quizzes[zi+1],data.quizzes[zi]]=[data.quizzes[zi],data.quizzes[zi+1]]; } }
+  else return;
+  saveData(); renderEdit();
+});
+$(".addquiz [data-act='addquiz']").onclick=()=>{ data.quizzes.push({name:"",lang:"",furigana:true,choices:4,auto:true,questions:[{q:"",a:"",kana:"",dist:[]}]}); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
+
+/* ====== AI一括 ====== */
+let aiZi=0;
+function aiPromptText(){
+  const lang=($("#aiLang").value||"").trim()||"英語";
+  const src=$("#aiSrc").value.trim();
+  return `次の日本語の単語について、単語クイズの問題を作ってください。1行に1問、次の形式で出力してください：\n問題（${lang}の語やフレーズ） | 日本語の答え | よみ\n・問題は答えの日本語に対応する${lang}の語（例：das Hobby）\n・よみは日本語の答えのふりがな（ひらがな）\n・番号や前置きは付けない\n\n単語:\n${src||"（ここに①で入れた単語が入ります）"}`;
+}
+function updateAiPrompt(){ $("#aiPrompt").textContent=aiPromptText(); }
+function openAi(zi){ aiZi=zi; $("#aiLang").value=(data.quizzes[zi]&&data.quizzes[zi].lang)||"英語"; $("#aiSrc").value=""; $("#aiResult").value=""; updateAiPrompt(); $("#aiOverlay").hidden=false; setTimeout(()=>$("#aiSrc").focus(),30); }
+$("#aiSrc").addEventListener("input",updateAiPrompt);
+$("#aiLang").addEventListener("input",()=>{ if(data.quizzes[aiZi]){ data.quizzes[aiZi].lang=$("#aiLang").value.trim(); saveData(); } updateAiPrompt(); });
+$("#aiCancel").onclick=()=>{ $("#aiOverlay").hidden=true; };
+$("#aiOverlay").onclick=e=>{ if(e.target===$("#aiOverlay")) $("#aiOverlay").hidden=true; };
+$("#aiCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText($("#aiPrompt").textContent); showToast("📋 プロンプトをコピーしました"); }catch(e){ const r=document.createRange(); r.selectNodeContents($("#aiPrompt")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); showToast("手動でコピーしてください（選択しました）"); } };
+$("#aiAdd").onclick=()=>{
+  const z=data.quizzes[aiZi]; if(!z) return;
+  const lines=$("#aiResult").value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean); const added=[];
+  lines.forEach(line=>{ const p=line.replace(/｜/g,"|").split("|").map(s=>s.trim()); if(!p[0]||!p[1]) return; added.push({q:p[0],a:p[1],kana:p[2]||"",dist:[]}); });
+  if(!added.length){ alert("読み取れませんでした。「問題 | 日本語の答え | よみ」の形で貼り付けてください。"); return; }
+  z.questions.push(...added); saveData(); $("#aiOverlay").hidden=true; renderEdit(); showToast(`✅ ${added.length}問を追加しました`);
+};
+
+/* ====== トースト ====== */
+let toastTimer=null;
+function showToast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); if(toastTimer)clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),1600); }
+
+/* ====== モード切替 ====== */
+function showEdit(){ $("#aiOverlay").hidden=true; $("#present").hidden=true; $("#edit").hidden=false; $("#menuBtn").hidden=true; renderEdit(); }
+function showPresent(){ $("#edit").hidden=true; $("#present").hidden=false; $("#menuBtn").hidden=false; phase="menu"; renderPresent(); }
+$("#modeBtn").onclick=showEdit;
+$("#doneBtn").onclick=showPresent;
+$("#menuBtn").onclick=()=>{ phase="menu"; renderPresent(); };
+$("#saveBtn").onclick=()=>{ saveData(); showToast("✅ 保存しました"); };
+$("#fsBtn").onclick=function(){ if(!document.fullscreenElement){(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen||function(){}).call(document.documentElement);} else {(document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);} };
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){ if(!$("#aiOverlay").hidden){ $("#aiOverlay").hidden=true; return; } }
+  if($("#present").hidden) return;
+  if(phase==="q"){
+    const z=data.quizzes[qi];
+    if(chosen<0 && /^[1-9]$/.test(e.key)){ const ci=+e.key-1; if(ci<choicesNow.length){ chosen=ci; if(choicesNow[ci].correct) score++; renderQuestion(); } }
+    else if((e.key==="Enter"||e.key==="ArrowRight") && chosen>=0){ $("#qNext")&&$("#qNext").click(); }
+  }
+});
+
+renderPresent();
+</script>
+<script src="editbar.js"></script>
+<script src="intro.js"></script>
+<script>ClassIntro.init({key:"wordquiz",icon:"❓",title:"単語クイズ",desc:"問題に合う日本語を、番号つきの選択肢から選ぶクイズです。\n口頭で「1！」のように答えて、先生が選択肢をクリックします。全部終わると点数が出ます。"});</script>
+</body>
+</html>

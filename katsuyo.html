@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>活用の部屋 — 日本語クラス</title>
+<meta name="description" content="日本語の活用（言い方の変化）を教えるツール。動詞・形容詞・助動詞などの部屋ごとに、もとの例文から変化文が下に積み上がり、変わった部分に色が付いて、動物が吹き出しで説明します。翻訳・発音・AI一括つき。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%237a5cff'/><text x='50' y='72' font-size='56' text-anchor='middle'>🚪</text></svg>">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;font-family:"Segoe UI","Yu Gothic UI",Meiryo,"Hiragino Kaku Gothic ProN","Malgun Gothic",system-ui,sans-serif;color:#fff;
+  background:radial-gradient(1200px 700px at 20% -10%,#3b2a6b 0%,rgba(59,42,107,0) 60%),
+             radial-gradient(1100px 700px at 100% 0%,#1d4ed8 0%,rgba(29,78,216,0) 55%),
+             linear-gradient(160deg,#1a1140,#2b1a5e 55%,#11103a);
+  min-height:100vh;-webkit-font-smoothing:antialiased}
+:root{--gold:#ffd34e;--tr:#7af0c4;--ok:#43d9ad;--ng:#ff6b6b}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;max-width:1000px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
+.brand .logo{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#ec6f9e,#2563eb);box-shadow:0 6px 16px rgba(234,95,147,.4);font-size:22px;font-weight:900}
+.brand small{display:block;font-size:11px;font-weight:600;color:#c9c2e8}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.chip-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:9px 15px;font-size:14px;font-weight:700;backdrop-filter:blur(6px);transition:background .15s,transform .12s}
+.chip-btn:hover{background:rgba(255,255,255,.2)}
+.chip-btn:active{transform:scale(.95)}
+.chip-btn.on{background:linear-gradient(135deg,#ec6f9e,#2563eb);border-color:transparent}
+
+.wrap{max-width:820px;margin:0 auto;padding:8px 16px 60px}
+.screen{animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+
+/* ---------- menu / rooms / topics ---------- */
+.menu-h{text-align:center;font-size:clamp(20px,4vw,28px);font-weight:900;margin:8px 0 4px}
+.menu-sub{text-align:center;color:#c9c2e8;font-size:14px;margin-bottom:16px}
+.crumbs{text-align:center;margin:2px 0 14px}
+.crumbs button{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:7px 14px;font-weight:800;font-size:13px}
+.qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.qcard{text-align:left;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:16px;padding:16px;cursor:pointer;transition:transform .12s,background .15s}
+.qcard:hover{background:rgba(255,255,255,.13);transform:translateY(-2px)}
+.qcard .ric{font-size:32px;line-height:1;margin-bottom:6px}
+.qcard .qn{font-size:19px;font-weight:900;margin-bottom:4px}
+.qcard .qm{font-size:13px;color:#c9c2e8;font-weight:700}
+.qcard .go{display:inline-block;margin-top:10px;background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff;border-radius:999px;padding:6px 14px;font-size:13px;font-weight:800}
+.empty-note{text-align:center;color:#a99fd6;margin-top:34px;font-size:15px;line-height:1.9}
+
+/* ---------- run (flow) ---------- */
+.qhead{text-align:center;color:#c9c2e8;font-weight:800;font-size:14px;margin:4px 0 16px}
+.qhead .badge{display:inline-block;background:rgba(122,92,255,.24);color:#c9b8ff;border-radius:999px;padding:3px 12px;font-size:12.5px;font-weight:800;margin-right:8px}
+.flow{display:flex;flex-direction:column;gap:0}
+.stepwrap{position:relative;background:rgba(0,0,0,.14);border:1.5px solid rgba(255,255,255,.1);border-radius:18px;padding:16px 16px 14px;margin-bottom:12px;animation:fade .32s ease}
+.tagpills{position:absolute;top:10px;right:12px;display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end;max-width:55%}
+.tagpill{font-size:12px;font-weight:800;padding:4px 11px;border-radius:999px;background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.25);color:#fff;white-space:nowrap}
+.stepwrap.base{background:linear-gradient(135deg,rgba(236,111,158,.14),rgba(37,99,235,.14));border-color:rgba(255,255,255,.18)}
+.arrow{text-align:center;color:#a99fd6;font-size:22px;line-height:1;margin:-4px 0 8px}
+.sentline{display:flex;align-items:center;gap:10px;justify-content:center;flex-wrap:wrap}
+.sent{font-size:clamp(22px,4.8vw,34px);font-weight:800;line-height:1.5;text-align:center}
+.sent .chg{color:var(--gold);border-bottom:3px solid rgba(255,211,78,.5);padding:0 1px}
+.sent ruby rt{font-size:.48em;color:#cbb8ff;font-weight:700}
+.sent .chg rt{color:#ffe9a8}
+.tr{color:var(--tr);font-size:clamp(14px,2.7vw,18px);font-weight:700;text-align:center;margin-top:6px}
+.spk{border:0;background:rgba(255,255,255,.16);color:#fff;border-radius:50%;width:40px;height:40px;font-size:19px;display:grid;place-items:center;flex:0 0 auto}
+.spk:active{transform:scale(.92)}
+.bubble{position:relative;display:flex;align-items:flex-start;gap:12px;background:rgba(255,255,255,.09);border:1.5px solid rgba(255,255,255,.16);border-radius:16px;padding:12px 15px;margin:12px auto 2px;max-width:600px}
+.bubble .animal{font-size:32px;flex:0 0 auto;line-height:1.1}
+.bubble .btext{font-size:14.5px;line-height:1.75;font-weight:600;color:#f0edff}
+.bubble .btr{display:block;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,.2);color:var(--tr);font-weight:600}
+.bubble::before{content:"";position:absolute;left:22px;top:-9px;width:16px;height:16px;background:rgba(255,255,255,.09);border-left:1.5px solid rgba(255,255,255,.16);border-top:1.5px solid rgba(255,255,255,.16);transform:rotate(45deg)}
+
+.controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:18px}
+.navbtn{border:0;border-radius:14px;padding:14px 24px;font-size:17px;font-weight:900;color:#3a2400;background:linear-gradient(135deg,#ffe27a,#ffb43b);box-shadow:0 8px 22px rgba(255,170,40,.35)}
+.navbtn:active{transform:scale(.97)}
+.navbtn.ghost{background:rgba(255,255,255,.12);color:#fff;box-shadow:none}
+.navbtn.reveal{background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff;box-shadow:0 8px 22px rgba(234,95,147,.35)}
+.hintline{text-align:center;color:#a99fd6;font-size:12.5px;margin-top:10px}
+
+/* ---------- edit ---------- */
+h1.title{font-size:clamp(22px,5vw,30px);margin:8px 0 2px;text-align:center}
+p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
+.room{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:16px;padding:14px;margin-bottom:14px}
+.room-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.room-head input.icon{width:52px;text-align:center;font-size:20px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:9px;padding:8px 4px;font-weight:800}
+.room-head input.nm{flex:1;min-width:140px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:9px;padding:9px 12px;font:inherit;font-weight:800}
+.psm{width:34px;height:34px;border-radius:9px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-weight:800;flex:0 0 auto}
+.psm:disabled{opacity:.35}
+.psm.del{color:#ff9aa8;border-color:rgba(255,107,133,.4)}
+.topic{background:rgba(0,0,0,.16);border-radius:13px;padding:12px;margin-bottom:10px}
+.topic-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.topic-head .tnum{width:22px;height:22px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:11px;background:linear-gradient(135deg,#ec6f9e,#2563eb)}
+.topic-head input.tt{flex:1;min-width:120px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:8px;padding:8px 11px;font:inherit;font-weight:800}
+.lblrow{font-size:11.5px;font-weight:800;color:#a99fd6;margin:6px 2px 4px}
+.baserow{display:grid;grid-template-columns:1.3fr 1fr;gap:6px;margin-bottom:8px}
+.baserow input{border:1.5px solid rgba(255,211,78,.4);background:rgba(255,255,255,.96);color:#241552;border-radius:8px;padding:8px 10px;font:inherit;font-weight:600;font-size:13.5px;min-width:0}
+.steprow{background:rgba(0,0,0,.12);border-radius:10px;padding:8px;margin-bottom:8px}
+.sr-main{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.sr-main .sjp{flex:1 1 auto;min-width:0}
+.sr-main .stag{flex:0 0 118px}
+.sr-main .animal{flex:0 0 46px;text-align:center;font-size:17px;padding:8px 2px}
+.sr-sub{display:grid;grid-template-columns:1fr 1.2fr 1.2fr;gap:6px}
+@media(max-width:680px){ .sr-main{flex-wrap:wrap} .sr-main .sjp{flex:1 1 100%} .sr-main .stag{flex:1 1 auto} .sr-sub{grid-template-columns:1fr} .baserow{grid-template-columns:1fr} }
+.steprow input{border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:8px;padding:8px 10px;font:inherit;font-weight:600;font-size:13.5px;min-width:0}
+.addbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.addbtns button{background:transparent;border:1.5px dashed rgba(255,255,255,.32);color:#cfc8f0;border-radius:11px;padding:8px 13px;font-weight:800;font-size:13px}
+.addbtns button:hover{border-color:#fff;color:#fff}
+.addbtns button.ai{border-style:solid;border-color:rgba(122,240,196,.5);color:#7af0c4}
+/* タグ一覧（作成・削除） */
+.tagmgr{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:14px;padding:12px 14px;margin-bottom:14px}
+.tagmgr .tm-lbl{font-weight:800;font-size:14px;color:#c9c2e8}
+.tm-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);border-radius:999px;padding:5px 6px 5px 12px;font-weight:800;font-size:13px;color:#fff}
+.tm-chip button{width:18px;height:18px;border-radius:50%;border:0;background:rgba(0,0,0,.3);color:#fff;font-size:11px;font-weight:900;cursor:pointer;line-height:1;padding:0}
+.tagmgr input{border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:8px;padding:7px 10px;font:inherit;font-weight:700;font-size:13px;width:132px}
+.tagmgr .addtag{background:rgba(122,240,196,.16);border:1.5px solid rgba(122,240,196,.5);color:#7af0c4;border-radius:9px;padding:7px 13px;font-weight:800;font-size:13px}
+/* 例文ごとのタグ選択チップ */
+.tagsel{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0 2px}
+.tagsel .tslbl{font-size:11.5px;font-weight:800;color:#a99fd6;margin-right:2px}
+.tsel{background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.18);color:#cfc8f0;border-radius:999px;padding:5px 12px;font-weight:800;font-size:12.5px;cursor:pointer;transition:background .12s,border-color .12s}
+.tsel:hover{border-color:#fff}
+.tsel.on{background:linear-gradient(135deg,#ec6f9e,#2563eb);border-color:transparent;color:#fff}
+.addroom{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.addroom button{background:transparent;border:1.5px dashed rgba(255,255,255,.32);color:#cfc8f0;border-radius:12px;padding:9px 14px;font-weight:800;font-size:14px}
+.note{font-size:12.5px;color:#a99fd6;margin:2px 2px 14px;line-height:1.7}
+.editbar{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:4px}
+.mini{border-radius:10px;padding:11px 18px;font-weight:800;font-size:15px;border:0}
+.mini.save{background:linear-gradient(135deg,#7af0c4,#2bbf8e);color:#063b2c}
+.mini.primary{background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff}
+.mini.plain{background:rgba(255,255,255,.14);color:#fff}
+
+/* AI modal */
+.overlay{position:fixed;inset:0;background:rgba(10,6,30,.66);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow:auto;z-index:120}
+.ai-panel{background:#1c1346;border:1.5px solid rgba(255,255,255,.16);border-radius:18px;max-width:620px;width:100%;padding:20px;box-shadow:0 30px 70px rgba(0,0,0,.55)}
+.ai-panel h3{margin:0 0 6px;font-size:19px}
+.ai-panel .step{font-weight:800;color:var(--gold);font-size:13px;margin:14px 0 6px}
+.ai-panel textarea{width:100%;min-height:74px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:10px;padding:11px;font:inherit;line-height:1.6;resize:vertical}
+.ai-panel .baseshow{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,211,78,.35);border-radius:8px;padding:8px 11px;font-weight:700;font-size:14px;color:#ffe9a8}
+.ai-prompt{background:rgba(255,255,255,.95);color:#241552;border-radius:8px;padding:10px;margin:6px 0;font-size:12.5px;line-height:1.6;white-space:pre-wrap;font-weight:600;max-height:150px;overflow:auto}
+.ai-lang{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:#e7e2ff;margin-bottom:6px}
+.ai-lang input{flex:1;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.95);color:#241552;border-radius:8px;padding:7px 10px;font:inherit;font-weight:700}
+.ai-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);background:#43d9ad;color:#063b2c;font-weight:800;font-size:15px;padding:12px 26px;border-radius:999px;box-shadow:0 12px 34px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:130}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a class="brand" href="games.html">
+    <span class="logo">🚪</span>
+    <span>活用の部屋<small>日本語クラス・ツール</small></span>
+  </a>
+  <div class="top-actions">
+    <button class="chip-btn" id="trBtn">🌐 翻訳</button>
+    <button class="chip-btn" id="menuBtn">☰ 部屋</button>
+    <button class="chip-btn" id="modeBtn">✏️ 編集</button>
+    <button class="chip-btn" id="fsBtn">⛶ 全画面</button>
+    <a class="chip-btn" href="games.html">🎮 ゲーム集</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <section id="present" class="screen"><div id="stage"></div></section>
+
+  <!-- ============ EDIT ============ -->
+  <section id="edit" class="screen" hidden>
+    <h1 class="title">✏️ 「活用の部屋」の編集</h1>
+    <p class="sub">部屋（動詞・形容詞・助動詞など）ごとに、活用のトピックを作ります。もとの例文と、変化した文・翻訳・説明（吹き出し）を登録します。</p>
+    <div class="tagmgr">
+      <span class="tm-lbl">🏷 タグ一覧</span>
+      <span id="tagChips"></span>
+      <input id="newTag" placeholder="新しいタグ名" maxlength="24">
+      <button class="addtag" id="addTag">＋ 作る</button>
+    </div>
+    <div id="editList"></div>
+    <div class="addroom"><button data-act="roomadd">＋ 部屋を追加</button></div>
+    <div class="note">💡 <b>もとの例文</b>と、<b>変化した文</b>を並べると、変わった部分に自動で色が付きます（`【 】`で囲むと手動で色付け）。<b>ふりがな</b>は例文に <code>漢字《ふりがな》</code> の形で書くと、漢字の上に表示されます（例：母《はは》）。<b>説明</b>は動物が吹き出しで日本語＋翻訳で話します。<b>タグ</b>（敬語・タメ語など）は各例文の右上に表示。上の「🏷 タグ一覧」で自由に作成し、例文ごとにタグのチップをタップして選びます（複数OK・言語も自由）。<b>🤖 AIで一括</b>は、ふりがな付きの「変化文｜翻訳｜説明｜説明の翻訳｜タグ」をまとめて作れます。</div>
+    <div class="editbar">
+      <button class="mini save" id="saveBtn">💾 保存</button>
+      <button class="mini primary" id="doneBtn">▶ 部屋へ</button>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast">✅ 保存しました</div>
+
+<div class="overlay" id="aiOverlay" hidden>
+  <div class="ai-panel">
+    <h3>🤖 AIで活用を一括作成</h3>
+    <div class="ai-lang">🌐 翻訳の言語：<input type="text" id="aiLang" placeholder="例：English / ドイツ語 / 中文"></div>
+    <div class="step">① もとの例文（このトピックの文）</div>
+    <div class="baseshow" id="aiBase">—</div>
+    <div class="step">② 作ってほしい変化を書く（例：否定、過去、否定の過去、カジュアルな否定）</div>
+    <textarea id="aiSrc" placeholder="例：否定（ていねい）、否定（カジュアル）、過去、過去の否定"></textarea>
+    <div class="step">③ このプロンプトをコピーして ChatGPT などに貼る</div>
+    <div class="ai-prompt" id="aiPrompt"></div>
+    <button class="mini plain" id="aiCopy">プロンプトをコピー</button>
+    <div class="step">④ AIの結果を貼り付け（変化した文 | 翻訳 | 説明(日本語) | 説明の翻訳 | タグ）</div>
+    <textarea id="aiResult" placeholder="例：&#10;私は母《はは》ではありません。 | I am not a mother. | 否定を表す（ていねいな言い方） | Negation (polite) | 丁寧な言い方&#10;私は母《はは》じゃないです。 | I'm not a mother. | 否定のカジュアルな言い方 | Casual negation | カジュアルな言い方"></textarea>
+    <div class="ai-actions">
+      <button class="mini plain" id="aiCancel">やめる</button>
+      <button class="mini primary" id="aiAdd">このトピックに追加</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+function load(k,d){ try{const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v}catch(e){return d} }
+function save(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+const ANIMALS=["🐰","🐻","🐱","🐶","🦊","🐼","🐨","🐯","🐹","🐸","🐷","🐮","🐵","🐧"];
+function stripBr(s){ return String(s||"").replace(/[【】]/g,""); }
+function plainText(s){ return String(s||"").replace(/《[^》]*》/g,"").replace(/[｜【】]/g,""); }   // 発音・素の文用（ルビ記号を除去）
+function splitTags(s){ return String(s||"").split(/[、,，]/).map(x=>x.trim()).filter(Boolean); }   // 「敬語、丁寧」→ ["敬語","丁寧"]
+function toTags(o){ let a = Array.isArray(o.tags)?o.tags : (o.tag?[o.tag]:[]); delete o.tag; return a.map(x=>String(x||"").trim()).filter(Boolean); }   // 旧tag(単数)→tags(複数)へ
+// 例文のふりがな：漢字《ふりがな》 → <ruby>漢字<rt>ふりがな</rt></ruby>（青空文庫式。｜で base を明示可）
+function addRuby(html){
+  html=html.replace(/｜([^《｜<]+)《([^》<]+)》/g,'<ruby>$1<rt>$2</rt></ruby>');
+  html=html.replace(/([一-鿿々〆ヶ]+)《([^》<]+)》/g,'<ruby>$1<rt>$2</rt></ruby>');
+  return html;
+}
+
+/* ====== データ ====== */
+const SEED={rooms:[
+  {name:"動詞", icon:"🏃", topics:[]},
+  {name:"い形容詞・な形容詞", icon:"🌸", topics:[]},
+  {name:"助動詞（ない・ます・です など）", icon:"🧩", topics:[
+    {title:"です", base:{jp:"私《わたし》は母《はは》です。", tr:"I am a mother.", tags:["敬語","丁寧な言い方"]}, steps:[
+      {jp:"私《わたし》は母《はは》ではありません。", tr:"I am not a mother.", note:"否定を表す（ていねいな言い方）。「です」→「ではありません」。", noteTr:"Negation (polite). です → ではありません.", tags:["敬語","丁寧な言い方"], animal:"🐰"},
+      {jp:"私《わたし》は母《はは》じゃないです。", tr:"I'm not a mother.", note:"同じ否定でも、カジュアルな言い方。「では」→「じゃ」。", noteTr:"Same negation, but casual. では → じゃ.", tags:["カジュアルな言い方"], animal:"🐻"},
+      {jp:"私《わたし》は母《はは》でした。", tr:"I was a mother.", note:"過去を表す。「です」→「でした」。", noteTr:"Past tense. です → でした.", tags:["敬語"], animal:"🐱"},
+    ]},
+  ]},
+]};
+let data=load("katsuyo.data.v1",null);
+if(!data || !Array.isArray(data.rooms)){ data={rooms:SEED.rooms.map(r=>({name:r.name,icon:r.icon,topics:r.topics.map(t=>({title:t.title,base:{...t.base},steps:t.steps.map(s=>({...s}))}))}))}; save("katsuyo.data.v1",data); }
+data.rooms.forEach(r=>{
+  if(typeof r.name!=="string")r.name=""; if(typeof r.icon!=="string")r.icon="🚪";
+  if(!Array.isArray(r.topics))r.topics=[];
+  r.topics.forEach(t=>{ if(typeof t.title!=="string")t.title=""; if(!t.base||typeof t.base!=="object")t.base={jp:"",tr:"",tags:[]}; t.base.jp=String(t.base.jp||""); t.base.tr=String(t.base.tr||""); t.base.tags=toTags(t.base);
+    if(!Array.isArray(t.steps))t.steps=[]; t.steps.forEach(s=>{ s.jp=String(s.jp||""); s.tr=String(s.tr||""); s.note=String(s.note||""); s.noteTr=String(s.noteTr||""); s.tags=toTags(s); s.animal=String(s.animal||""); }); });
+});
+// サンプル（です）の説明の翻訳・ふりがな・タグを「初回だけ」補完する。
+// 以後は再適用しないので、もとの例文もタグも自由に編集でき、リロードで戻らない。
+if(!data._seeded2){
+  const SEED_NOTETR={
+    "否定を表す（ていねいな言い方）。「です」→「ではありません」。":"Negation (polite). です → ではありません.",
+    "同じ否定でも、カジュアルな言い方。「では」→「じゃ」。":"Same negation, but casual. では → じゃ.",
+    "過去を表す。「です」→「でした」。":"Past tense. です → でした.",
+  };
+  data.rooms.forEach(r=>r.topics.forEach(t=>t.steps.forEach(s=>{ if(!s.noteTr && SEED_NOTETR[s.note]) s.noteTr=SEED_NOTETR[s.note]; })));
+  const SEED_RUBY={
+    "私は母です。":"私《わたし》は母《はは》です。",
+    "私は母ではありません。":"私《わたし》は母《はは》ではありません。",
+    "私は母じゃないです。":"私《わたし》は母《はは》じゃないです。",
+    "私は母でした。":"私《わたし》は母《はは》でした。",
+  };
+  data.rooms.forEach(r=>r.topics.forEach(t=>{ if(SEED_RUBY[t.base.jp]) t.base.jp=SEED_RUBY[t.base.jp]; t.steps.forEach(s=>{ if(SEED_RUBY[s.jp]) s.jp=SEED_RUBY[s.jp]; }); }));
+  const SEED_TAG={ "私は母です。":["敬語","丁寧な言い方"], "私は母ではありません。":["敬語","丁寧な言い方"], "私は母じゃないです。":["カジュアルな言い方"], "私は母でした。":["敬語"] };
+  data.rooms.forEach(r=>r.topics.forEach(t=>{ if(!t.base.tags.length){ const k=plainText(t.base.jp); if(SEED_TAG[k]) t.base.tags=SEED_TAG[k].slice(); } t.steps.forEach(s=>{ if(!s.tags.length){ const k=plainText(s.jp); if(SEED_TAG[k]) s.tags=SEED_TAG[k].slice(); } }); }));
+  data._seeded2=true;
+  save("katsuyo.data.v1",data);
+}
+// 「名詞（の でつなぐ）」の部屋を一度だけ追加（既存の端末にも出す）
+if(!data._noun1){
+  data.rooms.push({ name:"名詞（めいし）", icon:"🔗", topics:[
+    { title:"私の母（わたしのはは）", base:{jp:"私《わたし》　母《はは》", tr:"“I” and “mother” (two nouns)", tags:[]}, steps:[
+      {jp:"私《わたし》の母《はは》", tr:"my mother", note:"「の」で2つの名詞をつなぎます。「AのB」で所有・所属を表す。私＋母 →『私の母』。", noteTr:"「の」links two nouns. A の B shows possession: 私 (I) + 母 (mother) → “my mother”.", tags:[], animal:"🐰"},
+    ]},
+    { title:"日本語の先生（にほんごのせんせい）", base:{jp:"日本語《にほんご》　先生《せんせい》", tr:"“Japanese” and “teacher”", tags:[]}, steps:[
+      {jp:"日本語《にほんご》の先生《せんせい》", tr:"a teacher of Japanese", note:"同じく「の」でつなぎます。「日本語の先生」＝日本語を教える先生。", noteTr:"Also joined with の: 日本語の先生 = a teacher of Japanese.", tags:[], animal:"🐻"},
+    ]},
+  ]});
+  data._noun1=true;
+  save("katsuyo.data.v1",data);
+}
+function saveData(){ save("katsuyo.data.v1",data); }
+const DEFAULT_TAGS=["敬語","タメ語","丁寧な言い方","カジュアルな言い方"];
+let cfg=load("katsuyo.cfg.v1",{showTr:true, lang:"English", tags:DEFAULT_TAGS.slice()});
+if(typeof cfg.showTr!=="boolean")cfg.showTr=true; if(typeof cfg.lang!=="string")cfg.lang="English";
+if(!Array.isArray(cfg.tags)) cfg.tags=DEFAULT_TAGS.slice();
+cfg.tags=cfg.tags.filter(x=>typeof x==="string"&&x.trim());
+if(!cfg.tags.length) cfg.tags=DEFAULT_TAGS.slice();
+function saveCfg(){ save("katsuyo.cfg.v1",cfg); }
+
+/* ====== 共通 ====== */
+function speak(text){ try{ if(!window.speechSynthesis) return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(plainText(text)); u.lang="ja-JP"; u.rate=0.9; speechSynthesis.speak(u); }catch(e){} }
+function animalOf(st,i){ return st.animal || ANIMALS[i%ANIMALS.length]; }
+// タグごとに違う色。一覧(cfg.tags)での並び順に黄金角(137.5°)で色相をずらす＝隣どうしも遠い色になり、かぶりにくい。
+function tagHue(tag){ let i=cfg.tags.indexOf(tag); if(i<0){ let h=0; for(let k=0;k<tag.length;k++) h=(h*31+tag.charCodeAt(k))>>>0; i=h; } return Math.round((i*137.508)%360); }
+function tagPills(tags){ if(!tags||!tags.length) return ""; return `<div class="tagpills">${tags.map(tg=>{ const h=tagHue(tg); return `<span class="tagpill" style="background:hsla(${h},70%,55%,.18);border-color:hsla(${h},75%,62%,.6);color:hsl(${h},90%,77%)">${esc(tg)}</span>`; }).join("")}</div>`; }
+// もとの文との差分に色を付ける（【】明示があればそれを優先）
+function highlightDiff(base, s){
+  s=String(s||"");
+  if(/[【】]/.test(s)){ return esc(s).replace(/【([^】]*)】/g,'<span class="chg">$1</span>'); }
+  base=String(base||"");
+  if(!base || base===s) return esc(s);
+  const bl=base.length, sl=s.length, min=Math.min(bl,sl);
+  let p=0; while(p<min && base[p]===s[p]) p++;
+  let q=0; while(q<(min-p) && base[bl-1-q]===s[sl-1-q]) q++;
+  const mid=s.slice(p, sl-q);
+  if(!mid) return esc(s);
+  return esc(s.slice(0,p)) + '<span class="chg">'+esc(mid)+'</span>' + esc(s.slice(sl-q));
+}
+
+/* ====== 発表 ====== */
+const stage=$("#stage");
+let phase="rooms";              // rooms / topics / run
+let cur={ri:0, ti:0, shown:0};
+
+function renderPresent(){
+  if(!data.rooms.length){ stage.innerHTML=`<div class="empty-note">まだ部屋がありません。<br>右上の「✏️ 編集」から部屋と活用を作ってください。</div>`; return; }
+  if(phase==="rooms") return renderRooms();
+  if(phase==="topics") return renderTopics();
+  return renderRun();
+}
+function renderRooms(){
+  stage.innerHTML=`<div class="menu-h">活用の部屋</div><div class="menu-sub">部屋を選んでください</div>
+    <div class="qgrid">${data.rooms.map((r,i)=>`<button class="qcard" data-room="${i}"><div class="ric">${esc(r.icon||"🚪")}</div><div class="qn">${esc(r.name||("部屋"+(i+1)))}</div><div class="qm">${r.topics.length}個の活用</div><span class="go">▶ 入る</span></button>`).join("")}</div>`;
+  stage.querySelectorAll("[data-room]").forEach(b=>b.onclick=()=>{ cur.ri=+b.dataset.room; phase="topics"; renderPresent(); window.scrollTo(0,0); });
+}
+function renderTopics(){
+  const r=data.rooms[cur.ri];
+  stage.innerHTML=`<div class="crumbs"><button id="toRooms">← 部屋の一覧</button></div>
+    <div class="menu-h">${esc(r.icon||"🚪")} ${esc(r.name||"")}</div><div class="menu-sub">活用（トピック）を選んでください</div>
+    ${r.topics.length?`<div class="qgrid">${r.topics.map((t,i)=>`<button class="qcard" data-topic="${i}"><div class="qn">${esc(t.title||("活用"+(i+1)))}</div><div class="qm">もとの文：${esc(t.base.jp||"—")}<br>${t.steps.length}個の変化</div><span class="go">▶ はじめる</span></button>`).join("")}</div>`
+      :`<div class="empty-note">この部屋にはまだ活用がありません。<br>「✏️ 編集」から追加してください。</div>`}`;
+  $("#toRooms").onclick=()=>{ phase="rooms"; renderPresent(); window.scrollTo(0,0); };
+  stage.querySelectorAll("[data-topic]").forEach(b=>b.onclick=()=>{ cur.ti=+b.dataset.topic; cur.shown=0; phase="run"; renderPresent(); window.scrollTo(0,0); });
+}
+function sentHTML(obj, baseJp, isBase, idx){
+  const disp = addRuby(isBase ? esc(stripBr(obj.jp)) : highlightDiff(baseJp, obj.jp));
+  const animal = isBase ? "" : animalOf(obj, idx);
+  return `<div class="stepwrap${isBase?" base":""}">
+    ${tagPills(obj.tags)}
+    ${isBase?"":`<div class="arrow">↓</div>`}
+    <div class="sentline"><div class="sent">${disp}</div><button class="spk" data-say="${esc(obj.jp)}" title="発音">🔊</button></div>
+    ${cfg.showTr && obj.tr?`<div class="tr">${esc(obj.tr)}</div>`:""}
+    ${(!isBase && (obj.note||obj.noteTr))?`<div class="bubble"><span class="animal">${animal}</span><span class="btext">${obj.note?esc(obj.note):""}${(cfg.showTr && obj.noteTr)?`<span class="btr">${esc(obj.noteTr)}</span>`:""}</span></div>`:""}
+  </div>`;
+}
+function renderRun(){
+  const r=data.rooms[cur.ri], t=r.topics[cur.ti];
+  const parts=[`<div class="crumbs"><button id="toTopics">← ${esc(r.name||"部屋")}</button></div>
+    <div class="qhead"><span class="badge">${esc(r.icon||"🚪")} ${esc(r.name||"")}</span>${esc(t.title||"")}</div><div class="flow">`];
+  parts.push(sentHTML(t.base, "", true, 0));
+  for(let i=0;i<cur.shown;i++) parts.push(sentHTML(t.steps[i], t.base.jp, false, i));
+  parts.push(`</div>`);
+  const more = cur.shown < t.steps.length;
+  const hasNextTopic = cur.ti < r.topics.length-1;
+  let rightBtn;
+  if(more) rightBtn=`<button class="navbtn reveal" id="rNext">▶ 次へ</button>`;
+  else if(hasNextTopic) rightBtn=`<button class="navbtn" id="rNext">▶ 次の活用</button>`;
+  else rightBtn=`<button class="navbtn ghost" id="rNext">☰ 部屋へ</button>`;
+  parts.push(`<div class="controls"><button class="navbtn ghost" id="rTopics">☰ 一覧</button>${rightBtn}</div>`);
+  if(!t.steps.length) parts.push(`<div class="hintline">このトピックにはまだ変化が登録されていません。「✏️ 編集」から追加してください。</div>`);
+  else if(more) parts.push(`<div class="hintline">「▶ 次へ」で、下に次の例文が出ます</div>`);
+  stage.innerHTML=parts.join("");
+  stage.querySelectorAll("[data-say]").forEach(b=>b.onclick=()=>speak(b.dataset.say));
+  $("#rTopics").onclick=()=>{ phase="topics"; renderPresent(); window.scrollTo(0,0); };
+  $("#toTopics").onclick=()=>{ phase="topics"; renderPresent(); window.scrollTo(0,0); };
+  $("#rNext").onclick=()=>{
+    if(more){ cur.shown++; renderPresent(); setTimeout(()=>window.scrollTo(0,document.body.scrollHeight),40); }
+    else if(hasNextTopic){ cur.ti++; cur.shown=0; renderPresent(); window.scrollTo(0,0); }
+    else { phase="topics"; renderPresent(); window.scrollTo(0,0); }
+  };
+}
+
+/* ====== 編集 ====== */
+const editList=$("#editList");
+function renderEdit(){ renderTagMgr(); editList.innerHTML=data.rooms.map((r,ri)=>roomEditHTML(r,ri)).join(""); }
+function tagSelHTML(sel){
+  const chips = cfg.tags.length
+    ? cfg.tags.map(tg=>`<button type="button" class="tsel${sel.includes(tg)?" on":""}" data-tag="${esc(tg)}">${esc(tg)}</button>`).join("")
+    : `<span class="tslbl">（上の「🏷 タグ一覧」で作成してください）</span>`;
+  return `<span class="tslbl">タグ:</span>${chips}`;
+}
+function roomEditHTML(r,ri){
+  const topics=r.topics.map((t,ti)=>topicEditHTML(t,ri,ti)).join("");
+  return `<div class="room" data-ri="${ri}">
+    <div class="room-head">
+      <input class="icon" data-ri="${ri}" data-f="icon" value="${esc(r.icon)}" maxlength="2">
+      <input class="nm" data-ri="${ri}" data-f="name" placeholder="部屋の名前（例：動詞）" value="${esc(r.name)}">
+      <button class="psm" data-act="rup" data-ri="${ri}" ${ri===0?"disabled":""}>▲</button>
+      <button class="psm" data-act="rdown" data-ri="${ri}" ${ri===data.rooms.length-1?"disabled":""}>▼</button>
+      <button class="psm del" data-act="rdel" data-ri="${ri}">🗑</button>
+    </div>
+    ${topics}
+    <div class="addbtns"><button data-act="taddtopic" data-ri="${ri}">＋ 活用トピックを追加</button></div>
+  </div>`;
+}
+function topicEditHTML(t,ri,ti){
+  const steps=t.steps.map((s,pi)=>`
+    <div class="steprow">
+      <div class="sr-main">
+        <input class="sjp" data-ri="${ri}" data-ti="${ti}" data-pi="${pi}" data-f="sjp" placeholder="変化した文（私は母《はは》ではありません。）" value="${esc(s.jp)}">
+        <input class="animal" data-ri="${ri}" data-ti="${ti}" data-pi="${pi}" data-f="sanimal" placeholder="🐰" maxlength="2" value="${esc(s.animal)}">
+        <button class="psm del" data-act="sdel" data-ri="${ri}" data-ti="${ti}" data-pi="${pi}">✕</button>
+      </div>
+      <div class="sr-sub">
+        <input data-ri="${ri}" data-ti="${ti}" data-pi="${pi}" data-f="str" placeholder="翻訳" value="${esc(s.tr)}">
+        <input data-ri="${ri}" data-ti="${ti}" data-pi="${pi}" data-f="snote" placeholder="説明（日本語）" value="${esc(s.note)}">
+        <input data-ri="${ri}" data-ti="${ti}" data-pi="${pi}" data-f="snotetr" placeholder="説明の翻訳" value="${esc(s.noteTr)}">
+      </div>
+      <div class="tagsel" data-ri="${ri}" data-ti="${ti}" data-pi="${pi}" data-scope="step">${tagSelHTML(s.tags||[])}</div>
+    </div>`).join("");
+  return `<div class="topic" data-ri="${ri}" data-ti="${ti}">
+    <div class="topic-head">
+      <span class="tnum">${ti+1}</span>
+      <input class="tt" data-ri="${ri}" data-ti="${ti}" data-f="title" placeholder="活用の名前（例：です）" value="${esc(t.title)}">
+      <button class="psm" data-act="tup" data-ri="${ri}" data-ti="${ti}" ${ti===0?"disabled":""}>▲</button>
+      <button class="psm" data-act="tdown" data-ri="${ri}" data-ti="${ti}" ${ti===data.rooms[ri].topics.length-1?"disabled":""}>▼</button>
+      <button class="psm del" data-act="tdel" data-ri="${ri}" data-ti="${ti}">🗑</button>
+    </div>
+    <div class="lblrow">もとの例文</div>
+    <div class="baserow">
+      <input data-ri="${ri}" data-ti="${ti}" data-f="basejp" placeholder="もとの文（私は母《はは》です。）" value="${esc(t.base.jp)}">
+      <input data-ri="${ri}" data-ti="${ti}" data-f="basetr" placeholder="翻訳" value="${esc(t.base.tr)}">
+    </div>
+    <div class="tagsel" data-ri="${ri}" data-ti="${ti}" data-scope="base">${tagSelHTML(t.base.tags||[])}</div>
+    <div class="lblrow">変化した文（1つ目：文｜動物　2つ目：翻訳｜説明｜説明の翻訳　その下：タグ）</div>
+    ${steps}
+    <div class="addbtns">
+      <button data-act="saddstep" data-ri="${ri}" data-ti="${ti}">＋ 変化を追加</button>
+      <button class="ai" data-act="ai" data-ri="${ri}" data-ti="${ti}">🤖 AIで一括</button>
+    </div>
+  </div>`;
+}
+editList.addEventListener("input",e=>{
+  const t=e.target, ri=+t.dataset.ri; if(isNaN(ri)||!data.rooms[ri]) return; const room=data.rooms[ri]; const f=t.dataset.f;
+  if(f==="name"){ room.name=t.value; saveData(); return; }
+  if(f==="icon"){ room.icon=t.value; saveData(); return; }
+  const ti=+t.dataset.ti; if(isNaN(ti)||!room.topics[ti]) return; const topic=room.topics[ti];
+  if(f==="title"){ topic.title=t.value; saveData(); return; }
+  if(f==="basejp"){ topic.base.jp=t.value; saveData(); return; }
+  if(f==="basetr"){ topic.base.tr=t.value; saveData(); return; }
+  if(f==="basetag"){ topic.base.tags=splitTags(t.value); saveData(); return; }
+  const pi=+t.dataset.pi; if(isNaN(pi)||!topic.steps[pi]) return;
+  if(f==="sjp"){ topic.steps[pi].jp=t.value; saveData(); }
+  else if(f==="str"){ topic.steps[pi].tr=t.value; saveData(); }
+  else if(f==="snote"){ topic.steps[pi].note=t.value; saveData(); }
+  else if(f==="snotetr"){ topic.steps[pi].noteTr=t.value; saveData(); }
+  else if(f==="stag"){ topic.steps[pi].tags=splitTags(t.value); saveData(); }
+  else if(f==="sanimal"){ topic.steps[pi].animal=t.value; saveData(); }
+});
+// タグ一覧（自由に新規作成・削除）
+function renderTagMgr(){
+  const box=$("#tagChips"); if(!box) return;
+  box.innerHTML = cfg.tags.length
+    ? cfg.tags.map(tg=>{ const h=tagHue(tg); return `<span class="tm-chip" style="background:hsla(${h},70%,55%,.22);border-color:hsla(${h},75%,62%,.65);color:hsl(${h},92%,82%)">${esc(tg)}<button data-deltag="${esc(tg)}" title="このタグを削除">✕</button></span>`; }).join("")
+    : `<span class="tslbl">まだありません。右で作成してください。</span>`;
+}
+function addNewTag(){ const el=$("#newTag"); const v=(el.value||"").trim(); if(v && !cfg.tags.includes(v)){ cfg.tags.push(v); saveCfg(); renderTagMgr(); renderEdit(); } el.value=""; el.focus(); }
+$("#addTag").onclick=addNewTag;
+$("#newTag").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); addNewTag(); } });
+$("#tagChips").addEventListener("click",e=>{
+  const b=e.target.closest("[data-deltag]"); if(!b) return;
+  const tg=b.dataset.deltag;
+  if(!confirm(`タグ「${tg}」を一覧から削除しますか？（各例文からも外れます）`)) return;
+  cfg.tags=cfg.tags.filter(x=>x!==tg); saveCfg();
+  data.rooms.forEach(r=>r.topics.forEach(t=>{ t.base.tags=t.base.tags.filter(x=>x!==tg); t.steps.forEach(s=>s.tags=s.tags.filter(x=>x!==tg)); }));
+  saveData(); renderTagMgr(); renderEdit();
+});
+editList.addEventListener("click",e=>{
+  const chip=e.target.closest(".tsel");
+  if(chip){ const sel=chip.closest(".tagsel"); const topic=data.rooms[+sel.dataset.ri].topics[+sel.dataset.ti];
+    const arr = sel.dataset.scope==="base" ? topic.base.tags : topic.steps[+sel.dataset.pi].tags;
+    const tag=chip.dataset.tag, i=arr.indexOf(tag);
+    if(i>=0) arr.splice(i,1); else arr.push(tag);
+    saveData(); chip.classList.toggle("on"); return; }
+  const b=e.target.closest("[data-act]"); if(!b) return;
+  const act=b.dataset.act, ri=+b.dataset.ri;
+  if(act==="roomadd"){ return; }
+  const room=data.rooms[ri]; if(!room) return;
+  const ti=+b.dataset.ti;
+  if(act==="rdel"){ if(!confirm(`部屋「${room.name||"部屋"}」を削除しますか？`)) return; data.rooms.splice(ri,1); }
+  else if(act==="rup"){ if(ri>0){ [data.rooms[ri-1],data.rooms[ri]]=[data.rooms[ri],data.rooms[ri-1]]; } }
+  else if(act==="rdown"){ if(ri<data.rooms.length-1){ [data.rooms[ri+1],data.rooms[ri]]=[data.rooms[ri],data.rooms[ri+1]]; } }
+  else if(act==="taddtopic"){ room.topics.push({title:"",base:{jp:"",tr:"",tags:[]},steps:[{jp:"",tr:"",note:"",noteTr:"",tags:[],animal:""}]}); }
+  else if(act==="tdel"){ if(!confirm(`「${room.topics[ti].title||"活用"}」を削除しますか？`)) return; room.topics.splice(ti,1); }
+  else if(act==="tup"){ if(ti>0){ [room.topics[ti-1],room.topics[ti]]=[room.topics[ti],room.topics[ti-1]]; } }
+  else if(act==="tdown"){ if(ti<room.topics.length-1){ [room.topics[ti+1],room.topics[ti]]=[room.topics[ti],room.topics[ti+1]]; } }
+  else if(act==="saddstep"){ room.topics[ti].steps.push({jp:"",tr:"",note:"",noteTr:"",tags:[],animal:""}); }
+  else if(act==="sdel"){ room.topics[ti].steps.splice(+b.dataset.pi,1); }
+  else if(act==="ai"){ openAi(ri,ti); return; }
+  else return;
+  saveData(); renderEdit();
+});
+$(".addroom [data-act='roomadd']").onclick=()=>{ data.rooms.push({name:"",icon:"🚪",topics:[{title:"",base:{jp:"",tr:"",tags:[]},steps:[{jp:"",tr:"",note:"",noteTr:"",tags:[],animal:""}]}]}); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
+
+/* ====== AI一括 ====== */
+let aiRi=0, aiTi=0;
+function aiPromptText(){
+  const lang=($("#aiLang").value||"").trim()||"英語";
+  const base=(data.rooms[aiRi]&&data.rooms[aiRi].topics[aiTi]&&data.rooms[aiRi].topics[aiTi].base.jp)||"（もとの文）";
+  const src=$("#aiSrc").value.trim();
+  return `次の日本語の文をもとに、活用（言い方の変化）の例を作ってください。\nもとの文：${base}\nそれぞれの変化について、1行に1つ、次の形式で出力してください：\n変化した文 | ${lang}の翻訳 | 変化の説明（日本語） | 変化の説明（${lang}） | タグ\n・説明は「何を表すか・どこがどう変わったか」を、日本語と${lang}の両方で書く\n・タグは話し方の種類（例：敬語 / タメ語 / 丁寧な言い方 / カジュアルな言い方）。複数付けるときは「、」で区切る\n・もとの文と同じ語順を保ち、変わった部分だけ変える\n・初心者向けに、変化した文の漢字には「漢字《ふりがな》」の形でふりがなを付ける（例：母《はは》）。もとの文にふりがなが付いていれば同じように付ける\n・番号や前置きは付けない\n\n作ってほしい変化：\n${src||"（例：否定、過去、否定の過去、カジュアルな否定）"}`;
+}
+function updateAiPrompt(){ $("#aiPrompt").textContent=aiPromptText(); }
+function openAi(ri,ti){ aiRi=ri; aiTi=ti; const t=data.rooms[ri].topics[ti];
+  $("#aiBase").textContent=t.base.jp||"（もとの例文を先に入力してください）";
+  $("#aiLang").value=cfg.lang||"English"; $("#aiSrc").value=""; $("#aiResult").value="";
+  updateAiPrompt(); $("#aiOverlay").hidden=false; setTimeout(()=>$("#aiSrc").focus(),30);
+}
+$("#aiSrc").addEventListener("input",updateAiPrompt);
+$("#aiLang").addEventListener("input",()=>{ cfg.lang=$("#aiLang").value.trim(); saveCfg(); updateAiPrompt(); });
+$("#aiCancel").onclick=()=>{ $("#aiOverlay").hidden=true; };
+$("#aiOverlay").onclick=e=>{ if(e.target===$("#aiOverlay")) $("#aiOverlay").hidden=true; };
+$("#aiCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText($("#aiPrompt").textContent); showToast("📋 プロンプトをコピーしました"); }catch(e){ const r=document.createRange(); r.selectNodeContents($("#aiPrompt")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); showToast("手動でコピーしてください（選択しました）"); } };
+$("#aiAdd").onclick=()=>{
+  const t=data.rooms[aiRi]&&data.rooms[aiRi].topics[aiTi]; if(!t) return;
+  const lines=$("#aiResult").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean); const added=[];
+  lines.forEach((line,i)=>{ const p=line.replace(/｜/g,"|").split("|").map(x=>x.trim()); if(!p[0]) return; const tags=splitTags(p[4]||""); tags.forEach(tg=>{ if(!cfg.tags.includes(tg)){ cfg.tags.push(tg); saveCfg(); } }); added.push({jp:p[0],tr:p[1]||"",note:p[2]||"",noteTr:p[3]||"",tags,animal:ANIMALS[(t.steps.length+added.length)%ANIMALS.length]}); });
+  if(!added.length){ alert("読み取れませんでした。「変化した文 | 翻訳 | 説明」の形で貼り付けてください。"); return; }
+  t.steps.push(...added); saveData(); renderTagMgr(); $("#aiOverlay").hidden=true; renderEdit(); showToast(`✅ ${added.length}個の変化を追加しました`);
+};
+
+/* ====== トースト ====== */
+let toastTimer=null;
+function showToast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); if(toastTimer)clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),1600); }
+
+/* ====== モード切替 ====== */
+function showEdit(){ $("#aiOverlay").hidden=true; $("#present").hidden=true; $("#edit").hidden=false; $("#menuBtn").hidden=true; renderEdit(); }
+function showPresent(){ $("#edit").hidden=true; $("#present").hidden=false; $("#menuBtn").hidden=false; phase="rooms"; renderPresent(); }
+function updateTrBtn(){ $("#trBtn").classList.toggle("on",cfg.showTr); }
+$("#modeBtn").onclick=showEdit;
+$("#doneBtn").onclick=showPresent;
+$("#menuBtn").onclick=()=>{ phase="rooms"; renderPresent(); window.scrollTo(0,0); };
+$("#saveBtn").onclick=()=>{ saveData(); showToast("✅ 保存しました"); };
+$("#trBtn").onclick=()=>{ cfg.showTr=!cfg.showTr; saveCfg(); updateTrBtn(); if($("#edit").hidden) renderPresent(); };
+$("#fsBtn").onclick=function(){ if(!document.fullscreenElement){(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen||function(){}).call(document.documentElement);} else {(document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);} };
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){ if(!$("#aiOverlay").hidden){ $("#aiOverlay").hidden=true; return; } }
+  if($("#present").hidden || phase!=="run") return;
+  if(e.key==="Enter"||e.key==="ArrowRight"||e.key===" "){ e.preventDefault(); $("#rNext")&&$("#rNext").click(); }
+});
+
+updateTrBtn();
+renderTagMgr();
+renderPresent();
+</script>
+<script src="editbar.js"></script>
+<script src="intro.js"></script>
+<script>ClassIntro.init({key:"katsuyo",icon:"🚪",title:"活用の部屋",desc:"日本語の活用（言い方の変化）を教えるツールです。\n部屋（動詞・形容詞・助動詞など）を選び、活用を選ぶと、もとの例文が出ます。\n「次へ」を押すと、下に変化した文が出て、変わった部分に色が付き、動物が吹き出しで説明します。"});</script>
+</body>
+</html>
