@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ログイン — 日本語クラス・ゲーム</title>
+<meta name="description" content="日本語クラス・ゲームのログイン。Googleまたはメールでログインできます。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎌</text></svg>">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;min-height:100vh;font-family:"Segoe UI","Yu Gothic UI",Meiryo,"Hiragino Kaku Gothic ProN","Malgun Gothic",system-ui,sans-serif;color:#fff;
+  background:radial-gradient(1200px 700px at 20% -10%,#3b2a6b 0%,rgba(59,42,107,0) 60%),
+             radial-gradient(1100px 700px at 100% 0%,#1d4ed8 0%,rgba(29,78,216,0) 55%),
+             linear-gradient(160deg,#1a1140,#2b1a5e 55%,#11103a);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+a{color:#ffd34e}
+.card{width:100%;max-width:420px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.16);border-radius:20px;padding:28px 24px;box-shadow:0 30px 70px rgba(0,0,0,.45)}
+.brand{display:flex;align-items:center;gap:10px;justify-content:center;font-weight:900;font-size:20px;margin-bottom:4px}
+.brand .logo{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,#ec6f9e,#2563eb);font-size:22px}
+.sub{text-align:center;color:#c9c2e8;font-size:14px;margin:0 0 22px}
+.gbtn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#241552;border:0;border-radius:12px;padding:13px;font-size:15.5px;font-weight:800;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.25)}
+.gbtn:active{transform:scale(.98)}
+.gbtn svg{width:20px;height:20px;flex:0 0 auto}
+.or{display:flex;align-items:center;gap:12px;color:#a99fd6;font-size:12.5px;font-weight:700;margin:18px 0}
+.or::before,.or::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.18)}
+label.fl{display:block;font-size:13px;font-weight:800;color:#c9c2e8;margin:0 0 6px}
+input.email{width:100%;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:11px;padding:12px 13px;font:inherit;font-weight:600;font-size:15px}
+.mbtn{width:100%;margin-top:10px;border:0;border-radius:12px;padding:13px;font-size:15.5px;font-weight:800;color:#fff;background:linear-gradient(135deg,#ec6f9e,#2563eb);cursor:pointer;box-shadow:0 8px 20px rgba(234,95,147,.35)}
+.mbtn:active{transform:scale(.98)}
+.mbtn:disabled{opacity:.6;cursor:default}
+.msg{margin-top:14px;font-size:13.5px;line-height:1.7;font-weight:700;text-align:center;min-height:1.2em}
+.msg.ok{color:#7af0c4}
+.msg.err{color:#ff9aa8}
+.note{margin-top:16px;text-align:center;color:#a99fd6;font-size:12.5px;line-height:1.7}
+.back{display:block;text-align:center;margin-top:18px;font-weight:800;font-size:14px}
+/* ログイン済み */
+.acct{text-align:center}
+.acct .who{font-size:15px;font-weight:800;margin:6px 0 2px;word-break:break-all}
+.acct .em{color:#c9c2e8;font-size:13px;margin-bottom:16px;word-break:break-all}
+.acct .go{display:block;width:100%;border:0;border-radius:12px;padding:13px;font-size:15.5px;font-weight:800;color:#fff;background:linear-gradient(135deg,#ec6f9e,#2563eb);cursor:pointer;text-decoration:none;box-sizing:border-box}
+.acct .out{display:block;width:100%;margin-top:10px;border:1.5px solid rgba(255,255,255,.25);border-radius:12px;padding:12px;font-size:14.5px;font-weight:800;color:#fff;background:rgba(255,255,255,.08);cursor:pointer}
+.spin{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite;vertical-align:-3px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand"><span class="logo">🎌</span><span>日本語クラス・ゲーム</span></div>
+    <p class="sub">ログイン</p>
+
+    <!-- 準備中（未設定） -->
+    <div id="setup" hidden>
+      <div class="msg">🔧 ログインは準備中です。<br>（管理者がまもなく有効化します）</div>
+      <a class="back" href="games.html">← ゲーム集へ</a>
+    </div>
+
+    <!-- 読み込み中 -->
+    <div id="loading"><div class="msg"><span class="spin"></span>読み込み中…</div></div>
+
+    <!-- ログインフォーム -->
+    <div id="form" hidden>
+      <button class="gbtn" id="googleBtn">
+        <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Googleでログイン
+      </button>
+      <div class="or">または</div>
+      <label class="fl" for="email">メールアドレス</label>
+      <input class="email" id="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com">
+      <button class="mbtn" id="mailBtn">ログインリンクを送る</button>
+      <div class="msg" id="msg"></div>
+      <div class="note">はじめての方も、メールを入れて「リンクを送る」でアカウントが作られます。パスワードは不要です。</div>
+      <a class="back" href="games.html">← ゲーム集へ（ログインせずに使う）</a>
+    </div>
+
+    <!-- ログイン済み -->
+    <div id="account" class="acct" hidden>
+      <div class="msg ok">✅ ログイン中</div>
+      <div class="who" id="acctName"></div>
+      <div class="em" id="acctEmail"></div>
+      <a class="go" href="games.html">ゲーム集へ →</a>
+      <button class="out" id="signout">ログアウト</button>
+    </div>
+  </div>
+
+<script src="vendor/supabase.js"></script>
+<script src="auth-config.js"></script>
+<script src="auth.js"></script>
+<script>
+  var $ = function (s) { return document.querySelector(s); };
+  function show(id) { ["setup","loading","form","account"].forEach(function (k) { $("#" + k).hidden = (k !== id); }); }
+
+  if (!window.Auth || !Auth.configured) {
+    show("setup");
+  } else {
+    // 戻りURL(OAuth/マジックリンク)の処理は auth.js の detectSessionInUrl が行う。少し待ってから状態を見る。
+    show("loading");
+    setTimeout(function () {
+      Auth.user().then(function (u) {
+        if (u) { fillAccount(u); show("account"); }
+        else { show("form"); bindForm(); }
+      });
+    }, 350);
+  }
+
+  function fillAccount(u) {
+    var name = (u.user_metadata && (u.user_metadata.full_name || u.user_metadata.name)) || (u.email ? u.email.split("@")[0] : "ユーザー");
+    $("#acctName").textContent = "ようこそ、" + name + " さん";
+    $("#acctEmail").textContent = u.email || "";
+    $("#signout").onclick = function () { Auth.signOut().then(function () { location.reload(); }); };
+  }
+
+  function bindForm() {
+    $("#googleBtn").onclick = function () {
+      $("#msg").className = "msg"; $("#msg").textContent = "Googleへ移動します…";
+      Auth.signInGoogle().then(function (r) { if (r && r.error) { $("#msg").className = "msg err"; $("#msg").textContent = "エラー: " + (r.error.message || "ログインできませんでした"); } });
+    };
+    var mailBtn = $("#mailBtn"), email = $("#email"), msg = $("#msg");
+    function sendLink() {
+      var v = (email.value || "").trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { msg.className = "msg err"; msg.textContent = "メールアドレスを正しく入力してください。"; email.focus(); return; }
+      mailBtn.disabled = true; msg.className = "msg"; msg.innerHTML = '<span class="spin"></span>送信中…';
+      Auth.signInEmail(v).then(function (r) {
+        mailBtn.disabled = false;
+        if (r && r.error) { msg.className = "msg err"; msg.textContent = "エラー: " + (r.error.message || "送信できませんでした"); }
+        else { msg.className = "msg ok"; msg.innerHTML = "📩 " + v + " にログインリンクを送りました。<br>メールのリンクを開いてください。"; }
+      });
+    }
+    mailBtn.onclick = sendLink;
+    email.addEventListener("keydown", function (e) { if (e.key === "Enter") sendLink(); });
+  }
+</script>
+</body>
+</html>
