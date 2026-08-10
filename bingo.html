@@ -132,8 +132,8 @@ button{font:inherit;cursor:pointer}
 .bcard .btitle{text-align:center;font-weight:900;font-size:16px;color:#241552}
 .bcard .bname{font-size:11px;color:#6a6390;margin:2px 0 8px;font-weight:700;text-align:right}
 .bgrid{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:5px}
-.bcell{position:relative;aspect-ratio:1;border:2px solid #241552;border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:3px;overflow:hidden;background:#fff}
-.bcell img{max-width:96%;max-height:58%;object-fit:contain}
+.bcell{position:relative;aspect-ratio:1;border:2px solid #241552;border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;padding:4px 3px 3px;overflow:hidden;background:#fff}
+.bcell img{max-width:96%;max-height:62%;object-fit:contain;flex:0 0 auto}
 .bcell span{font-weight:800;color:#241552;font-size:clamp(9px,2.3vw,15px);line-height:1.1;word-break:break-word;text-align:center}
 .bcell.free{background:linear-gradient(135deg,#ec6f9e,#2563eb);border-color:#ec6f9e}
 .bcell.free span{color:#fff;font-size:clamp(11px,2.8vw,17px);letter-spacing:1px}
@@ -846,7 +846,7 @@ async function cardToCanvas(model, size, g){
     if(it.free){ ctx.fillStyle="#ec6f9e"; ctx.fillRect(x+2,y+2,cell-4,cell-4); ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.font="bold 38px 'Yu Gothic UI',Meiryo,sans-serif"; ctx.fillText("BINGO", x+cell/2, y+cell/2); }
     else {
       const im=imMap[it.v];
-      if(im){ const inset=14, capH=30, availW=cell-inset*2, availH=cell-inset-capH, ratio=Math.min(availW/im.width, availH/im.height), w=im.width*ratio, h=im.height*ratio; ctx.drawImage(im, x+(cell-w)/2, y+inset, w, h); ctx.fillStyle="#241552"; ctx.textAlign="center"; ctx.textBaseline="middle"; fitFont(ctx,it.v,cell-20,22,true); ctx.fillText(it.v, x+cell/2, y+cell-16); }
+      if(im){ const inset=12, imgMaxH=cell*0.6, availW=cell-inset*2, ratio=Math.min(availW/im.width, imgMaxH/im.height), w=im.width*ratio, h=im.height*ratio; ctx.drawImage(im, x+(cell-w)/2, y+inset, w, h); ctx.fillStyle="#241552"; ctx.textAlign="center"; ctx.textBaseline="top"; fitFont(ctx,it.v,cell-16,20,true); ctx.fillText(it.v, x+cell/2, y+inset+h+6); }
       else { ctx.fillStyle="#241552"; ctx.textAlign="center"; ctx.textBaseline="middle"; fitFont(ctx,it.v,cell-24,40,true); ctx.fillText(it.v, x+cell/2, y+cell/2); }
     }
     ctx.strokeStyle="#241552"; ctx.lineWidth=3; ctx.strokeRect(x,y,cell,cell);
@@ -877,8 +877,8 @@ $("#cardPrint").onclick=()=>{
     .ph{text-align:center;font-weight:900;font-size:24px;margin:0 0 2px}
     .pn{text-align:right;font-weight:700;font-size:14px;margin:0 0 8px}
     .pg{width:100%;aspect-ratio:1;display:grid;grid-template-columns:repeat(var(--n),1fr);grid-auto-rows:1fr;gap:6px}
-    .pc{border:3px solid #241552;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px;overflow:hidden;text-align:center;min-height:0}
-    .pc img{max-width:92%;max-height:56%;object-fit:contain}
+    .pc{border:3px solid #241552;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;padding:7px 6px 6px;overflow:hidden;text-align:center;min-height:0}
+    .pc img{max-width:92%;max-height:62%;object-fit:contain;flex:0 0 auto}
     .pc span{font-weight:800;font-size:19px;line-height:1.15;word-break:break-word}
     .pc.free{background:linear-gradient(135deg,#ec6f9e,#2563eb);border-color:#ec6f9e}
     .pc.free span{color:#fff;font-size:23px;letter-spacing:1px}
