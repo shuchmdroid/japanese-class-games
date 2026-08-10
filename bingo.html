@@ -137,6 +137,15 @@ button{font:inherit;cursor:pointer}
 .bcell span{font-weight:800;color:#241552;font-size:clamp(9px,2.3vw,15px);line-height:1.1;word-break:break-word;text-align:center}
 .bcell.free{background:linear-gradient(135deg,#ec6f9e,#2563eb);border-color:#ec6f9e}
 .bcell.free span{color:#fff;font-size:clamp(11px,2.8vw,17px);letter-spacing:1px}
+/* グループ合体 */
+.mergelist{max-height:46vh;overflow:auto;margin:8px 0 14px;border:1.5px solid #e5e1f2;border-radius:12px;padding:6px}
+.mg-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;font-weight:700;font-size:15px;color:#241552;cursor:pointer}
+.mg-row:hover{background:#f3f0fb}
+.mg-row input{width:18px;height:18px;flex:0 0 auto}
+.mg-row>span:first-of-type{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mg-row .mg-n{margin-left:auto;color:#8a83ad;font-size:13px;font-weight:800;background:#efeaff;border-radius:999px;padding:2px 10px;flex:0 0 auto}
+.mergename label{display:block;font-size:13px;font-weight:800;color:#6a6390;margin-bottom:5px}
+.mergename input{width:100%;border:1.5px solid #cfc7ea;border-radius:9px;padding:9px 11px;font:inherit;font-weight:700;color:#241552}
 .panel{background:#fff;color:#241552;border-radius:18px;max-width:480px;width:100%;padding:22px;box-shadow:0 30px 70px rgba(0,0,0,.5)}
 .panel h3{margin:0 0 4px;font-size:20px}
 .panel p.note{margin:0 0 16px;color:#7b71a8;font-size:13px}
@@ -250,6 +259,20 @@ button{font:inherit;cursor:pointer}
   </div>
 </div>
 
+<!-- グループ合体 -->
+<div class="overlay" id="mergeOverlay">
+  <div class="panel">
+    <h3>🔗 グループを合体</h3>
+    <p class="note">2つ以上のグループにチェックを入れると、中身をまとめた新しいグループを作ります。ビンゴも「🎴 カード」も、合体した内容からランダムに出ます。</p>
+    <div id="mergeList" class="mergelist"></div>
+    <div class="mergename"><label>新しいグループ名（任意）</label><input type="text" id="mergeName" placeholder="例：ひらがな＋動物"></div>
+    <div class="panel-actions">
+      <button class="pbtn" id="mergeCancel">とじる</button>
+      <button class="pbtn primary" id="mergeGo">合体する</button>
+    </div>
+  </div>
+</div>
+
 <div id="confetti"></div>
 
 <script>
@@ -352,6 +375,10 @@ function renderModes(){
   add.className="mode add"; add.textContent="＋ グループ"; add.title="新しいグループを作る";
   add.onclick=()=>{ if(spinning) return; addGroup(); };
   modesEl.appendChild(add);
+  const merge=document.createElement("button");
+  merge.className="mode add"; merge.textContent="🔗 合体"; merge.title="グループを合体して新しいグループを作る";
+  merge.onclick=()=>{ if(spinning) return; openMerge(); };
+  modesEl.appendChild(merge);
 }
 
 function renderBoard(){
@@ -728,7 +755,7 @@ $("#fsBtn").onclick=function(){
 
 // スペース／Enterでもスピン
 document.addEventListener("keydown",e=>{
-  if((e.code==="Space"||e.code==="Enter") && !overlay.classList.contains("open") && !cardOverlay.classList.contains("open")){
+  if((e.code==="Space"||e.code==="Enter") && !overlay.classList.contains("open") && !cardOverlay.classList.contains("open") && !mergeOverlay.classList.contains("open")){
     e.preventDefault(); spin();
   }
 });
@@ -860,6 +887,32 @@ $("#cardPrint").onclick=()=>{
   if(!w){ alert("印刷用の画面を開けませんでした。ブラウザのポップアップを許可してください。"); return; }
   w.document.write(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>ビンゴカード</title><style>${css}</style></head><body>${cards.map(pageHTML).join("")}<script>window.onload=function(){setTimeout(function(){window.focus();window.print();},250);}<\/script></body></html>`);
   w.document.close();
+};
+
+/* ============================ グループの合体 ============================ */
+const mergeOverlay=$("#mergeOverlay");
+function inferCells(keys){ return keys.every(k=>{ const g=groupOf(k); return g&&g.cells==="kana"; })?"kana":"word"; }
+function openMerge(){
+  $("#mergeList").innerHTML=groups.map(g=>`<label class="mg-row"><input type="checkbox" value="${esc(g.key)}"><span>${esc(g.label)}</span><span class="mg-n">${poolOf(g.key).length}</span></label>`).join("");
+  $("#mergeName").value="";
+  mergeOverlay.classList.add("open");
+}
+$("#mergeCancel").onclick=()=>mergeOverlay.classList.remove("open");
+mergeOverlay.onclick=e=>{ if(e.target===mergeOverlay) mergeOverlay.classList.remove("open"); };
+$("#mergeGo").onclick=()=>{
+  const keys=[...$("#mergeList").querySelectorAll("input:checked")].map(c=>c.value);
+  if(keys.length<2){ alert("2つ以上のグループにチェックを入れてください。"); return; }
+  const items=[], imgs={}, seen=new Set();
+  keys.forEach(k=>{ const g=groupOf(k); poolOf(k).forEach(v=>{ if(!seen.has(v)){ seen.add(v); items.push(v); } if(g&&g.imgs&&g.imgs[v]&&!imgs[v]) imgs[v]=g.imgs[v]; }); });
+  if(items.length<2){ alert("合体できる中身が足りません。"); return; }
+  const label=($("#mergeName").value||"").trim() || ("🔗 "+keys.map(k=>(groupOf(k)||{}).label||"").join("＋"));
+  const key=genKey();
+  const g={key,label,type:"list",cells:inferCells(keys),items};
+  if(Object.keys(imgs).length) g.imgs=imgs;
+  groups.push(g); saveGroups();
+  mode=key; cfg.mode=key; save(LS_CFG,cfg);
+  mergeOverlay.classList.remove("open");
+  renderAll();
 };
 
 renderAll();
