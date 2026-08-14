@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>今日のアニメ — 日本語クラス</title>
+<meta name="description" content="かわいい動物キャラ2匹が会話する、約30秒のミニアニメ。背景・表情・頭上の感情マークを設定でき、字幕＋翻訳＋読み上げで再生。セリフはAI一括登録。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ec6f9e'/><text x='50' y='72' font-size='56' text-anchor='middle'>🎬</text></svg>">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;font-family:"Segoe UI","Yu Gothic UI",Meiryo,"Hiragino Kaku Gothic ProN","Malgun Gothic",system-ui,sans-serif;color:#fff;
+  background:radial-gradient(1200px 700px at 20% -10%,#3b2a6b 0%,rgba(59,42,107,0) 60%),
+             radial-gradient(1100px 700px at 100% 0%,#1d4ed8 0%,rgba(29,78,216,0) 55%),
+             linear-gradient(160deg,#1a1140,#2b1a5e 55%,#11103a);
+  min-height:100vh;-webkit-font-smoothing:antialiased}
+:root{--gold:#ffd34e;--tr:#7af0c4}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;max-width:1000px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
+.brand .logo{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#ec6f9e,#2563eb);box-shadow:0 6px 16px rgba(234,95,147,.4);font-size:22px}
+.brand small{display:block;font-size:11px;font-weight:600;color:#c9c2e8}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.chip-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:9px 15px;font-size:14px;font-weight:700;backdrop-filter:blur(6px);transition:background .15s,transform .12s}
+.chip-btn:hover{background:rgba(255,255,255,.2)}
+.chip-btn:active{transform:scale(.95)}
+.chip-btn.on{background:linear-gradient(135deg,#ec6f9e,#2563eb);border-color:transparent}
+
+.wrap{max-width:900px;margin:0 auto;padding:8px 16px 50px}
+.screen{animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+
+/* menu */
+.menu-h{text-align:center;font-size:clamp(20px,4vw,28px);font-weight:900;margin:8px 0 4px}
+.menu-sub{text-align:center;color:#c9c2e8;font-size:14px;margin-bottom:16px}
+.qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.qcard{text-align:left;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:16px;padding:16px;cursor:pointer;transition:transform .12s,background .15s;color:#fff}
+.qcard:hover{background:rgba(255,255,255,.13);transform:translateY(-2px)}
+.qcard .qn{font-size:19px;font-weight:900;margin-bottom:4px}
+.qcard .qm{font-size:13px;color:#c9c2e8;font-weight:700;line-height:1.6}
+.qcard .go{display:inline-block;margin-top:10px;background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff;border-radius:999px;padding:6px 14px;font-size:13px;font-weight:800}
+.empty-note{text-align:center;color:#a99fd6;margin-top:34px;font-size:15px;line-height:1.9}
+
+/* stage（アニメ） */
+.crumbs{margin:2px 0 10px}
+.crumbs button{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:7px 14px;font-weight:800;font-size:13px}
+.stage{position:relative;width:100%;aspect-ratio:16/10;max-height:62vh;border-radius:20px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.45);background:#89c;}
+.bg-emojis{position:absolute;inset:0;pointer-events:none}
+.bg-emojis span{position:absolute;font-size:34px;opacity:.85;filter:drop-shadow(0 2px 3px rgba(0,0,0,.15))}
+.ground{position:absolute;left:0;right:0;bottom:0;height:26%;background:rgba(0,0,0,.10)}
+.chars{position:absolute;left:0;right:0;bottom:20%;display:flex;justify-content:space-around;align-items:flex-end;padding:0 6%}
+.chara{position:relative;width:min(30%,190px);transform-origin:bottom center;transition:transform .18s}
+.chara.left{transform:rotate(7deg)}
+.chara.right{transform:rotate(-7deg)}
+.chara.left.talk{animation:talkL .5s ease-in-out infinite alternate}
+.chara.right.talk{animation:talkR .5s ease-in-out infinite alternate}
+@keyframes talkL{from{transform:rotate(7deg) translateY(0)}to{transform:rotate(7deg) translateY(-7px) scale(1.03)}}
+@keyframes talkR{from{transform:rotate(-7deg) translateY(0)}to{transform:rotate(-7deg) translateY(-7px) scale(1.03)}}
+.csvg{width:100%;height:auto;display:block;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25))}
+.mark{position:absolute;top:-14%;left:50%;transform:translateX(-50%);font-size:clamp(26px,6vw,44px);filter:drop-shadow(0 2px 3px rgba(0,0,0,.25));animation:markpop .3s cubic-bezier(.2,1.4,.4,1)}
+@keyframes markpop{from{transform:translateX(-50%) scale(.3);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
+.namep{position:absolute;bottom:-6%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.35);color:#fff;font-size:12px;font-weight:800;padding:2px 10px;border-radius:999px;white-space:nowrap}
+/* 字幕 */
+.subs{position:absolute;left:0;right:0;bottom:0;padding:14px 16px 16px;background:linear-gradient(0deg,rgba(0,0,0,.55),rgba(0,0,0,0));text-align:center}
+.subs .who{font-size:12.5px;font-weight:800;color:#ffd34e;margin-bottom:2px}
+.subs .jp{font-size:clamp(18px,3.6vw,28px);font-weight:900;line-height:1.35;text-shadow:0 2px 6px rgba(0,0,0,.6)}
+.subs .tr{font-size:clamp(13px,2.4vw,17px);font-weight:700;color:#bff3df;margin-top:3px;text-shadow:0 2px 5px rgba(0,0,0,.6)}
+.subs.hidden .jp,.subs.hidden .tr,.subs.hidden .who{visibility:hidden}
+/* コントロール */
+.pbar{height:6px;border-radius:999px;background:rgba(255,255,255,.14);overflow:hidden;margin:12px 0 12px}
+.pbar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ec6f9e,#2563eb);transition:width .2s linear}
+.controls{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.pbtn{border:0;border-radius:14px;padding:13px 22px;font-size:16px;font-weight:900;color:#3a2400;background:linear-gradient(135deg,#ffe27a,#ffb43b);box-shadow:0 8px 22px rgba(255,170,40,.35)}
+.pbtn:active{transform:scale(.97)}
+.pbtn.ghost{background:rgba(255,255,255,.12);color:#fff;box-shadow:none}
+.pbtn.play{background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff;box-shadow:0 8px 22px rgba(234,95,147,.35)}
+
+/* edit */
+h1.title{font-size:clamp(22px,5vw,30px);margin:8px 0 2px;text-align:center}
+p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
+.scene{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:16px;padding:14px;margin-bottom:14px}
+.sc-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.sc-head .num{width:24px;height:24px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:12px;background:linear-gradient(135deg,#ec6f9e,#2563eb)}
+.sc-head input.nm{flex:1;min-width:140px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:9px;padding:9px 12px;font:inherit;font-weight:800}
+.psm{width:34px;height:34px;border-radius:9px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-weight:800;flex:0 0 auto}
+.psm:disabled{opacity:.35}
+.psm.del{color:#ff9aa8;border-color:rgba(255,107,133,.4)}
+.setrow{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin:8px 0 12px;font-size:13px;font-weight:800;color:#c9c2e8}
+.setrow label{display:inline-flex;align-items:center;gap:6px}
+.setrow select{border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:8px;padding:7px 9px;font:inherit;font-weight:700;font-size:13px}
+.lrow{background:rgba(0,0,0,.16);border-radius:11px;padding:9px;margin-bottom:8px}
+.lrow .l1{display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
+.lrow .l2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+@media(max-width:640px){.lrow .l2{grid-template-columns:1fr}}
+.lrow input,.lrow select{border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:8px;padding:8px 10px;font:inherit;font-weight:600;font-size:13.5px;min-width:0}
+.lrow .who-seg{display:inline-flex;gap:2px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.16);border-radius:9px;padding:2px}
+.lrow .who-seg button{background:transparent;border:0;color:#cfc8f0;border-radius:7px;padding:5px 10px;font-weight:800;font-size:12.5px}
+.lrow .who-seg button.on{background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff}
+.lrow .jp{flex:1;min-width:120px}
+.lrow .dur{width:64px;text-align:center}
+.addbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.addbtns button{background:transparent;border:1.5px dashed rgba(255,255,255,.32);color:#cfc8f0;border-radius:11px;padding:8px 13px;font-weight:800;font-size:13px}
+.addbtns button:hover{border-color:#fff;color:#fff}
+.addbtns button.ai{border-style:solid;border-color:rgba(122,240,196,.5);color:#7af0c4}
+.addscene{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.addscene button{background:transparent;border:1.5px dashed rgba(255,255,255,.32);color:#cfc8f0;border-radius:12px;padding:9px 14px;font-weight:800;font-size:14px}
+.note{font-size:12.5px;color:#a99fd6;margin:2px 2px 14px;line-height:1.7}
+.editbar{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:4px}
+.mini{border-radius:10px;padding:11px 18px;font-weight:800;font-size:15px;border:0}
+.mini.save{background:linear-gradient(135deg,#7af0c4,#2bbf8e);color:#063b2c}
+.mini.primary{background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff}
+.mini.plain{background:rgba(255,255,255,.14);color:#fff}
+.lbl-mini{font-size:11px;font-weight:800;color:#a99fd6;margin-left:2px}
+
+/* AI modal */
+.overlay{position:fixed;inset:0;background:rgba(10,6,30,.66);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow:auto;z-index:120}
+.ai-panel{background:#1c1346;border:1.5px solid rgba(255,255,255,.16);border-radius:18px;max-width:620px;width:100%;padding:20px;box-shadow:0 30px 70px rgba(0,0,0,.55)}
+.ai-panel h3{margin:0 0 6px;font-size:19px}
+.ai-panel .step{font-weight:800;color:var(--gold);font-size:13px;margin:14px 0 6px}
+.ai-panel textarea{width:100%;min-height:80px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.96);color:#241552;border-radius:10px;padding:11px;font:inherit;line-height:1.6;resize:vertical}
+.ai-prompt{background:rgba(255,255,255,.95);color:#241552;border-radius:8px;padding:10px;margin:6px 0;font-size:12px;line-height:1.6;white-space:pre-wrap;font-weight:600;max-height:150px;overflow:auto}
+.ai-lang{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:#e7e2ff;margin-bottom:6px}
+.ai-lang input{flex:1;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.95);color:#241552;border-radius:8px;padding:7px 10px;font:inherit;font-weight:700}
+.ai-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(18px);background:#43d9ad;color:#063b2c;font-weight:800;font-size:15px;padding:12px 26px;border-radius:999px;box-shadow:0 12px 34px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:130}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a class="brand" href="games.html">
+    <span class="logo">🎬</span>
+    <span>今日のアニメ<small>日本語クラス・ツール</small></span>
+  </a>
+  <div class="top-actions">
+    <button class="chip-btn" id="trBtn">🌐 翻訳</button>
+    <button class="chip-btn" id="menuBtn">☰ 一覧</button>
+    <button class="chip-btn" id="modeBtn">✏️ 編集</button>
+    <button class="chip-btn" id="fsBtn">⛶ 全画面</button>
+    <a class="chip-btn" href="games.html">🎮 ゲーム集</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <section id="present" class="screen"><div id="stage"></div></section>
+
+  <section id="edit" class="screen" hidden>
+    <h1 class="title">✏️ 今日のアニメの編集</h1>
+    <p class="sub">シーン（背景・キャラ2匹）ごとに、セリフを順番に登録します。各セリフに話者・表情・頭上マーク・翻訳を設定できます。</p>
+    <div id="editList"></div>
+    <div class="addscene"><button data-act="addscene">＋ シーンを追加</button></div>
+    <div class="note">💡 キャラは向かい合った状態で位置は固定。<b>表情</b>と<b>頭上マーク</b>はセリフごとに（話している方に）付きます。<b>秒数</b>で1セリフの長さを調整（合計で約30秒が目安）。<b>🤖 AIで一括</b>で会話をまとめて作れます。</div>
+    <div class="editbar">
+      <button class="mini save" id="saveBtn">💾 保存</button>
+      <button class="mini primary" id="doneBtn">▶ 一覧へ</button>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast">✅ 保存しました</div>
+
+<div class="overlay" id="aiOverlay" hidden>
+  <div class="ai-panel">
+    <h3>🤖 AIで会話を一括作成</h3>
+    <div class="ai-lang">🌐 翻訳の言語：<input type="text" id="aiLang" placeholder="例：English / ドイツ語 / 中文"></div>
+    <div class="step">① どんな場面か（例：公園で天気の話。だんだん雨がふる）</div>
+    <textarea id="aiSrc" placeholder="例：ふたりが公園で会って、天気の話をする。とちゅうで雨がふってきて、また明日と約束する。"></textarea>
+    <div class="step">② このプロンプトをコピーして ChatGPT などに貼る</div>
+    <div class="ai-prompt" id="aiPrompt"></div>
+    <button class="mini plain" id="aiCopy">プロンプトをコピー</button>
+    <div class="step">③ AIの結果を貼り付け（左/右 | 日本語 | 翻訳 | 表情 | マーク）</div>
+    <textarea id="aiResult" placeholder="例：&#10;左 | おはよう！ | Good morning! | にこにこ | &#10;右 | あ、おはよう。 | Oh, morning. | にこにこ | 🎵&#10;左 | あっ、雨だ！ | Oh, rain! | びっくり | ❗"></textarea>
+    <div class="ai-actions">
+      <button class="mini plain" id="aiCancel">やめる</button>
+      <button class="mini primary" id="aiAdd">このシーンに追加</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+function load(k,d){ try{const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v}catch(e){return d} }
+function save(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function speak(t){ try{ if(!window.speechSynthesis)return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(String(t||"")); u.lang="ja-JP"; u.rate=0.95; speechSynthesis.speak(u);}catch(e){} }
+
+/* ===== キャラ・背景・表情 ===== */
+const ANIMALS={
+  rabbit:{name:"うさぎ",color:"#f6c6d6",ear:"long",inner:"#f39ab6"},
+  bear:{name:"くま",color:"#cba279",ear:"round",inner:"#e2c3a0"},
+  cat:{name:"ねこ",color:"#ffcf8f",ear:"tri",inner:"#ffe1b0"},
+  dog:{name:"いぬ",color:"#ecd7ab",ear:"floppy",inner:"#f5e8cc"},
+  panda:{name:"パンダ",color:"#f5f5f5",ear:"panda",inner:"#2b2b2b"},
+  frog:{name:"かえる",color:"#a8dc8c",ear:"eyes",inner:"#c6ebb0"},
+  pig:{name:"ぶた",color:"#f7b8c6",ear:"tri",inner:"#f19bb0"},
+  chick:{name:"ひよこ",color:"#ffe08a",ear:"none",inner:"#ffcf5a"}
+};
+const EXPR=["neutral","happy","angry","sad","surprised","troubled","love","sleepy"];
+const EXPR_LABEL={neutral:"ふつう",happy:"にこにこ",angry:"おこ",sad:"かなしい",surprised:"びっくり",troubled:"こまり",love:"だいすき",sleepy:"ねむい"};
+const LABEL_EXPR={}; Object.keys(EXPR_LABEL).forEach(k=>LABEL_EXPR[EXPR_LABEL[k]]=k);
+const MARKS=["","💢","❓","❗","💦","💕","💤","✨","🎵","💡","😅","💧"];
+const BGS={
+  park:{name:"公園",grad:"linear-gradient(180deg,#bfe6ff,#eaffe0)",em:[["🌳","6%","30%"],["☁️","70%","12%"],["🌷","82%","62%"],["🦋","30%","20%"]]},
+  class:{name:"教室",grad:"linear-gradient(180deg,#dfeaf6,#eef3f8)",em:[["🪟","10%","16%"],["🕐","78%","12%"],["📚","84%","60%"]]},
+  home:{name:"おうち",grad:"linear-gradient(180deg,#ffe9d6,#fff4e6)",em:[["🪟","12%","16%"],["🪴","82%","55%"],["🖼️","64%","14%"]]},
+  cafe:{name:"カフェ",grad:"linear-gradient(180deg,#e7d6c4,#f3e8dc)",em:[["☕","16%","58%"],["🪴","80%","52%"],["🧁","66%","60%"]]},
+  sea:{name:"うみ",grad:"linear-gradient(180deg,#8fd3ff,#d8f4ff)",em:[["☀️","74%","12%"],["🌊","6%","70%"],["🐚","82%","68%"],["⛱️","20%","54%"]]},
+  night:{name:"よぞら",grad:"linear-gradient(180deg,#243b6b,#3a2a6b)",em:[["🌙","74%","12%"],["⭐","20%","16%"],["✨","50%","24%"],["⭐","86%","30%"]]},
+  school:{name:"がっこう",grad:"linear-gradient(180deg,#cfe3ff,#eef3f8)",em:[["🏫","70%","14%"],["🌸","10%","60%"],["☁️","30%","12%"]]},
+  snow:{name:"ゆき",grad:"linear-gradient(180deg,#d9ecff,#f2f8ff)",em:[["❄️","20%","18%"],["⛄","78%","56%"],["❄️","60%","26%"]]}
+};
+
+function earsSVG(a){
+  const c=a.color, st='stroke="rgba(0,0,0,.12)" stroke-width="1.5"';
+  if(a.ear==="long") return `<ellipse cx="35" cy="22" rx="9" ry="22" fill="${c}" ${st}/><ellipse cx="65" cy="22" rx="9" ry="22" fill="${c}" ${st}/><ellipse cx="35" cy="24" rx="4.5" ry="14" fill="${a.inner}"/><ellipse cx="65" cy="24" rx="4.5" ry="14" fill="${a.inner}"/>`;
+  if(a.ear==="round") return `<circle cx="28" cy="30" r="13" fill="${c}" ${st}/><circle cx="72" cy="30" r="13" fill="${c}" ${st}/><circle cx="28" cy="30" r="6.5" fill="${a.inner}"/><circle cx="72" cy="30" r="6.5" fill="${a.inner}"/>`;
+  if(a.ear==="tri") return `<path d="M22 40 L30 12 L46 34 Z" fill="${c}" ${st}/><path d="M78 40 L70 12 L54 34 Z" fill="${c}" ${st}/><path d="M27 34 L31 20 L39 31 Z" fill="${a.inner}"/><path d="M73 34 L69 20 L61 31 Z" fill="${a.inner}"/>`;
+  if(a.ear==="floppy") return `<ellipse cx="20" cy="52" rx="11" ry="20" fill="${c}" ${st}/><ellipse cx="80" cy="52" rx="11" ry="20" fill="${c}" ${st}/>`;
+  if(a.ear==="panda") return `<circle cx="26" cy="30" r="13" fill="#2b2b2b"/><circle cx="74" cy="30" r="13" fill="#2b2b2b"/>`;
+  if(a.ear==="eyes") return `<circle cx="30" cy="30" r="15" fill="${c}" ${st}/><circle cx="70" cy="30" r="15" fill="${c}" ${st}/><circle cx="30" cy="28" r="7" fill="#fff"/><circle cx="70" cy="28" r="7" fill="#fff"/><circle cx="30" cy="29" r="3.5" fill="#3a2a4a"/><circle cx="70" cy="29" r="3.5" fill="#3a2a4a"/>`;
+  return "";
+}
+function faceParts(ex){
+  const D="#3a2a4a", s='fill="none" stroke="'+D+'" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"';
+  var eyes,mouth;
+  switch(ex){
+    case "happy": eyes=`<path d="M30 60 Q37 51 44 60" ${s}/><path d="M56 60 Q63 51 70 60" ${s}/>`; mouth=`<path d="M40 73 Q50 86 60 73 Z" fill="#ff9db0" stroke="${D}" stroke-width="2.4"/>`; break;
+    case "angry": eyes=`<path d="M29 50 L45 55" ${s}/><path d="M71 50 L55 55" ${s}/><circle cx="37" cy="60" r="4.4" fill="${D}"/><circle cx="63" cy="60" r="4.4" fill="${D}"/>`; mouth=`<path d="M42 81 Q50 74 58 81" ${s}/>`; break;
+    case "sad": eyes=`<path d="M30 57 Q37 63 44 57" ${s}/><path d="M56 57 Q63 63 70 57" ${s}/><path d="M44 61 q-3 7 0 9 q3 -2 0 -9" fill="#8fd3ff"/>`; mouth=`<path d="M42 82 Q50 76 58 82" ${s}/>`; break;
+    case "surprised": eyes=`<circle cx="37" cy="57" r="7.5" fill="#fff" stroke="${D}" stroke-width="2"/><circle cx="37" cy="58.5" r="3.6" fill="${D}"/><circle cx="63" cy="57" r="7.5" fill="#fff" stroke="${D}" stroke-width="2"/><circle cx="63" cy="58.5" r="3.6" fill="${D}"/>`; mouth=`<ellipse cx="50" cy="80" rx="4.6" ry="5.6" fill="${D}"/>`; break;
+    case "troubled": eyes=`<path d="M30 52 Q37 49 44 52" ${s}/><path d="M56 52 Q63 49 70 52" ${s}/><circle cx="37" cy="59" r="3.6" fill="${D}"/><circle cx="63" cy="59" r="3.6" fill="${D}"/>`; mouth=`<path d="M42 79 q4 -3 8 0 q4 3 8 0" ${s}/>`; break;
+    case "love": eyes=`<circle cx="37" cy="57" r="6.4" fill="${D}"/><circle cx="34.5" cy="54.5" r="2.1" fill="#fff"/><circle cx="63" cy="57" r="6.4" fill="${D}"/><circle cx="60.5" cy="54.5" r="2.1" fill="#fff"/>`; mouth=`<path d="M40 73 Q50 86 60 73 Z" fill="#ff8fa6" stroke="${D}" stroke-width="2.4"/>`; break;
+    case "sleepy": eyes=`<path d="M30 58 Q37 61 44 58" ${s}/><path d="M56 58 Q63 61 70 58" ${s}/>`; mouth=`<path d="M46 79 Q50 82 54 79" ${s}/>`; break;
+    default: eyes=`<circle cx="37" cy="57" r="5.2" fill="${D}"/><circle cx="35.2" cy="55" r="1.7" fill="#fff"/><circle cx="63" cy="57" r="5.2" fill="${D}"/><circle cx="61.2" cy="55" r="1.7" fill="#fff"/>`; mouth=`<path d="M44 78 Q50 82 56 78" ${s}/>`;
+  }
+  return eyes+mouth;
+}
+function charSVG(animalKey, ex){
+  const a=ANIMALS[animalKey]||ANIMALS.rabbit;
+  return `<svg viewBox="0 0 100 108" class="csvg">${earsSVG(a)}<circle cx="50" cy="62" r="36" fill="${a.color}" stroke="rgba(0,0,0,.12)" stroke-width="1.6"/><ellipse cx="30" cy="71" rx="7" ry="4.2" fill="#ff9db0" opacity=".5"/><ellipse cx="70" cy="71" rx="7" ry="4.2" fill="#ff9db0" opacity=".5"/>${faceParts(ex)}</svg>`;
+}
+
+/* ===== データ ===== */
+const SEED={scenes:[
+  {title:"公園であいさつ", bg:"park", left:"rabbit", right:"bear", lines:[
+    {who:"left", jp:"おはよう！", tr:"Good morning!", ex:"happy", mark:"", dur:3},
+    {who:"right", jp:"あ、おはよう。", tr:"Oh, good morning.", ex:"happy", mark:"", dur:3},
+    {who:"left", jp:"きょうは いい てんきだね。", tr:"It's nice weather today.", ex:"neutral", mark:"", dur:3.5},
+    {who:"right", jp:"うん！ こうえんで あそぼう。", tr:"Yeah! Let's play in the park.", ex:"happy", mark:"🎵", dur:3.5},
+    {who:"left", jp:"あっ、あめが ふってきた！", tr:"Oh, it started to rain!", ex:"surprised", mark:"❗", dur:3.5},
+    {who:"right", jp:"ええ〜、ざんねん。", tr:"Aww, too bad.", ex:"troubled", mark:"💦", dur:3.5},
+    {who:"left", jp:"だいじょうぶ、また あした！", tr:"It's okay, see you tomorrow!", ex:"happy", mark:"", dur:3.5},
+    {who:"right", jp:"うん、また あした！", tr:"Yeah, see you tomorrow!", ex:"love", mark:"💕", dur:3.5}
+  ]}
+]};
+let data=load("anime.data.v1",null);
+if(!data||!Array.isArray(data.scenes)){ data={scenes:SEED.scenes.map(s=>({...s,lines:s.lines.map(l=>({...l}))}))}; save("anime.data.v1",data); }
+data.scenes.forEach(s=>{ if(typeof s.title!=="string")s.title=""; if(!BGS[s.bg])s.bg="park"; if(!ANIMALS[s.left])s.left="rabbit"; if(!ANIMALS[s.right])s.right="bear";
+  if(!Array.isArray(s.lines))s.lines=[]; s.lines.forEach(l=>{ l.who=l.who==="right"?"right":"left"; l.jp=String(l.jp||""); l.tr=String(l.tr||""); l.ex=EXPR.includes(l.ex)?l.ex:"neutral"; l.mark=String(l.mark||""); l.dur=Math.max(1,Math.min(12,+l.dur||3)); }); });
+function saveData(){ save("anime.data.v1",data); }
+let cfg=load("anime.cfg.v1",{showTr:true,lang:"English"});
+if(typeof cfg.showTr!=="boolean")cfg.showTr=true; if(typeof cfg.lang!=="string")cfg.lang="English";
+function saveCfg(){ save("anime.cfg.v1",cfg); }
+
+/* ===== 発表 ===== */
+const stage=$("#stage");
+let phase="menu";
+let run=null;   // {si, idx, playing, timer, exL, exR}
+
+function renderPresent(){
+  if(!data.scenes.length){ stage.innerHTML=`<div class="empty-note">まだアニメがありません。<br>右上の「✏️ 編集」から作ってください。</div>`; return; }
+  if(phase==="menu") return renderMenu();
+  return renderPlay();
+}
+function renderMenu(){
+  run=null;
+  stage.innerHTML=`<div class="menu-h">今日のアニメ</div><div class="menu-sub">アニメを選んで再生！</div>
+    <div class="qgrid">${data.scenes.map((s,i)=>`<button class="qcard" data-play="${i}"><div class="qn">🎬 ${esc(s.title||("アニメ"+(i+1)))}</div><div class="qm">${ANIMALS[s.left].name}＆${ANIMALS[s.right].name}・${BGS[s.bg].name}<br>${s.lines.length}セリフ・約${Math.round(s.lines.reduce((a,l)=>a+(+l.dur||3),0))}秒</div><span class="go">▶ 見る</span></button>`).join("")}</div>`;
+  stage.querySelectorAll("[data-play]").forEach(b=>b.onclick=()=>{ startScene(+b.dataset.play); });
+}
+function startScene(i){
+  run={si:i, idx:-1, playing:false, timer:null, exL:"neutral", exR:"neutral", mkL:"", mkR:""};
+  phase="play"; renderPlay(); window.scrollTo(0,0);
+}
+function sceneEmojis(bg){ return (BGS[bg].em||[]).map(e=>`<span style="left:${e[1]};top:${e[2]}">${e[0]}</span>`).join(""); }
+function renderPlay(){
+  const s=data.scenes[run.si];
+  const total=s.lines.length;
+  stage.innerHTML=`
+    <div class="crumbs"><button id="toMenu">← 一覧</button></div>
+    <div class="stage" id="anStage" style="background:${BGS[s.bg].grad}">
+      <div class="bg-emojis">${sceneEmojis(s.bg)}</div>
+      <div class="ground"></div>
+      <div class="chars">
+        <div class="chara left" id="cL"><div class="mark" id="mkL" hidden></div>${charSVG(s.left,run.exL)}<div class="namep">${esc(ANIMALS[s.left].name)}</div></div>
+        <div class="chara right" id="cR"><div class="mark" id="mkR" hidden></div>${charSVG(s.right,run.exR)}<div class="namep">${esc(ANIMALS[s.right].name)}</div></div>
+      </div>
+      <div class="subs${run.idx<0?" hidden":""}" id="subs"><div class="who" id="subWho"></div><div class="jp" id="subJp"></div><div class="tr" id="subTr"></div></div>
+    </div>
+    <div class="pbar"><i id="pfill"></i></div>
+    <div class="controls">
+      <button class="pbtn ghost" id="cReset">⏮ 最初から</button>
+      <button class="pbtn play" id="cPlay">▶ 再生</button>
+    </div>
+    <div class="crumbs" style="text-align:center;margin-top:10px"><span style="color:#a99fd6;font-size:12.5px">タップでも 一時停止／再生できます</span></div>`;
+  $("#toMenu").onclick=()=>{ stopRun(); phase="menu"; renderPresent(); window.scrollTo(0,0); };
+  $("#cReset").onclick=()=>{ resetRun(); };
+  $("#cPlay").onclick=()=>{ togglePlay(); };
+  $("#anStage").onclick=()=>{ togglePlay(); };
+  drawFrame();
+}
+function drawFrame(){
+  const s=data.scenes[run.si];
+  const cL=$("#cL"), cR=$("#cR");
+  if(!cL) return;
+  cL.querySelector(".csvg").outerHTML=charSVG(s.left,run.exL);
+  cR.querySelector(".csvg").outerHTML=charSVG(s.right,run.exR);
+  setMark("mkL",run.mkL); setMark("mkR",run.mkR);
+  const line=run.idx>=0?s.lines[run.idx]:null;
+  cL.classList.toggle("talk", run.playing && line && line.who==="left");
+  cR.classList.toggle("talk", run.playing && line && line.who==="right");
+  const subs=$("#subs");
+  if(line){ subs.classList.remove("hidden"); $("#subWho").textContent=(line.who==="left"?ANIMALS[s.left].name:ANIMALS[s.right].name); $("#subJp").textContent=line.jp; $("#subTr").textContent=cfg.showTr?line.tr:""; }
+  else { subs.classList.add("hidden"); }
+  const total=s.lines.length; $("#pfill").style.width=(total?Math.max(0,Math.min(100,((run.idx+1)/total)*100)):0)+"%";
+  const pb=$("#cPlay"); if(pb) pb.textContent=run.playing?"⏸ 一時停止":(run.idx>=total-1?"🔁 もう一度":"▶ 再生");
+}
+function setMark(id,mk){ const el=$("#"+id); if(!el)return; if(mk){ el.textContent=mk; el.hidden=false; el.style.animation="none"; el.offsetHeight; el.style.animation=""; } else el.hidden=true; }
+function stopRun(){ if(run&&run.timer){ clearTimeout(run.timer); run.timer=null; } if(run)run.playing=false; try{speechSynthesis.cancel();}catch(e){} }
+function resetRun(){ stopRun(); run.idx=-1; run.exL="neutral"; run.exR="neutral"; run.mkL=""; run.mkR=""; drawFrame(); }
+function togglePlay(){
+  if(!run)return;
+  const s=data.scenes[run.si];
+  if(run.playing){ stopRun(); drawFrame(); return; }
+  if(run.idx>=s.lines.length-1) resetRun();   // 最後まで見たら最初から
+  run.playing=true; nextLine();
+}
+function nextLine(){
+  const s=data.scenes[run.si];
+  run.idx++;
+  if(run.idx>=s.lines.length){ run.playing=false; run.idx=s.lines.length-1; drawFrame(); return; }
+  const line=s.lines[run.idx];
+  if(line.who==="left"){ run.exL=line.ex; run.mkL=line.mark; } else { run.exR=line.ex; run.mkR=line.mark; }
+  drawFrame();
+  if(line.jp) speak(line.jp);
+  const ms=Math.max(1000,(+line.dur||3)*1000);
+  run.timer=setTimeout(()=>{ if(run&&run.playing) nextLine(); }, ms);
+}
+
+/* ===== 編集 ===== */
+const editList=$("#editList");
+function opt(list,cur,lab){ return Object.keys(list).map(k=>`<option value="${k}"${k===cur?" selected":""}>${esc(lab?lab(list[k],k):list[k].name)}</option>`).join(""); }
+function renderEdit(){ editList.innerHTML=data.scenes.map((s,si)=>sceneHTML(s,si)).join(""); }
+function sceneHTML(s,si){
+  const lines=s.lines.map((l,li)=>`
+    <div class="lrow">
+      <div class="l1">
+        <span class="who-seg" data-si="${si}" data-li="${li}"><button data-who="left" class="${l.who==="left"?"on":""}">左</button><button data-who="right" class="${l.who==="right"?"on":""}">右</button></span>
+        <input class="jp" data-si="${si}" data-li="${li}" data-f="jp" placeholder="セリフ（日本語）" value="${esc(l.jp)}">
+        <select data-si="${si}" data-li="${li}" data-f="ex" title="表情">${EXPR.map(e=>`<option value="${e}"${l.ex===e?" selected":""}>${EXPR_LABEL[e]}</option>`).join("")}</select>
+        <select data-si="${si}" data-li="${li}" data-f="mark" title="頭上マーク">${MARKS.map(m=>`<option value="${esc(m)}"${l.mark===m?" selected":""}>${m||"（マークなし）"}</option>`).join("")}</select>
+        <input class="dur" type="number" min="1" max="12" step="0.5" data-si="${si}" data-li="${li}" data-f="dur" value="${l.dur}" title="秒">
+        <button class="psm del" data-act="ldel" data-si="${si}" data-li="${li}">✕</button>
+      </div>
+      <div class="l2"><input data-si="${si}" data-li="${li}" data-f="tr" placeholder="翻訳" value="${esc(l.tr)}"></div>
+    </div>`).join("");
+  return `<div class="scene" data-si="${si}">
+    <div class="sc-head"><span class="num">${si+1}</span>
+      <input class="nm" data-si="${si}" data-f="title" placeholder="タイトル（例：公園であいさつ）" value="${esc(s.title)}">
+      <button class="psm" data-act="sup" data-si="${si}" ${si===0?"disabled":""}>▲</button>
+      <button class="psm" data-act="sdown" data-si="${si}" ${si===data.scenes.length-1?"disabled":""}>▼</button>
+      <button class="psm del" data-act="sdel" data-si="${si}">🗑</button>
+    </div>
+    <div class="setrow">
+      <label>背景 <select data-si="${si}" data-f="bg">${opt(BGS,s.bg)}</select></label>
+      <label>左キャラ <select data-si="${si}" data-f="left">${opt(ANIMALS,s.left)}</select></label>
+      <label>右キャラ <select data-si="${si}" data-f="right">${opt(ANIMALS,s.right)}</select></label>
+    </div>
+    <div class="lbl-mini">セリフ（話者・日本語・表情・マーク・秒／下段：翻訳）</div>
+    ${lines}
+    <div class="addbtns">
+      <button data-act="ladd" data-si="${si}">＋ セリフを追加</button>
+      <button class="ai" data-act="ai" data-si="${si}">🤖 AIで一括</button>
+    </div>
+  </div>`;
+}
+editList.addEventListener("input",e=>{
+  const t=e.target, si=+t.dataset.si; if(isNaN(si)||!data.scenes[si])return; const s=data.scenes[si], f=t.dataset.f;
+  if(t.dataset.li!=null && !isNaN(+t.dataset.li)){ const l=s.lines[+t.dataset.li]; if(!l)return;
+    if(f==="dur") l.dur=Math.max(1,Math.min(12,+t.value||3)); else l[f]=t.value; saveData(); return; }
+  if(f==="title"){ s.title=t.value; saveData(); }
+});
+editList.addEventListener("change",e=>{
+  const t=e.target, si=+t.dataset.si; if(isNaN(si)||!data.scenes[si])return; const s=data.scenes[si], f=t.dataset.f;
+  if(t.tagName!=="SELECT")return;
+  if(t.dataset.li!=null && !isNaN(+t.dataset.li)){ const l=s.lines[+t.dataset.li]; if(l){ l[f]=t.value; saveData(); } return; }
+  if(f==="bg"||f==="left"||f==="right"){ s[f]=t.value; saveData(); }
+});
+editList.addEventListener("click",e=>{
+  const who=e.target.closest(".who-seg button");
+  if(who){ const seg=who.parentElement; const s=data.scenes[+seg.dataset.si], l=s&&s.lines[+seg.dataset.li]; if(l){ l.who=who.dataset.who; saveData(); renderEdit(); } return; }
+  const b=e.target.closest("[data-act]"); if(!b)return;
+  const act=b.dataset.act, si=+b.dataset.si, s=data.scenes[si];
+  if(act==="ladd"){ s.lines.push({who:"left",jp:"",tr:"",ex:"neutral",mark:"",dur:3}); }
+  else if(act==="ldel"){ s.lines.splice(+b.dataset.li,1); }
+  else if(act==="ai"){ openAi(si); return; }
+  else if(act==="sdel"){ if(!confirm(`「${s.title||"アニメ"}」を削除しますか？`))return; data.scenes.splice(si,1); }
+  else if(act==="sup"){ if(si>0){ [data.scenes[si-1],data.scenes[si]]=[data.scenes[si],data.scenes[si-1]]; } }
+  else if(act==="sdown"){ if(si<data.scenes.length-1){ [data.scenes[si+1],data.scenes[si]]=[data.scenes[si],data.scenes[si+1]]; } }
+  else return;
+  saveData(); renderEdit();
+});
+$(".addscene [data-act='addscene']").onclick=()=>{ data.scenes.push({title:"",bg:"park",left:"rabbit",right:"bear",lines:[{who:"left",jp:"",tr:"",ex:"neutral",mark:"",dur:3}]}); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
+
+/* ===== AI一括 ===== */
+let aiSi=0;
+function aiPromptText(){
+  const lang=($("#aiLang").value||"").trim()||"英語";
+  const src=$("#aiSrc").value.trim();
+  return `かわいい動物キャラ2匹（左・右）の、やさしい日本語の会話を作ってください。1行に1セリフ、次の形式で出力：\n左または右 | 日本語のセリフ | ${lang}の翻訳 | 表情 | 頭上マーク\n・表情は次から1つ：ふつう / にこにこ / おこ / かなしい / びっくり / こまり / だいすき / ねむい\n・頭上マークは絵文字1つ（例：💢 ❓ ❗ 💦 💕 🎵 ✨）。無いときは空欄\n・左と右がかわりばんこに話す／初級〜中級のやさしい日本語／8〜10セリフくらい（合計30秒くらい）\n・番号や説明は付けない\n\n場面：\n${src||"（ここに①で書いた場面が入ります）"}`;
+}
+function updateAiPrompt(){ $("#aiPrompt").textContent=aiPromptText(); }
+function openAi(si){ aiSi=si; $("#aiLang").value=cfg.lang||"English"; $("#aiSrc").value=""; $("#aiResult").value=""; updateAiPrompt(); $("#aiOverlay").hidden=false; setTimeout(()=>$("#aiSrc").focus(),30); }
+$("#aiSrc").addEventListener("input",updateAiPrompt);
+$("#aiLang").addEventListener("input",()=>{ cfg.lang=$("#aiLang").value.trim(); saveCfg(); updateAiPrompt(); });
+$("#aiCancel").onclick=()=>{ $("#aiOverlay").hidden=true; };
+$("#aiOverlay").onclick=e=>{ if(e.target===$("#aiOverlay")) $("#aiOverlay").hidden=true; };
+$("#aiCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText($("#aiPrompt").textContent); showToast("📋 プロンプトをコピーしました"); }catch(e){ const r=document.createRange(); r.selectNodeContents($("#aiPrompt")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); showToast("手動でコピーしてください（選択しました）"); } };
+$("#aiAdd").onclick=()=>{
+  const s=data.scenes[aiSi]; if(!s)return;
+  const lines=$("#aiResult").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean); const added=[];
+  lines.forEach(line=>{
+    const p=line.replace(/｜/g,"|").split("|").map(x=>x.trim());
+    if(p.length<2)return;
+    const who=/右|right|B\b/i.test(p[0])?"right":"left";
+    const jp=p[1]||""; if(!jp)return;
+    const tr=p[2]||"";
+    const ex=LABEL_EXPR[(p[3]||"").trim()]||"neutral";
+    let mark=(p[4]||"").trim(); if(!MARKS.includes(mark)) mark = /[\u{1F000}-\u{1FAFF}☀-➿]/u.test(mark)?mark:"";
+    added.push({who,jp,tr,ex,mark,dur:3});
+  });
+  if(!added.length){ alert("読み取れませんでした。「左/右 | 日本語 | 翻訳 | 表情 | マーク」の形で貼り付けてください。"); return; }
+  s.lines.push(...added); saveData(); $("#aiOverlay").hidden=true; renderEdit(); showToast(`✅ ${added.length}セリフを追加しました`);
+};
+
+/* ===== トースト・モード ===== */
+let toastTimer=null;
+function showToast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); if(toastTimer)clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),1600); }
+function showEdit(){ stopRun&&run&&stopRun(); $("#aiOverlay").hidden=true; $("#present").hidden=true; $("#edit").hidden=false; $("#menuBtn").hidden=true; renderEdit(); }
+function showPresent(){ $("#edit").hidden=true; $("#present").hidden=false; $("#menuBtn").hidden=false; phase="menu"; renderPresent(); }
+function updateTrBtn(){ $("#trBtn").classList.toggle("on",cfg.showTr); }
+$("#modeBtn").onclick=showEdit;
+$("#doneBtn").onclick=showPresent;
+$("#menuBtn").onclick=()=>{ if(run)stopRun(); phase="menu"; renderPresent(); window.scrollTo(0,0); };
+$("#saveBtn").onclick=()=>{ saveData(); showToast("✅ 保存しました"); };
+$("#trBtn").onclick=()=>{ cfg.showTr=!cfg.showTr; saveCfg(); updateTrBtn(); if($("#edit").hidden && phase==="play") drawFrame(); };
+$("#fsBtn").onclick=function(){ if(!document.fullscreenElement){(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen||function(){}).call(document.documentElement);} else {(document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);} };
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape" && !$("#aiOverlay").hidden){ $("#aiOverlay").hidden=true; return; }
+  if($("#present").hidden || phase!=="play")return;
+  if(e.key===" "||e.key==="Enter"){ e.preventDefault(); togglePlay(); }
+});
+
+updateTrBtn();
+renderPresent();
+</script>
+<script src="editbar.js"></script>
+<script src="intro.js"></script>
+<script>ClassIntro.init({key:"anime",icon:"🎬",title:"今日のアニメ",desc:"かわいい動物キャラ2匹の、みじかいアニメ会話です。\n「▶ 再生」で、字幕（＋翻訳）と読み上げで会話が流れます。\nセリフ・表情・頭上マークは「✏️ 編集」で作れます（AI一括もあり）。"});</script>
+</body>
+</html>
