@@ -86,6 +86,7 @@ button{font:inherit;cursor:pointer}
 .subs{position:absolute;left:0;right:0;bottom:0;padding:14px 16px 16px;background:linear-gradient(0deg,rgba(0,0,0,.55),rgba(0,0,0,0));text-align:center}
 .subs .who{font-size:12.5px;font-weight:800;color:#ffd34e;margin-bottom:2px}
 .subs .jp{font-size:clamp(18px,3.6vw,28px);font-weight:900;line-height:1.35;text-shadow:0 2px 6px rgba(0,0,0,.6)}
+.subs .jp ruby rt{font-size:.45em;font-weight:800;color:#ffe9a8;text-shadow:0 2px 5px rgba(0,0,0,.6)}
 .subs .tr{font-size:clamp(13px,2.4vw,17px);font-weight:700;color:#bff3df;margin-top:3px;text-shadow:0 2px 5px rgba(0,0,0,.6)}
 .subs.hidden .jp,.subs.hidden .tr,.subs.hidden .who{visibility:hidden}
 /* コントロール */
@@ -96,6 +97,9 @@ button{font:inherit;cursor:pointer}
 .pbtn:active{transform:scale(.97)}
 .pbtn.ghost{background:rgba(255,255,255,.12);color:#fff;box-shadow:none}
 .pbtn.play{background:linear-gradient(135deg,#ec6f9e,#2563eb);color:#fff;box-shadow:0 8px 22px rgba(234,95,147,.35)}
+/* 字幕・翻訳の切替（押すと出たり消えたり） */
+.pbtn.tgl{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.22);color:#cfc8f0;box-shadow:none;padding:12px 18px;font-size:15px}
+.pbtn.tgl.on{background:rgba(122,240,196,.18);border-color:rgba(122,240,196,.6);color:#7af0c4}
 
 /* edit */
 h1.title{font-size:clamp(22px,5vw,30px);margin:8px 0 2px;text-align:center}
@@ -176,7 +180,7 @@ p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
     <p class="sub">シーン（背景・キャラ2匹）ごとに、セリフを順番に登録します。各セリフに話者・表情・頭上マーク・翻訳を設定できます。</p>
     <div id="editList"></div>
     <div class="addscene"><button data-act="addscene">＋ シーンを追加</button></div>
-    <div class="note">💡 キャラは向かい合った状態で位置は固定。<b>表情</b>と<b>頭上マーク</b>はセリフごとに（話している方に）付きます。<b>秒数</b>で1セリフの長さを調整（1セリフ最大20秒・アニメ全体は最大1分）。<b>⏱ 秒を自動調整</b>を押すと、セリフの長さに合わせて秒数を決め直します（1分をこえる場合は自動で収めます）。<b>🤖 AIで一括</b>で会話をまとめて作れます。</div>
+    <div class="note">💡 キャラは向かい合った状態で位置は固定。<b>表情</b>と<b>頭上マーク</b>はセリフごとに（話している方に）付きます。<b>ふりがな</b>はセリフに <code>漢字《ふりがな》</code> と書くと字幕でルビになります（例：急《いそ》ごう）。<b>秒数</b>で1セリフの長さを調整（1セリフ最大20秒・アニメ全体は最大1分）。<b>⏱ 秒を自動調整</b>を押すと、セリフの長さに合わせて秒数を決め直します（1分をこえる場合は自動で収めます）。<b>🤖 AIで一括</b>で会話をまとめて作れます。</div>
     <div class="editbar">
       <button class="mini save" id="saveBtn">💾 保存</button>
       <button class="mini primary" id="doneBtn">▶ 一覧へ</button>
@@ -196,7 +200,7 @@ p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
     <div class="ai-prompt" id="aiPrompt"></div>
     <button class="mini plain" id="aiCopy">プロンプトをコピー</button>
     <div class="step">③ AIの結果を貼り付け（左/右 | 日本語 | 翻訳 | 表情 | マーク）</div>
-    <textarea id="aiResult" placeholder="例：&#10;左 | おはよう！ | Good morning! | にこにこ | &#10;右 | あ、おはよう。 | Oh, morning. | にこにこ | 🎵&#10;左 | あっ、雨だ！ | Oh, rain! | びっくり | ❗"></textarea>
+    <textarea id="aiResult" placeholder="例：&#10;左 | おはよう！ | Good morning! | にこにこ | &#10;右 | あ、おはよう。 | Oh, morning. | にこにこ | 🎵&#10;左 | あっ、雨《あめ》だ！ 急《いそ》ごう！ | Oh, rain! Let's hurry! | びっくり | ❗"></textarea>
     <div class="ai-actions">
       <button class="mini plain" id="aiCancel">やめる</button>
       <button class="mini primary" id="aiAdd">このシーンに追加</button>
@@ -210,10 +214,17 @@ const $=s=>document.querySelector(s);
 function load(k,d){ try{const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v}catch(e){return d} }
 function save(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
 function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
-function speak(t){ try{ if(!window.speechSynthesis)return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(String(t||"")); u.lang="ja-JP"; u.rate=0.95; speechSynthesis.speak(u);}catch(e){} }
+// 字幕のふりがな：漢字《ふりがな》 → ルビ表示（青空文庫式。｜で始まりを明示できる）
+function plainText(s){ return String(s||"").replace(/《[^》]*》/g,"").replace(/｜/g,""); }
+function addRuby(html){
+  html=html.replace(/｜([^《｜<]+)《([^》<]+)》/g,'<ruby>$1<rt>$2</rt></ruby>');
+  return html.replace(/([一-鿿々〆ヶ]+)《([^》<]+)》/g,'<ruby>$1<rt>$2</rt></ruby>');
+}
+function speak(t){ try{ if(!window.speechSynthesis)return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(plainText(t)); u.lang="ja-JP"; u.rate=0.95; speechSynthesis.speak(u);}catch(e){} }
 const MAX_DUR=20, MAX_TOTAL=60;   // 1セリフの最長／アニメ全体の最長（秒）
 // セリフの長さから、読み上げ＋読む時間に合う秒数を決める（短い相づちは短く、長い文は長く）
-function autoDur(jp){ const n=String(jp||"").replace(/\s/g,"").length; return Math.min(MAX_DUR, Math.max(2, Math.round((1.4 + n*0.26)*2)/2)); }
+// 秒数の計算では、ふりがな記号は長さに数えない
+function autoDur(jp){ const n=plainText(jp).replace(/\s/g,"").length; return Math.min(MAX_DUR, Math.max(2, Math.round((1.4 + n*0.26)*2)/2)); }
 function totalDur(s){ return (s.lines||[]).reduce((a,l)=>a+(+l.dur||0),0); }
 
 /* ===== キャラ・背景・表情 ===== */
@@ -304,8 +315,8 @@ if(anyPic() && !data._picDefault){ data.scenes.forEach(s=>{ if(s.style!=="pic") 
 // サンプルの題名の翻訳を、まだ空のときだけ補う（手を入れた題名は触らない）
 if(!data._titleTr){ data.scenes.forEach(s=>{ if(!s.titleTr && s.title==="公園であいさつ") s.titleTr="Greetings in the park"; }); data._titleTr=true; save("anime.data.v1",data); }
 function saveData(){ save("anime.data.v1",data); }
-let cfg=load("anime.cfg.v1",{showTr:true,lang:"English"});
-if(typeof cfg.showTr!=="boolean")cfg.showTr=true; if(typeof cfg.lang!=="string")cfg.lang="English";
+let cfg=load("anime.cfg.v1",{showTr:true,showSub:true,lang:"English"});
+if(typeof cfg.showTr!=="boolean")cfg.showTr=true; if(typeof cfg.showSub!=="boolean")cfg.showSub=true; if(typeof cfg.lang!=="string")cfg.lang="English";
 function saveCfg(){ save("anime.cfg.v1",cfg); }
 
 /* ===== 発表 ===== */
@@ -353,11 +364,15 @@ function renderPlay(){
     <div class="controls">
       <button class="pbtn ghost" id="cReset">⏮ 最初から</button>
       <button class="pbtn play" id="cPlay">▶ 再生</button>
+      <button class="pbtn tgl${cfg.showSub?" on":""}" id="cSub">💬 字幕</button>
+      <button class="pbtn tgl${cfg.showTr?" on":""}" id="cTr">🌐 翻訳</button>
     </div>
     <div class="crumbs" style="text-align:center;margin-top:10px"><span style="color:#a99fd6;font-size:12.5px">タップでも 一時停止／再生できます</span></div>`;
   $("#toMenu").onclick=()=>{ stopRun(); phase="menu"; renderPresent(); window.scrollTo(0,0); };
   $("#cReset").onclick=()=>{ resetRun(); };
   $("#cPlay").onclick=()=>{ togglePlay(); };
+  $("#cSub").onclick=()=>{ cfg.showSub=!cfg.showSub; saveCfg(); $("#cSub").classList.toggle("on",cfg.showSub); drawFrame(); };
+  $("#cTr").onclick=()=>{ cfg.showTr=!cfg.showTr; saveCfg(); updateTrBtn(); $("#cTr").classList.toggle("on",cfg.showTr); renderPlay(); };
   $("#anStage").onclick=()=>{ togglePlay(); };
   run._kL=null; run._kR=null;   // 絵の再描画キャッシュをリセット
   drawFrame();
@@ -377,7 +392,10 @@ function drawFrame(){
   cR.classList.toggle("talk", run.playing && line && line.who==="right");
   const tc=$("#titleCard"); if(tc) tc.classList.toggle("hide", run.idx>=0);   // 再生前だけタイトルを出す
   const subs=$("#subs");
-  if(line){ subs.classList.remove("hidden"); $("#subWho").textContent=(line.who==="left"?ANIMALS[s.left].name:ANIMALS[s.right].name); $("#subJp").textContent=line.jp; $("#subTr").textContent=cfg.showTr?line.tr:""; }
+  if(line){ subs.classList.remove("hidden");
+    $("#subWho").textContent=cfg.showSub?(line.who==="left"?ANIMALS[s.left].name:ANIMALS[s.right].name):"";
+    $("#subJp").innerHTML=cfg.showSub?addRuby(esc(line.jp)):"";
+    $("#subTr").textContent=cfg.showTr?line.tr:""; }
   else { subs.classList.add("hidden"); }
   const total=s.lines.length; $("#pfill").style.width=(total?Math.max(0,Math.min(100,((run.idx+1)/total)*100)):0)+"%";
   const pb=$("#cPlay"); if(pb) pb.textContent=run.playing?"⏸ 一時停止":(run.idx>=total-1?"🔁 もう一度":"▶ 再生");
@@ -488,7 +506,7 @@ let aiSi=0;
 function aiPromptText(){
   const lang=($("#aiLang").value||"").trim()||"英語";
   const src=$("#aiSrc").value.trim();
-  return `かわいい動物キャラ2匹（左・右）の、やさしい日本語の会話を作ってください。1行に1セリフ、次の形式で出力：\n左または右 | 日本語のセリフ | ${lang}の翻訳 | 表情 | 頭上マーク\n・表情は次から1つ：ふつう / にこにこ / おこ / かなしい / びっくり / こまり / だいすき / ねむい\n・頭上マークは絵文字1つ（例：💢 ❓ ❗ 💦 💕 🎵 ✨）。無いときは空欄\n・左と右がかわりばんこに話す／初級〜中級のやさしい日本語\n・セリフは8〜16個くらい（読み上げの合計が1分以内に収まる長さ。1つのセリフは長くても25文字くらいまで）\n・番号や説明は付けない\n\n場面：\n${src||"（ここに①で書いた場面が入ります）"}`;
+  return `かわいい動物キャラ2匹（左・右）の、やさしい日本語の会話を作ってください。1行に1セリフ、次の形式で出力：\n左または右 | 日本語のセリフ | ${lang}の翻訳 | 表情 | 頭上マーク\n・表情は次から1つ：ふつう / にこにこ / おこ / かなしい / びっくり / こまり / だいすき / ねむい\n・頭上マークは絵文字1つ（例：💢 ❓ ❗ 💦 💕 🎵 ✨）。無いときは空欄\n・左と右がかわりばんこに話す／初級〜中級のやさしい日本語\n・初心者向けに、セリフの漢字には「漢字《ふりがな》」の形でふりがなを付ける（例：急《いそ》ごう、学校《がっこう》）\n・セリフは8〜16個くらい（読み上げの合計が1分以内に収まる長さ。1つのセリフは長くても25文字くらいまで）\n・番号や説明は付けない\n\n場面：\n${src||"（ここに①で書いた場面が入ります）"}`;
 }
 function updateAiPrompt(){ $("#aiPrompt").textContent=aiPromptText(); }
 function openAi(si){ aiSi=si; $("#aiLang").value=cfg.lang||"English"; $("#aiSrc").value=""; $("#aiResult").value=""; updateAiPrompt(); $("#aiOverlay").hidden=false; setTimeout(()=>$("#aiSrc").focus(),30); }
