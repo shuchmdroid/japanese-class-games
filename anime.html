@@ -59,6 +59,7 @@ button{font:inherit;cursor:pointer}
 @keyframes talkL{from{transform:rotate(7deg) translateY(0)}to{transform:rotate(7deg) translateY(-7px) scale(1.03)}}
 @keyframes talkR{from{transform:rotate(-7deg) translateY(0)}to{transform:rotate(-7deg) translateY(-7px) scale(1.03)}}
 .csvg{width:100%;height:auto;display:block;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25))}
+.cimg{width:100%;height:auto;display:block;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25))}
 .mark{position:absolute;top:-14%;left:50%;transform:translateX(-50%);font-size:clamp(26px,6vw,44px);filter:drop-shadow(0 2px 3px rgba(0,0,0,.25));animation:markpop .3s cubic-bezier(.2,1.4,.4,1)}
 @keyframes markpop{from{transform:translateX(-50%) scale(.3);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
 .namep{position:absolute;bottom:-6%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.35);color:#fff;font-size:12px;font-weight:800;padding:2px 10px;border-radius:999px;white-space:nowrap}
@@ -180,6 +181,7 @@ p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
   </div>
 </div>
 
+<script src="chara-images.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 function load(k,d){ try{const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v}catch(e){return d} }
@@ -243,6 +245,14 @@ function charSVG(animalKey, ex){
   return `<svg viewBox="0 0 100 108" class="csvg">${earsSVG(a)}<circle cx="50" cy="62" r="36" fill="${a.color}" stroke="rgba(0,0,0,.12)" stroke-width="1.6"/><ellipse cx="30" cy="71" rx="7" ry="4.2" fill="#ff9db0" opacity=".5"/><ellipse cx="70" cy="71" rx="7" ry="4.2" fill="#ff9db0" opacity=".5"/>${faceParts(ex)}</svg>`;
 }
 
+/* イラスト版（画像）とアニメ顔（SVG）の切替。画像が無いキャラは自動でSVGにフォールバック */
+function hasPic(k){ return !!(window.CHARA_IMG && window.CHARA_IMG[k]); }
+function anyPic(){ return !!(window.CHARA_IMG && Object.keys(window.CHARA_IMG).length); }
+function charHTML(animalKey, ex, style){
+  if(style==="pic" && hasPic(animalKey)) return `<img class="cimg" src="${window.CHARA_IMG[animalKey]}" alt="">`;
+  return charSVG(animalKey, ex);
+}
+
 /* ===== データ ===== */
 const SEED={scenes:[
   {title:"公園であいさつ", bg:"park", left:"rabbit", right:"bear", lines:[
@@ -259,6 +269,7 @@ const SEED={scenes:[
 let data=load("anime.data.v1",null);
 if(!data||!Array.isArray(data.scenes)){ data={scenes:SEED.scenes.map(s=>({...s,lines:s.lines.map(l=>({...l}))}))}; save("anime.data.v1",data); }
 data.scenes.forEach(s=>{ if(typeof s.title!=="string")s.title=""; if(!BGS[s.bg])s.bg="park"; if(!ANIMALS[s.left])s.left="rabbit"; if(!ANIMALS[s.right])s.right="bear";
+  if(s.style!=="pic"&&s.style!=="svg") s.style = anyPic()?"pic":"svg";   // 絵柄：イラスト画像 / アニメ顔(SVG)
   if(!Array.isArray(s.lines))s.lines=[]; s.lines.forEach(l=>{ l.who=l.who==="right"?"right":"left"; l.jp=String(l.jp||""); l.tr=String(l.tr||""); l.ex=EXPR.includes(l.ex)?l.ex:"neutral"; l.mark=String(l.mark||""); l.dur=Math.max(1,Math.min(12,+l.dur||3)); }); });
 function saveData(){ save("anime.data.v1",data); }
 let cfg=load("anime.cfg.v1",{showTr:true,lang:"English"});
@@ -295,8 +306,8 @@ function renderPlay(){
       <div class="bg-emojis">${sceneEmojis(s.bg)}</div>
       <div class="ground"></div>
       <div class="chars">
-        <div class="chara left" id="cL"><div class="mark" id="mkL" hidden></div>${charSVG(s.left,run.exL)}<div class="namep">${esc(ANIMALS[s.left].name)}</div></div>
-        <div class="chara right" id="cR"><div class="mark" id="mkR" hidden></div>${charSVG(s.right,run.exR)}<div class="namep">${esc(ANIMALS[s.right].name)}</div></div>
+        <div class="chara left" id="cL"><div class="mark" id="mkL" hidden></div><div class="cart" id="artL"></div><div class="namep">${esc(ANIMALS[s.left].name)}</div></div>
+        <div class="chara right" id="cR"><div class="mark" id="mkR" hidden></div><div class="cart" id="artR"></div><div class="namep">${esc(ANIMALS[s.right].name)}</div></div>
       </div>
       <div class="subs${run.idx<0?" hidden":""}" id="subs"><div class="who" id="subWho"></div><div class="jp" id="subJp"></div><div class="tr" id="subTr"></div></div>
     </div>
@@ -310,14 +321,18 @@ function renderPlay(){
   $("#cReset").onclick=()=>{ resetRun(); };
   $("#cPlay").onclick=()=>{ togglePlay(); };
   $("#anStage").onclick=()=>{ togglePlay(); };
+  run._kL=null; run._kR=null;   // 絵の再描画キャッシュをリセット
   drawFrame();
 }
 function drawFrame(){
   const s=data.scenes[run.si];
   const cL=$("#cL"), cR=$("#cR");
   if(!cL) return;
-  cL.querySelector(".csvg").outerHTML=charSVG(s.left,run.exL);
-  cR.querySelector(".csvg").outerHTML=charSVG(s.right,run.exR);
+  // 絵柄が同じ間は描き直さない（画像のちらつき防止）
+  const kL=s.style+"|"+s.left+"|"+(s.style==="pic"&&hasPic(s.left)?"":run.exL);
+  const kR=s.style+"|"+s.right+"|"+(s.style==="pic"&&hasPic(s.right)?"":run.exR);
+  if(run._kL!==kL){ $("#artL").innerHTML=charHTML(s.left,run.exL,s.style); run._kL=kL; }
+  if(run._kR!==kR){ $("#artR").innerHTML=charHTML(s.right,run.exR,s.style); run._kR=kR; }
   setMark("mkL",run.mkL); setMark("mkR",run.mkR);
   const line=run.idx>=0?s.lines[run.idx]:null;
   cL.classList.toggle("talk", run.playing && line && line.who==="left");
@@ -375,6 +390,7 @@ function sceneHTML(s,si){
       <button class="psm del" data-act="sdel" data-si="${si}">🗑</button>
     </div>
     <div class="setrow">
+      <label>絵柄 <select data-si="${si}" data-f="style"><option value="pic"${s.style==="pic"?" selected":""}${anyPic()?"":" disabled"}>イラスト${anyPic()?"":"（画像なし）"}</option><option value="svg"${s.style==="svg"?" selected":""}>アニメ顔（表情が変わる）</option></select></label>
       <label>背景 <select data-si="${si}" data-f="bg">${opt(BGS,s.bg)}</select></label>
       <label>左キャラ <select data-si="${si}" data-f="left">${opt(ANIMALS,s.left)}</select></label>
       <label>右キャラ <select data-si="${si}" data-f="right">${opt(ANIMALS,s.right)}</select></label>
@@ -397,7 +413,7 @@ editList.addEventListener("change",e=>{
   const t=e.target, si=+t.dataset.si; if(isNaN(si)||!data.scenes[si])return; const s=data.scenes[si], f=t.dataset.f;
   if(t.tagName!=="SELECT")return;
   if(t.dataset.li!=null && !isNaN(+t.dataset.li)){ const l=s.lines[+t.dataset.li]; if(l){ l[f]=t.value; saveData(); } return; }
-  if(f==="bg"||f==="left"||f==="right"){ s[f]=t.value; saveData(); }
+  if(f==="bg"||f==="left"||f==="right"||f==="style"){ s[f]=t.value; saveData(); }
 });
 editList.addEventListener("click",e=>{
   const who=e.target.closest(".who-seg button");
