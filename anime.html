@@ -51,6 +51,11 @@ button{font:inherit;cursor:pointer}
 .bg-emojis span{position:absolute;font-size:34px;opacity:.85;filter:drop-shadow(0 2px 3px rgba(0,0,0,.15))}
 .ground{position:absolute;left:0;right:0;bottom:0;height:26%;background:rgba(0,0,0,.10)}
 .chars{position:absolute;left:0;right:0;bottom:20%;display:flex;justify-content:space-around;align-items:flex-end;padding:0 6%}
+/* イラスト背景のときは、地面に立って見えるよう少し小さく・低い位置に */
+.chars.pic{bottom:21%;padding:0 4%}   /* 字幕の帯にかぶらない高さで地面に立たせる */
+/* 画像は高さで揃える（横幅は絵ごとに違うため、幅で揃えると背の高さがバラつく） */
+.chars.pic .chara{width:auto}
+.chars.pic .cimg{height:clamp(96px,27vw,236px);width:auto}
 .chara{position:relative;width:min(30%,190px);transform-origin:bottom center;transition:transform .18s}
 .chara.left{transform:rotate(7deg)}
 .chara.right{transform:rotate(-7deg)}
@@ -58,6 +63,10 @@ button{font:inherit;cursor:pointer}
 .chara.right.talk{animation:talkR .5s ease-in-out infinite alternate}
 @keyframes talkL{from{transform:rotate(7deg) translateY(0)}to{transform:rotate(7deg) translateY(-7px) scale(1.03)}}
 @keyframes talkR{from{transform:rotate(-7deg) translateY(0)}to{transform:rotate(-7deg) translateY(-7px) scale(1.03)}}
+/* イラストは正面向きの絵なので、傾けず上下の動きだけにする */
+.chara.pic.left,.chara.pic.right{transform:none}
+.chara.pic.left.talk,.chara.pic.right.talk{animation:talkP .5s ease-in-out infinite alternate}
+@keyframes talkP{from{transform:translateY(0)}to{transform:translateY(-8px) scale(1.03)}}
 .csvg{width:100%;height:auto;display:block;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25))}
 .cimg{width:100%;height:auto;display:block;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25))}
 .mark{position:absolute;top:-14%;left:50%;transform:translateX(-50%);font-size:clamp(26px,6vw,44px);filter:drop-shadow(0 2px 3px rgba(0,0,0,.25));animation:markpop .3s cubic-bezier(.2,1.4,.4,1)}
@@ -272,6 +281,8 @@ if(!data||!Array.isArray(data.scenes)){ data={scenes:SEED.scenes.map(s=>({...s,l
 data.scenes.forEach(s=>{ if(typeof s.title!=="string")s.title=""; if(!BGS[s.bg])s.bg="park"; if(!ANIMALS[s.left])s.left="rabbit"; if(!ANIMALS[s.right])s.right="bear";
   if(s.style!=="pic"&&s.style!=="svg") s.style = anyPic()?"pic":"svg";   // 絵柄：イラスト画像 / アニメ顔(SVG)
   if(!Array.isArray(s.lines))s.lines=[]; s.lines.forEach(l=>{ l.who=l.who==="right"?"right":"left"; l.jp=String(l.jp||""); l.tr=String(l.tr||""); l.ex=EXPR.includes(l.ex)?l.ex:"neutral"; l.mark=String(l.mark||""); l.dur=Math.max(1,Math.min(12,+l.dur||3)); }); });
+// イラスト画像が入ったら、いちどだけ既存シーンもイラスト表示に切り替える（あとから絵柄は変更可）
+if(anyPic() && !data._picDefault){ data.scenes.forEach(s=>{ if(s.style!=="pic") s.style="pic"; }); data._picDefault=true; save("anime.data.v1",data); }
 function saveData(){ save("anime.data.v1",data); }
 let cfg=load("anime.cfg.v1",{showTr:true,lang:"English"});
 if(typeof cfg.showTr!=="boolean")cfg.showTr=true; if(typeof cfg.lang!=="string")cfg.lang="English";
@@ -307,9 +318,9 @@ function renderPlay(){
     <div class="stage" id="anStage" style="${bgStyle(s.bg)}">
       <div class="bg-emojis">${sceneEmojis(s.bg)}</div>
       ${BGS[s.bg].img?"":'<div class="ground"></div>'}
-      <div class="chars">
-        <div class="chara left" id="cL"><div class="mark" id="mkL" hidden></div><div class="cart" id="artL"></div><div class="namep">${esc(ANIMALS[s.left].name)}</div></div>
-        <div class="chara right" id="cR"><div class="mark" id="mkR" hidden></div><div class="cart" id="artR"></div><div class="namep">${esc(ANIMALS[s.right].name)}</div></div>
+      <div class="chars${s.style==="pic"&&(hasPic(s.left)||hasPic(s.right))?" pic":""}">
+        <div class="chara left${s.style==="pic"&&hasPic(s.left)?" pic":""}" id="cL"><div class="mark" id="mkL" hidden></div><div class="cart" id="artL"></div><div class="namep">${esc(ANIMALS[s.left].name)}</div></div>
+        <div class="chara right${s.style==="pic"&&hasPic(s.right)?" pic":""}" id="cR"><div class="mark" id="mkR" hidden></div><div class="cart" id="artR"></div><div class="namep">${esc(ANIMALS[s.right].name)}</div></div>
       </div>
       <div class="subs${run.idx<0?" hidden":""}" id="subs"><div class="who" id="subWho"></div><div class="jp" id="subJp"></div><div class="tr" id="subTr"></div></div>
     </div>

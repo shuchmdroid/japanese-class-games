@@ -1,4 +1,12 @@
-/* イラスト版キャラクター画像（背景透過PNG・base64）。
-   キーは anime.html の ANIMALS と同じ（rabbit / bear / cat / dog / panda / frog / pig / chick）。
-   空のあいだは「アニメ顔（SVG）」で表示されます。 */
-window.CHARA_IMG = {};
+/* イラスト版キャラクター画像（背景透過PNG）。
+   キーは anime.html の ANIMALS と同じ。空にすると「アニメ顔（SVG）」表示に戻ります。 */
+window.CHARA_IMG = {
+  rabbit: "chara/rabbit.png",
+  bear:   "chara/bear.png",
+  cat:    "chara/cat.png",
+  dog:    "chara/dog.png",
+  panda:  "chara/panda.png",
+  frog:   "chara/frog.png",
+  pig:    "chara/pig.png",
+  chick:  "chara/chick.png"
+};
