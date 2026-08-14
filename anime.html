@@ -114,6 +114,10 @@ p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
 .addbtns button{background:transparent;border:1.5px dashed rgba(255,255,255,.32);color:#cfc8f0;border-radius:11px;padding:8px 13px;font-weight:800;font-size:13px}
 .addbtns button:hover{border-color:#fff;color:#fff}
 .addbtns button.ai{border-style:solid;border-color:rgba(122,240,196,.5);color:#7af0c4}
+.addbtns .total{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:12.5px;font-weight:700;color:#a99fd6}
+.addbtns .total b{color:#e7e2ff;font-size:13.5px}
+.addbtns .total b.over{color:#ff9aa8}
+.addbtns .total .warn{color:#ff9aa8;font-weight:800}
 .addscene{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .addscene button{background:transparent;border:1.5px dashed rgba(255,255,255,.32);color:#cfc8f0;border-radius:12px;padding:9px 14px;font-weight:800;font-size:14px}
 .note{font-size:12.5px;color:#a99fd6;margin:2px 2px 14px;line-height:1.7}
@@ -162,7 +166,7 @@ p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
     <p class="sub">シーン（背景・キャラ2匹）ごとに、セリフを順番に登録します。各セリフに話者・表情・頭上マーク・翻訳を設定できます。</p>
     <div id="editList"></div>
     <div class="addscene"><button data-act="addscene">＋ シーンを追加</button></div>
-    <div class="note">💡 キャラは向かい合った状態で位置は固定。<b>表情</b>と<b>頭上マーク</b>はセリフごとに（話している方に）付きます。<b>秒数</b>で1セリフの長さを調整（合計で約30秒が目安）。<b>🤖 AIで一括</b>で会話をまとめて作れます。</div>
+    <div class="note">💡 キャラは向かい合った状態で位置は固定。<b>表情</b>と<b>頭上マーク</b>はセリフごとに（話している方に）付きます。<b>秒数</b>で1セリフの長さを調整（1セリフ最大20秒・アニメ全体は最大1分）。<b>⏱ 秒を自動調整</b>を押すと、セリフの長さに合わせて秒数を決め直します（1分をこえる場合は自動で収めます）。<b>🤖 AIで一括</b>で会話をまとめて作れます。</div>
     <div class="editbar">
       <button class="mini save" id="saveBtn">💾 保存</button>
       <button class="mini primary" id="doneBtn">▶ 一覧へ</button>
@@ -197,6 +201,10 @@ function load(k,d){ try{const v=JSON.parse(localStorage.getItem(k)); return v==n
 function save(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} }
 function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function speak(t){ try{ if(!window.speechSynthesis)return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(String(t||"")); u.lang="ja-JP"; u.rate=0.95; speechSynthesis.speak(u);}catch(e){} }
+const MAX_DUR=20, MAX_TOTAL=60;   // 1セリフの最長／アニメ全体の最長（秒）
+// セリフの長さから、読み上げ＋読む時間に合う秒数を決める（短い相づちは短く、長い文は長く）
+function autoDur(jp){ const n=String(jp||"").replace(/\s/g,"").length; return Math.min(MAX_DUR, Math.max(2, Math.round((1.4 + n*0.26)*2)/2)); }
+function totalDur(s){ return (s.lines||[]).reduce((a,l)=>a+(+l.dur||0),0); }
 
 /* ===== キャラ・背景・表情 ===== */
 const ANIMALS={
@@ -280,7 +288,7 @@ let data=load("anime.data.v1",null);
 if(!data||!Array.isArray(data.scenes)){ data={scenes:SEED.scenes.map(s=>({...s,lines:s.lines.map(l=>({...l}))}))}; save("anime.data.v1",data); }
 data.scenes.forEach(s=>{ if(typeof s.title!=="string")s.title=""; if(!BGS[s.bg])s.bg="park"; if(!ANIMALS[s.left])s.left="rabbit"; if(!ANIMALS[s.right])s.right="bear";
   if(s.style!=="pic"&&s.style!=="svg") s.style = anyPic()?"pic":"svg";   // 絵柄：イラスト画像 / アニメ顔(SVG)
-  if(!Array.isArray(s.lines))s.lines=[]; s.lines.forEach(l=>{ l.who=l.who==="right"?"right":"left"; l.jp=String(l.jp||""); l.tr=String(l.tr||""); l.ex=EXPR.includes(l.ex)?l.ex:"neutral"; l.mark=String(l.mark||""); l.dur=Math.max(1,Math.min(12,+l.dur||3)); }); });
+  if(!Array.isArray(s.lines))s.lines=[]; s.lines.forEach(l=>{ l.who=l.who==="right"?"right":"left"; l.jp=String(l.jp||""); l.tr=String(l.tr||""); l.ex=EXPR.includes(l.ex)?l.ex:"neutral"; l.mark=String(l.mark||""); l.dur=Math.max(1,Math.min(MAX_DUR,+l.dur||3)); }); });
 // イラスト画像が入ったら、いちどだけ既存シーンもイラスト表示に切り替える（あとから絵柄は変更可）
 if(anyPic() && !data._picDefault){ data.scenes.forEach(s=>{ if(s.style!=="pic") s.style="pic"; }); data._picDefault=true; save("anime.data.v1",data); }
 function saveData(){ save("anime.data.v1",data); }
@@ -380,6 +388,8 @@ function nextLine(){
 
 /* ===== 編集 ===== */
 const editList=$("#editList");
+function totalHTML(s){ const t=totalDur(s); const over=t>MAX_TOTAL; return `<b class="${over?"over":""}">合計 ${Math.round(t)}秒</b>${over?` <span class="warn">⚠ 1分（${MAX_TOTAL}秒）をこえています</span>`:` / ${MAX_TOTAL}秒まで`}`; }
+function updateTotal(si){ const el=document.getElementById("tot"+si); if(el&&data.scenes[si]) el.innerHTML=totalHTML(data.scenes[si]); }
 function opt(list,cur,lab){ return Object.keys(list).map(k=>`<option value="${k}"${k===cur?" selected":""}>${esc(lab?lab(list[k],k):list[k].name)}</option>`).join(""); }
 function renderEdit(){ editList.innerHTML=data.scenes.map((s,si)=>sceneHTML(s,si)).join(""); }
 function sceneHTML(s,si){
@@ -390,7 +400,7 @@ function sceneHTML(s,si){
         <input class="jp" data-si="${si}" data-li="${li}" data-f="jp" placeholder="セリフ（日本語）" value="${esc(l.jp)}">
         <select data-si="${si}" data-li="${li}" data-f="ex" title="表情">${EXPR.map(e=>`<option value="${e}"${l.ex===e?" selected":""}>${EXPR_LABEL[e]}</option>`).join("")}</select>
         <select data-si="${si}" data-li="${li}" data-f="mark" title="頭上マーク">${MARKS.map(m=>`<option value="${esc(m)}"${l.mark===m?" selected":""}>${m||"（マークなし）"}</option>`).join("")}</select>
-        <input class="dur" type="number" min="1" max="12" step="0.5" data-si="${si}" data-li="${li}" data-f="dur" value="${l.dur}" title="秒">
+        <input class="dur" type="number" min="1" max="${MAX_DUR}" step="0.5" data-si="${si}" data-li="${li}" data-f="dur" value="${l.dur}" title="このセリフの秒数">
         <button class="psm del" data-act="ldel" data-si="${si}" data-li="${li}">✕</button>
       </div>
       <div class="l2"><input data-si="${si}" data-li="${li}" data-f="tr" placeholder="翻訳" value="${esc(l.tr)}"></div>
@@ -412,14 +422,17 @@ function sceneHTML(s,si){
     ${lines}
     <div class="addbtns">
       <button data-act="ladd" data-si="${si}">＋ セリフを追加</button>
+      <button data-act="autodur" data-si="${si}" title="セリフの長さに合わせて、それぞれの秒数を決め直します">⏱ 秒を自動調整</button>
       <button class="ai" data-act="ai" data-si="${si}">🤖 AIで一括</button>
+      <span class="total" id="tot${si}">${totalHTML(s)}</span>
     </div>
   </div>`;
 }
 editList.addEventListener("input",e=>{
   const t=e.target, si=+t.dataset.si; if(isNaN(si)||!data.scenes[si])return; const s=data.scenes[si], f=t.dataset.f;
   if(t.dataset.li!=null && !isNaN(+t.dataset.li)){ const l=s.lines[+t.dataset.li]; if(!l)return;
-    if(f==="dur") l.dur=Math.max(1,Math.min(12,+t.value||3)); else l[f]=t.value; saveData(); return; }
+    if(f==="dur") l.dur=Math.max(1,Math.min(MAX_DUR,+t.value||3)); else l[f]=t.value;
+    saveData(); if(f==="dur"||f==="jp") updateTotal(si); return; }
   if(f==="title"){ s.title=t.value; saveData(); }
 });
 editList.addEventListener("change",e=>{
@@ -433,6 +446,13 @@ editList.addEventListener("click",e=>{
   if(who){ const seg=who.parentElement; const s=data.scenes[+seg.dataset.si], l=s&&s.lines[+seg.dataset.li]; if(l){ l.who=who.dataset.who; saveData(); renderEdit(); } return; }
   const b=e.target.closest("[data-act]"); if(!b)return;
   const act=b.dataset.act, si=+b.dataset.si, s=data.scenes[si];
+  if(act==="autodur"){
+    s.lines.forEach(l=>{ l.dur=autoDur(l.jp); });
+    // 合計が1分をこえたら、全体を縮めて1分に収める
+    const t=totalDur(s);
+    if(t>MAX_TOTAL){ const k=MAX_TOTAL/t; s.lines.forEach(l=>{ l.dur=Math.max(1,Math.floor(l.dur*k*2)/2); }); }   // 切り下げて確実に1分以内へ
+    saveData(); renderEdit(); showToast(`⏱ 合計 ${Math.round(totalDur(s))}秒 に調整しました`); return;
+  }
   if(act==="ladd"){ s.lines.push({who:"left",jp:"",tr:"",ex:"neutral",mark:"",dur:3}); }
   else if(act==="ldel"){ s.lines.splice(+b.dataset.li,1); }
   else if(act==="ai"){ openAi(si); return; }
@@ -449,7 +469,7 @@ let aiSi=0;
 function aiPromptText(){
   const lang=($("#aiLang").value||"").trim()||"英語";
   const src=$("#aiSrc").value.trim();
-  return `かわいい動物キャラ2匹（左・右）の、やさしい日本語の会話を作ってください。1行に1セリフ、次の形式で出力：\n左または右 | 日本語のセリフ | ${lang}の翻訳 | 表情 | 頭上マーク\n・表情は次から1つ：ふつう / にこにこ / おこ / かなしい / びっくり / こまり / だいすき / ねむい\n・頭上マークは絵文字1つ（例：💢 ❓ ❗ 💦 💕 🎵 ✨）。無いときは空欄\n・左と右がかわりばんこに話す／初級〜中級のやさしい日本語／8〜10セリフくらい（合計30秒くらい）\n・番号や説明は付けない\n\n場面：\n${src||"（ここに①で書いた場面が入ります）"}`;
+  return `かわいい動物キャラ2匹（左・右）の、やさしい日本語の会話を作ってください。1行に1セリフ、次の形式で出力：\n左または右 | 日本語のセリフ | ${lang}の翻訳 | 表情 | 頭上マーク\n・表情は次から1つ：ふつう / にこにこ / おこ / かなしい / びっくり / こまり / だいすき / ねむい\n・頭上マークは絵文字1つ（例：💢 ❓ ❗ 💦 💕 🎵 ✨）。無いときは空欄\n・左と右がかわりばんこに話す／初級〜中級のやさしい日本語\n・セリフは8〜16個くらい（読み上げの合計が1分以内に収まる長さ。1つのセリフは長くても25文字くらいまで）\n・番号や説明は付けない\n\n場面：\n${src||"（ここに①で書いた場面が入ります）"}`;
 }
 function updateAiPrompt(){ $("#aiPrompt").textContent=aiPromptText(); }
 function openAi(si){ aiSi=si; $("#aiLang").value=cfg.lang||"English"; $("#aiSrc").value=""; $("#aiResult").value=""; updateAiPrompt(); $("#aiOverlay").hidden=false; setTimeout(()=>$("#aiSrc").focus(),30); }
@@ -469,7 +489,7 @@ $("#aiAdd").onclick=()=>{
     const tr=p[2]||"";
     const ex=LABEL_EXPR[(p[3]||"").trim()]||"neutral";
     let mark=(p[4]||"").trim(); if(!MARKS.includes(mark)) mark = /[\u{1F000}-\u{1FAFF}☀-➿]/u.test(mark)?mark:"";
-    added.push({who,jp,tr,ex,mark,dur:3});
+    added.push({who,jp,tr,ex,mark,dur:autoDur(jp)});   // セリフの長さに合わせた秒数
   });
   if(!added.length){ alert("読み取れませんでした。「左/右 | 日本語 | 翻訳 | 表情 | マーク」の形で貼り付けてください。"); return; }
   s.lines.push(...added); saveData(); $("#aiOverlay").hidden=true; renderEdit(); showToast(`✅ ${added.length}セリフを追加しました`);
