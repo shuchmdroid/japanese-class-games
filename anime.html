@@ -205,15 +205,16 @@ const EXPR_LABEL={neutral:"ふつう",happy:"にこにこ",angry:"おこ",sad:"�
 const LABEL_EXPR={}; Object.keys(EXPR_LABEL).forEach(k=>LABEL_EXPR[EXPR_LABEL[k]]=k);
 const MARKS=["","💢","❓","❗","💦","💕","💤","✨","🎵","💡","😅","💧"];
 const BGS={
-  park:{name:"公園",grad:"linear-gradient(180deg,#bfe6ff,#eaffe0)",em:[["🌳","6%","30%"],["☁️","70%","12%"],["🌷","82%","62%"],["🦋","30%","20%"]]},
-  class:{name:"教室",grad:"linear-gradient(180deg,#dfeaf6,#eef3f8)",em:[["🪟","10%","16%"],["🕐","78%","12%"],["📚","84%","60%"]]},
-  home:{name:"おうち",grad:"linear-gradient(180deg,#ffe9d6,#fff4e6)",em:[["🪟","12%","16%"],["🪴","82%","55%"],["🖼️","64%","14%"]]},
-  cafe:{name:"カフェ",grad:"linear-gradient(180deg,#e7d6c4,#f3e8dc)",em:[["☕","16%","58%"],["🪴","80%","52%"],["🧁","66%","60%"]]},
-  sea:{name:"うみ",grad:"linear-gradient(180deg,#8fd3ff,#d8f4ff)",em:[["☀️","74%","12%"],["🌊","6%","70%"],["🐚","82%","68%"],["⛱️","20%","54%"]]},
-  night:{name:"よぞら",grad:"linear-gradient(180deg,#243b6b,#3a2a6b)",em:[["🌙","74%","12%"],["⭐","20%","16%"],["✨","50%","24%"],["⭐","86%","30%"]]},
-  school:{name:"がっこう",grad:"linear-gradient(180deg,#cfe3ff,#eef3f8)",em:[["🏫","70%","14%"],["🌸","10%","60%"],["☁️","30%","12%"]]},
-  snow:{name:"ゆき",grad:"linear-gradient(180deg,#d9ecff,#f2f8ff)",em:[["❄️","20%","18%"],["⛄","78%","56%"],["❄️","60%","26%"]]}
+  park:{name:"公園",img:"bg/park.jpg",grad:"linear-gradient(180deg,#bfe6ff,#eaffe0)",em:[["🌳","6%","30%"],["☁️","70%","12%"],["🌷","82%","62%"],["🦋","30%","20%"]]},
+  class:{name:"教室",img:"bg/classroom.jpg",grad:"linear-gradient(180deg,#dfeaf6,#eef3f8)",em:[["🪟","10%","16%"],["🕐","78%","12%"],["📚","84%","60%"]]},
+  home:{name:"おうち",img:"bg/home.jpg",grad:"linear-gradient(180deg,#ffe9d6,#fff4e6)",em:[["🪟","12%","16%"],["🪴","82%","55%"],["🖼️","64%","14%"]]},
+  cafe:{name:"カフェ",img:"bg/cafe.jpg",grad:"linear-gradient(180deg,#e7d6c4,#f3e8dc)",em:[["☕","16%","58%"],["🪴","80%","52%"],["🧁","66%","60%"]]},
+  sea:{name:"うみ",img:"bg/sea.jpg",grad:"linear-gradient(180deg,#8fd3ff,#d8f4ff)",em:[["☀️","74%","12%"],["🌊","6%","70%"],["🐚","82%","68%"],["⛱️","20%","54%"]]},
+  night:{name:"よぞら",img:"bg/night-sky.jpg",grad:"linear-gradient(180deg,#243b6b,#3a2a6b)",em:[["🌙","74%","12%"],["⭐","20%","16%"],["✨","50%","24%"],["⭐","86%","30%"]]},
+  school:{name:"がっこう",img:"bg/school.jpg",grad:"linear-gradient(180deg,#cfe3ff,#eef3f8)",em:[["🏫","70%","14%"],["🌸","10%","60%"],["☁️","30%","12%"]]},
+  snow:{name:"ゆき",img:"bg/snow.jpg",grad:"linear-gradient(180deg,#d9ecff,#f2f8ff)",em:[["❄️","20%","18%"],["⛄","78%","56%"],["❄️","60%","26%"]]}
 };
+function bgStyle(bg){ const b=BGS[bg]; return b.img ? `background:${b.grad};background-image:url('${b.img}');background-size:cover;background-position:center bottom` : `background:${b.grad}`; }
 
 function earsSVG(a){
   const c=a.color, st='stroke="rgba(0,0,0,.12)" stroke-width="1.5"';
@@ -296,15 +297,16 @@ function startScene(i){
   run={si:i, idx:-1, playing:false, timer:null, exL:"neutral", exR:"neutral", mkL:"", mkR:""};
   phase="play"; renderPlay(); window.scrollTo(0,0);
 }
-function sceneEmojis(bg){ return (BGS[bg].em||[]).map(e=>`<span style="left:${e[1]};top:${e[2]}">${e[0]}</span>`).join(""); }
+// 背景画像があるときは絵文字の飾りは出さない（イラストとぶつかるため）
+function sceneEmojis(bg){ if(BGS[bg].img) return ""; return (BGS[bg].em||[]).map(e=>`<span style="left:${e[1]};top:${e[2]}">${e[0]}</span>`).join(""); }
 function renderPlay(){
   const s=data.scenes[run.si];
   const total=s.lines.length;
   stage.innerHTML=`
     <div class="crumbs"><button id="toMenu">← 一覧</button></div>
-    <div class="stage" id="anStage" style="background:${BGS[s.bg].grad}">
+    <div class="stage" id="anStage" style="${bgStyle(s.bg)}">
       <div class="bg-emojis">${sceneEmojis(s.bg)}</div>
-      <div class="ground"></div>
+      ${BGS[s.bg].img?"":'<div class="ground"></div>'}
       <div class="chars">
         <div class="chara left" id="cL"><div class="mark" id="mkL" hidden></div><div class="cart" id="artL"></div><div class="namep">${esc(ANIMALS[s.left].name)}</div></div>
         <div class="chara right" id="cR"><div class="mark" id="mkR" hidden></div><div class="cart" id="artR"></div><div class="namep">${esc(ANIMALS[s.right].name)}</div></div>
