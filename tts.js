@@ -25,16 +25,24 @@
     { id: "plain",  name: "ふつう",         text: "やさしく、はっきりと、自然に話してください。棒読みにしない。" }
   ];
   function presetText(id) { for (var i = 0; i < PRESETS.length; i++) if (PRESETS[i].id === id) return PRESETS[i].text; return PRESETS[PRESETS.length - 1].text; }
+  // 話すはやさ（生成時に効く＝作り直しが必要。デジタルで遅くするより自然に聞こえる）
+  var SPEEDS = [
+    { id: "slow2",  name: "とてもゆっくり", text: " とてもゆっくり、一語ずつはっきりと、じゅうぶんに間をとって話してください。" },
+    { id: "slow",   name: "ゆっくり",       text: " ゆっくりめに、間をとって、落ち着いて話してください。" },
+    { id: "normal", name: "ふつう",         text: "" },
+    { id: "fast",   name: "はやめ",         text: " すこしはやめのテンポで話してください。" }
+  ];
+  function speedText(id) { for (var i = 0; i < SPEEDS.length; i++) if (SPEEDS[i].id === id) return SPEEDS[i].text; return ""; }
 
   var cfg = {
     key: "", model: "gpt-4o-mini-tts",
-    voiceL: "coral", styleL: "cute",  customL: "", pitchL: 1.12,
-    voiceR: "ash",   styleR: "boy",   customR: "", pitchR: 1.06
+    voiceL: "coral", styleL: "cute",  customL: "", pitchL: 1.10, speedL: "slow",
+    voiceR: "ash",   styleR: "boy",   customR: "", pitchR: 1.04, speedR: "slow"
   };
   try {
     var s = JSON.parse(localStorage.getItem(LS) || "{}");
     if (s && typeof s === "object") {
-      ["key", "model", "voiceL", "voiceR", "styleL", "styleR", "customL", "customR"].forEach(function (k) { if (typeof s[k] === "string") cfg[k] = s[k]; });
+      ["key", "model", "voiceL", "voiceR", "styleL", "styleR", "customL", "customR", "speedL", "speedR"].forEach(function (k) { if (typeof s[k] === "string") cfg[k] = s[k]; });
       ["pitchL", "pitchR"].forEach(function (k) { if (+s[k]) cfg[k] = Math.max(0.8, Math.min(1.4, +s[k])); });
       if (typeof s.instructions === "string" && s.instructions && !s.styleL) { cfg.styleL = cfg.styleR = "custom"; cfg.customL = cfg.customR = s.instructions; }  // 旧設定からの移行
     }
@@ -44,7 +52,7 @@
   var VOICES = ["alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer", "verse"];
   function side(sd) { return sd === "R" ? "R" : "L"; }
   function voiceOf(sd) { return cfg["voice" + side(sd)] || "coral"; }
-  function styleOf(sd) { var st = cfg["style" + side(sd)]; return st === "custom" ? (cfg["custom" + side(sd)] || "") : presetText(st); }
+  function styleOf(sd) { var d = side(sd), st = cfg["style" + d]; var base = st === "custom" ? (cfg["custom" + d] || "") : presetText(st); return base + speedText(cfg["speed" + d]); }
   function pitchOf(sd) { return cfg["pitch" + side(sd)] || 1; }
 
   /* ---------- 保存先（IndexedDB：localStorage より容量が大きい） ---------- */
@@ -141,14 +149,16 @@
   function ensureCSS() { if (styled) return; var el = document.createElement("style"); el.textContent = CSS; document.head.appendChild(el); styled = true; }
   function vopts(sel) { return VOICES.map(function (v) { return '<option value="' + v + '"' + (v === sel ? " selected" : "") + ">" + v + "</option>"; }).join(""); }
   function sopts(sel) { return PRESETS.map(function (p) { return '<option value="' + p.id + '"' + (p.id === sel ? " selected" : "") + ">" + p.name + "</option>"; }).join("") + '<option value="custom"' + (sel === "custom" ? " selected" : "") + ">じぶんで書く</option>"; }
+  function spopts(sel) { return SPEEDS.map(function (p) { return '<option value="' + p.id + '"' + (p.id === sel ? " selected" : "") + ">" + p.name + "</option>"; }).join(""); }
 
   function charCard(sd, title) {
-    var v = voiceOf(sd), st = cfg["style" + sd], cu = cfg["custom" + sd] || "", pi = pitchOf(sd);
+    var v = voiceOf(sd), st = cfg["style" + sd], cu = cfg["custom" + sd] || "", pi = pitchOf(sd), sp = cfg["speed" + sd];
     return '<div class="jt-card" data-sd="' + sd + '"><h4>' + title + '</h4>\
 <label class="jt-lbl">声</label><select class="jt-v">' + vopts(v) + '</select>\
 <label class="jt-lbl">話し方</label><select class="jt-s">' + sopts(st) + '</select>\
 <textarea class="jt-c" placeholder="話し方をじぶんで書く"' + (st === "custom" ? "" : " hidden") + '>' + cu.replace(/</g, "&lt;") + '</textarea>\
-<label class="jt-lbl">声の高さ（かわいさ）</label><div class="jt-row"><input class="jt-pi" type="range" min="0.9" max="1.35" step="0.01" value="' + pi + '"><span class="jt-val">' + pi.toFixed(2) + '</span></div>\
+<label class="jt-lbl">話すはやさ <span style="font-weight:600;color:#a99fd6">（作り直しが必要）</span></label><select class="jt-sp">' + spopts(sp) + '</select>\
+<label class="jt-lbl">声の高さ（かわいさ）<span style="font-weight:600;color:#a99fd6"> ※上げると少し速くなります</span></label><div class="jt-row"><input class="jt-pi" type="range" min="0.9" max="1.35" step="0.01" value="' + pi + '"><span class="jt-val">' + pi.toFixed(2) + '</span></div>\
 <div style="margin-top:8px"><button class="jt-b sm jt-try">▶ この声をためす</button></div></div>';
   }
 
@@ -157,7 +167,7 @@
     var ov = document.createElement("div"); ov.className = "jt-ov";
     ov.innerHTML = '<div class="jt-p">\
 <h3>🎙 AIナレーション（自然＆かわいい声）</h3>\
-<p class="jt-note">セリフを作ったときに<b>一度だけ</b>音声を生成してこの端末に保存し、授業では保存した音声を再生します。<br><b>話し方</b>は音声を作るときに反映（変えたら作り直し）、<b>声の高さ</b>は再生のたびに反映（作り直し不要）です。</p>\
+<p class="jt-note">セリフを作ったときに<b>一度だけ</b>音声を生成してこの端末に保存し、授業では保存した音声を再生します。<br>🔁 <b>声・話し方・話すはやさ</b>を変えたら「✏️編集 → 🎙 音声を作る」で<b>作り直し</b>てください。<br>⚡ <b>声の高さ</b>だけは再生時に反映されるので作り直し不要です。</p>\
 <label class="jt-lbl">OpenAI APIキー</label><input class="jt-key" type="password" placeholder="sk-..." value="' + (cfg.key ? cfg.key.replace(/"/g, "&quot;") : "") + '">\
 <div class="jt-chars">' + charCard("L", "左のキャラ") + charCard("R", "右のキャラ") + '</div>\
 <div class="jt-tip">🔑 キーは<b>この端末のブラウザにだけ</b>保存され、音声を作るとき OpenAI にのみ送られます。<br>※ 販売用に配るときは、キーを隠すサーバー経由に切り替えます。</div>\
@@ -172,6 +182,7 @@
         cfg["voice" + sd] = c.querySelector(".jt-v").value;
         cfg["style" + sd] = c.querySelector(".jt-s").value;
         cfg["custom" + sd] = c.querySelector(".jt-c").value;
+        cfg["speed" + sd] = c.querySelector(".jt-sp").value;
         cfg["pitch" + sd] = +c.querySelector(".jt-pi").value;
         c.querySelector(".jt-val").textContent = (+c.querySelector(".jt-pi").value).toFixed(2);
         c.querySelector(".jt-c").hidden = (c.querySelector(".jt-s").value !== "custom");
