@@ -126,6 +126,9 @@ p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
 .addbtns button{background:transparent;border:1.5px dashed rgba(255,255,255,.32);color:#cfc8f0;border-radius:11px;padding:8px 13px;font-weight:800;font-size:13px}
 .addbtns button:hover{border-color:#fff;color:#fff}
 .addbtns button.ai{border-style:solid;border-color:rgba(122,240,196,.5);color:#7af0c4}
+.addbtns button.tts{border-style:solid;border-color:rgba(255,211,78,.55);color:#ffd34e}
+.addbtns .vcount{font-size:12px;font-weight:800;color:#a99fd6}
+.addbtns .vcount.ok{color:#7af0c4}
 .addbtns .total{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:12.5px;font-weight:700;color:#a99fd6}
 .addbtns .total b{color:#e7e2ff;font-size:13.5px}
 .addbtns .total b.over{color:#ff9aa8}
@@ -162,7 +165,8 @@ p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
     <span>今日のアニメ<small>日本語クラス・ツール</small></span>
   </a>
   <div class="top-actions">
-    <button class="chip-btn" id="voiceBtn" title="ナレーションの声・はやさ">🔊 声</button>
+    <button class="chip-btn" id="voiceBtn" title="AIナレーション（自然な音声）の設定">🎙 音声</button>
+    <button class="chip-btn" id="voiceBtn2" title="ブラウザ内蔵の声・はやさ">🔊 声</button>
     <button class="chip-btn" id="trBtn">🌐 翻訳</button>
     <button class="chip-btn" id="menuBtn">☰ 一覧</button>
     <button class="chip-btn" id="modeBtn">✏️ 編集</button>
@@ -179,7 +183,7 @@ p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
     <p class="sub">シーン（背景・キャラ2匹）ごとに、セリフを順番に登録します。各セリフに話者・表情・頭上マーク・翻訳を設定できます。</p>
     <div id="editList"></div>
     <div class="addscene"><button data-act="addscene">＋ シーンを追加</button></div>
-    <div class="note">💡 キャラは向かい合った状態で位置は固定。<b>表情</b>と<b>頭上マーク</b>はセリフごとに（話している方に）付きます。<b>ふりがな</b>はセリフに <code>漢字《ふりがな》</code> と書くと字幕でルビになります（例：急《いそ》ごう）。<b>秒数</b>で1セリフの長さを調整（1セリフ最大20秒・アニメ全体は最大1分）。<b>⏱ 秒を自動調整</b>を押すと、セリフの長さに合わせて秒数を決め直します（1分をこえる場合は自動で収めます）。<b>🤖 AIで一括</b>で会話をまとめて作れます。</div>
+    <div class="note">💡 キャラは向かい合った状態で位置は固定。<b>表情</b>と<b>頭上マーク</b>はセリフごとに（話している方に）付きます。<b>ふりがな</b>はセリフに <code>漢字《ふりがな》</code> と書くと字幕でルビになります（例：急《いそ》ごう）。<b>秒数</b>で1セリフの長さを調整（1セリフ最大20秒・アニメ全体は最大1分）。<b>⏱ 秒を自動調整</b>を押すと、セリフの長さに合わせて秒数を決め直します（1分をこえる場合は自動で収めます）。<b>🎙 音声を作る</b>で、AIの自然な声を作ってこの端末に保存します（作っておくと、授業ではその音声で再生され、読み終わってから次のセリフに進みます）。<b>🤖 AIで一括</b>で会話をまとめて作れます。</div>
     <div class="editbar">
       <button class="mini save" id="saveBtn">💾 保存</button>
       <button class="mini primary" id="doneBtn">▶ 一覧へ</button>
@@ -209,6 +213,7 @@ p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
 
 <script src="chara-images.js"></script>
 <script src="voice.js"></script>
+<script src="tts.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 function load(k,d){ try{const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v}catch(e){return d} }
@@ -220,9 +225,17 @@ function addRuby(html){
   html=html.replace(/｜([^《｜<]+)《([^》<]+)》/g,'<ruby>$1<rt>$2</rt></ruby>');
   return html.replace(/([0-9０-９一-鿿々〆ヶ]+)《([^》<]+)》/g,'<ruby>$1<rt>$2</rt></ruby>');
 }
-// ナレーションは voice.js（端末の一番自然な日本語音声を選ぶ共通モジュール）に任せる
+// ナレーション：AI音声（tts.js）が作ってあればそれを再生。無ければブラウザ内蔵の声（voice.js）
+function lineVoice(who){ const c=(window.JTTS&&JTTS.config())||{}; return who==="right" ? (c.voiceR||"ash") : (c.voiceL||"coral"); }
 function speak(t){ if(window.JVoice) JVoice.speak(plainText(t)); }
-function stopSpeak(){ if(window.JVoice) JVoice.stop(); }
+function stopSpeak(){ if(window.JVoice) JVoice.stop(); if(window.JTTS) JTTS.stop(); }
+// AI音声があれば再生して <audio> を返す。無ければブラウザ音声でしゃべって null
+function speakLine(line){
+  const txt=plainText(line.jp);
+  if(!txt) return Promise.resolve(null);
+  if(!window.JTTS) { speak(line.jp); return Promise.resolve(null); }
+  return JTTS.play(txt, lineVoice(line.who)).then(a=>{ if(a) return a; speak(line.jp); return null; }).catch(()=>{ speak(line.jp); return null; });
+}
 const MAX_DUR=20, MAX_TOTAL=60;   // 1セリフの最長／アニメ全体の最長（秒）
 // セリフの長さから、読み上げ＋読む時間に合う秒数を決める（短い相づちは短く、長い文は長く）
 // 秒数の計算では、ふりがな記号は長さに数えない
@@ -420,9 +433,18 @@ function nextLine(){
   const line=s.lines[run.idx];
   if(line.who==="left"){ run.exL=line.ex; run.mkL=line.mark; } else { run.exR=line.ex; run.mkR=line.mark; }
   drawFrame();
-  if(line.jp) speak(line.jp);
   const ms=Math.max(1000,(+line.dur||3)*1000);
-  run.timer=setTimeout(()=>{ if(run&&run.playing) nextLine(); }, ms);
+  const myIdx=run.idx;
+  speakLine(line).then(audio=>{
+    if(!run || !run.playing || run.idx!==myIdx) return;   // 途中で止められた/進んだら何もしない
+    if(audio){
+      // AI音声のときは「読み終わってから」次へ（自然な間をとる）
+      audio.onended=()=>{ if(run&&run.playing&&run.idx===myIdx) run.timer=setTimeout(()=>{ if(run&&run.playing) nextLine(); }, 450); };
+      audio.onerror=()=>{ if(run&&run.playing&&run.idx===myIdx) run.timer=setTimeout(()=>{ if(run&&run.playing) nextLine(); }, ms); };
+    } else {
+      run.timer=setTimeout(()=>{ if(run&&run.playing) nextLine(); }, ms);
+    }
+  });
 }
 
 /* ===== 編集 ===== */
@@ -430,7 +452,7 @@ const editList=$("#editList");
 function totalHTML(s){ const t=totalDur(s); const over=t>MAX_TOTAL; return `<b class="${over?"over":""}">合計 ${Math.round(t)}秒</b>${over?` <span class="warn">⚠ 1分（${MAX_TOTAL}秒）をこえています</span>`:` / ${MAX_TOTAL}秒まで`}`; }
 function updateTotal(si){ const el=document.getElementById("tot"+si); if(el&&data.scenes[si]) el.innerHTML=totalHTML(data.scenes[si]); }
 function opt(list,cur,lab){ return Object.keys(list).map(k=>`<option value="${k}"${k===cur?" selected":""}>${esc(lab?lab(list[k],k):list[k].name)}</option>`).join(""); }
-function renderEdit(){ editList.innerHTML=data.scenes.map((s,si)=>sceneHTML(s,si)).join(""); }
+function renderEdit(){ editList.innerHTML=data.scenes.map((s,si)=>sceneHTML(s,si)).join(""); data.scenes.forEach((_,si)=>refreshVoiceCount(si)); }
 function sceneHTML(s,si){
   const lines=s.lines.map((l,li)=>`
     <div class="lrow">
@@ -463,7 +485,9 @@ function sceneHTML(s,si){
     <div class="addbtns">
       <button data-act="ladd" data-si="${si}">＋ セリフを追加</button>
       <button data-act="autodur" data-si="${si}" title="セリフの長さに合わせて、それぞれの秒数を決め直します">⏱ 秒を自動調整</button>
+      <button class="tts" data-act="mkvoice" data-si="${si}" title="AIの自然な音声を作って、この端末に保存します">🎙 音声を作る</button>
       <button class="ai" data-act="ai" data-si="${si}">🤖 AIで一括</button>
+      <span class="vcount" id="vc${si}"></span>
       <span class="total" id="tot${si}">${totalHTML(s)}</span>
     </div>
   </div>`;
@@ -486,6 +510,7 @@ editList.addEventListener("click",e=>{
   if(who){ const seg=who.parentElement; const s=data.scenes[+seg.dataset.si], l=s&&s.lines[+seg.dataset.li]; if(l){ l.who=who.dataset.who; saveData(); renderEdit(); } return; }
   const b=e.target.closest("[data-act]"); if(!b)return;
   const act=b.dataset.act, si=+b.dataset.si, s=data.scenes[si];
+  if(act==="mkvoice"){ makeVoices(si); return; }
   if(act==="autodur"){
     s.lines.forEach(l=>{ l.dur=autoDur(l.jp); });
     // 合計が1分をこえたら、全体を縮めて1分に収める
@@ -503,6 +528,34 @@ editList.addEventListener("click",e=>{
   saveData(); renderEdit();
 });
 $(".addscene [data-act='addscene']").onclick=()=>{ data.scenes.push({title:"",titleTr:"",bg:"park",left:"rabbit",right:"bear",style:anyPic()?"pic":"svg",lines:[{who:"left",jp:"",tr:"",ex:"neutral",mark:"",dur:3}]}); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
+
+/* ===== AI音声づくり（このシーンの全セリフ） ===== */
+async function makeVoices(si){
+  const s=data.scenes[si]; if(!s) return;
+  if(!window.JTTS){ alert("音声モジュールが読み込めていません。"); return; }
+  if(!JTTS.ready()){ JTTS.openSettings(); return; }
+  const lines=s.lines.filter(l=>plainText(l.jp).trim());
+  if(!lines.length){ showToast("セリフがありません"); return; }
+  let done=0, made=0, failed=0, lastErr="";
+  for(const l of lines){
+    showToast(`🎙 音声を作っています… ${done+1}/${lines.length}`);
+    const r=await JTTS.generate(plainText(l.jp), lineVoice(l.who));
+    if(r.ok){ if(!r.cached) made++; } else { failed++; lastErr=r.error||""; }
+    done++;
+  }
+  renderEdit();
+  if(failed){ alert(`音声を作れなかったセリフが ${failed} 個ありました。\n${lastErr}`); }
+  showToast(failed?`⚠ ${made}個作成／${failed}個失敗`:`✅ 音声ができました（新規${made}個）`);
+}
+// このシーンの音声が何個そろっているかを表示に反映
+async function refreshVoiceCount(si){
+  const el=document.getElementById("vc"+si); if(!el||!window.JTTS) return;
+  const s=data.scenes[si]; if(!s) return;
+  const lines=s.lines.filter(l=>plainText(l.jp).trim());
+  let n=0; for(const l of lines){ if(await JTTS.has(plainText(l.jp), lineVoice(l.who))) n++; }
+  el.textContent = lines.length ? (n===lines.length ? `🎙 音声OK（${n}）` : `🎙 音声 ${n}/${lines.length}`) : "";
+  el.className = "vcount"+(lines.length&&n===lines.length?" ok":"");
+}
 
 /* ===== AI一括 ===== */
 let aiSi=0;
@@ -541,7 +594,8 @@ function showToast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("sh
 function showEdit(){ stopRun&&run&&stopRun(); $("#aiOverlay").hidden=true; $("#present").hidden=true; $("#edit").hidden=false; $("#menuBtn").hidden=true; renderEdit(); }
 function showPresent(){ $("#edit").hidden=true; $("#present").hidden=false; $("#menuBtn").hidden=false; phase="menu"; renderPresent(); }
 function updateTrBtn(){ $("#trBtn").classList.toggle("on",cfg.showTr); }
-$("#voiceBtn").onclick=()=>{ if(run)stopRun(); if(window.JVoice) JVoice.openPicker(); };
+$("#voiceBtn").onclick=()=>{ if(run)stopRun(); if(window.JTTS) JTTS.openSettings(); else if(window.JVoice) JVoice.openPicker(); };
+$("#voiceBtn2") && ($("#voiceBtn2").onclick=()=>{ if(run)stopRun(); if(window.JVoice) JVoice.openPicker(); });
 $("#modeBtn").onclick=showEdit;
 $("#doneBtn").onclick=showPresent;
 $("#menuBtn").onclick=()=>{ if(run)stopRun(); phase="menu"; renderPresent(); window.scrollTo(0,0); };
