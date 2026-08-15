@@ -10,7 +10,9 @@
   try { var s = localStorage.getItem(LS); if (s === "0") on = false; } catch (e) {}
   function setEnabled(v) { on = !!v; try { localStorage.setItem(LS, on ? "1" : "0"); } catch (e) {} }
 
-  var ctx = null, master = null, stopAt = 0;
+  // 音量。持続音（風・波・ざわめき）は聞こえにくいので強めに、単発音は控えめに上げる
+  var VOL = 3.0, NOISE_BOOST = 5.5, BLIP_BOOST = 2.4;
+  var ctx = null, master = null;
   function audio() {
     if (!ctx) {
       var AC = window.AudioContext || window.webkitAudioContext;
@@ -25,6 +27,11 @@
     setTimeout(function () { if (master) { try { master.disconnect(); } catch (e) {} master = null; } }, 300);
   }
 
+  function limiter(c) {
+    var k = c.createDynamicsCompressor();
+    k.threshold.value = -6; k.knee.value = 6; k.ratio.value = 12; k.attack.value = 0.003; k.release.value = 0.2;
+    return k;
+  }
   // ざらざらノイズ（風・波・ざわめきのもと）
   function noiseBuffer(c, sec) {
     var n = Math.floor(c.sampleRate * sec), b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0);
@@ -38,7 +45,7 @@
     f.frequency.value = opts.freq || 800; f.Q.value = opts.q || 0.7;
     var g = c.createGain(); g.gain.value = 0;
     src.connect(f); f.connect(g); g.connect(out);
-    var pk = opts.gain || 0.05;
+    var pk = (opts.gain || 0.05) * NOISE_BOOST;
     g.gain.setValueAtTime(0, t0);
     g.gain.linearRampToValueAtTime(pk, t0 + (opts.attack || 0.4));
     g.gain.setValueAtTime(pk, t0 + dur - (opts.release || 0.6));
@@ -53,7 +60,7 @@
     var o = c.createOscillator(); o.type = opts.type || "sine";
     var g = c.createGain(); g.gain.value = 0;
     o.connect(g); g.connect(out);
-    var f0 = opts.f0 || 2200, f1 = (opts.f1 == null ? f0 * 1.25 : opts.f1), d = opts.dur || 0.12, pk = opts.gain || 0.06;
+    var f0 = opts.f0 || 2200, f1 = (opts.f1 == null ? f0 * 1.25 : opts.f1), d = opts.dur || 0.12, pk = (opts.gain || 0.06) * BLIP_BOOST;
     o.frequency.setValueAtTime(f0, t0);
     o.frequency.exponentialRampToValueAtTime(Math.max(60, f1), t0 + d);
     g.gain.setValueAtTime(0, t0);
@@ -78,11 +85,11 @@
       blip(c, out, t + 1.15, { f0: 1400, f1: 850, dur: 0.28, gain: 0.03 });
     },
     night: function (c, out, t) {           // 虫の音（コオロギ）＋しずかな空気
-      noise(c, out, t, 2.6, { type: "lowpass", freq: 300, gain: 0.02 });
+      noise(c, out, t, 2.6, { type: "lowpass", freq: 320, gain: 0.05 });
       for (var i = 0; i < 14; i++) {
         var d = 0.2 + i * 0.17;
-        blip(c, out, t + d, { f0: 4200, f1: 4000, dur: 0.05, gain: 0.03 });
-        blip(c, out, t + d + 0.06, { f0: 4300, f1: 4100, dur: 0.05, gain: 0.025 });
+        blip(c, out, t + d, { f0: 4200, f1: 4000, dur: 0.05, gain: 0.055 });
+        blip(c, out, t + d + 0.06, { f0: 4300, f1: 4100, dur: 0.05, gain: 0.045 });
       }
     },
     cafe: function (c, out, t) {            // 店内のざわめき＋カップの音
@@ -103,8 +110,8 @@
       });
     },
     home: function (c, out, t) {            // しずかな部屋＋時計のカチカチ
-      noise(c, out, t, 2.6, { type: "lowpass", freq: 220, gain: 0.028 });
-      for (var i = 0; i < 5; i++) blip(c, out, t + 0.3 + i * 0.5, { type: "square", f0: 1500, f1: 700, dur: 0.035, gain: 0.03 });
+      noise(c, out, t, 2.6, { type: "lowpass", freq: 260, gain: 0.06 });
+      for (var i = 0; i < 5; i++) blip(c, out, t + 0.3 + i * 0.5, { type: "square", f0: 1500, f1: 700, dur: 0.035, gain: 0.06 });
     },
     snow: function (c, out, t) {            // しんしんとした風
       noise(c, out, t, 2.8, { type: "lowpass", freq: 420, gain: 0.055, sweep: 260, attack: .8, release: .9 });
@@ -117,15 +124,30 @@
     var fn = SCENES[bg]; if (!fn) return 0;
     var c = audio(); if (!c) return 0;
     stop();
-    master = c.createGain(); master.gain.value = 1; master.connect(c.destination);
-    var t = c.currentTime + 0.02;
+    master = c.createGain(); master.gain.value = VOL;
+    master.connect(limiter(c)).connect(c.destination);   // 音割れ防止
+    var t = c.currentTime + 0.06;   // 少し先に予約（resume 直後でも取りこぼさない）
     try { fn(c, master, t); } catch (e) { return 0; }
     return 2800;   // だいたいの長さ(ms)
+  }
+
+  // 動作確認用：実際に鳴る音をオフラインで描画して、音量の最大値を返す
+  function renderPeak(bg) {
+    var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    if (!OAC || !SCENES[bg]) return Promise.resolve(null);
+    var oc = new OAC(1, 44100 * 3, 44100);
+    var g = oc.createGain(); g.gain.value = VOL; g.connect(limiter(oc)).connect(oc.destination);
+    SCENES[bg](oc, g, 0);
+    return oc.startRendering().then(function (buf) {
+      var d = buf.getChannelData(0), peak = 0, sum = 0;
+      for (var i = 0; i < d.length; i++) { var a = Math.abs(d[i]); if (a > peak) peak = a; sum += a; }
+      return { peak: +peak.toFixed(4), avg: +(sum / d.length).toFixed(4) };
+    });
   }
 
   window.JAmbient = {
     play: play, stop: stop,
     enabled: function (v) { if (v === undefined) return on; setEnabled(v); if (!on) stop(); return on; },
-    scenes: Object.keys(SCENES)
+    scenes: Object.keys(SCENES), renderPeak: renderPeak, volume: function () { return VOL; }
   };
 })();
