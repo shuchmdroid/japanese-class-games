@@ -69,7 +69,8 @@ button{font:inherit;cursor:pointer}
 @keyframes talkP{from{transform:translateY(0)}to{transform:translateY(-8px) scale(1.03)}}
 .csvg{width:100%;height:auto;display:block;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25))}
 .cimg{width:100%;height:auto;display:block;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25))}
-.mark{position:absolute;top:-14%;left:50%;transform:translateX(-50%);font-size:clamp(26px,6vw,44px);filter:drop-shadow(0 2px 3px rgba(0,0,0,.25));animation:markpop .3s cubic-bezier(.2,1.4,.4,1)}
+/* キャラ画像は filter を持つため z-index:0 のレイヤーに乗る。マークはその上に出す */
+.mark{position:absolute;z-index:3;top:-14%;left:50%;transform:translateX(-50%);font-size:clamp(26px,6vw,44px);filter:drop-shadow(0 2px 4px rgba(0,0,0,.35));animation:markpop .3s cubic-bezier(.2,1.4,.4,1)}
 @keyframes markpop{from{transform:translateX(-50%) scale(.3);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
 /* タイトル画面（再生前・すりガラス） */
 .titlecard{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;padding:20px;
