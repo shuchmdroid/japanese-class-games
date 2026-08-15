@@ -218,7 +218,7 @@ function toTags(o){ let a = Array.isArray(o.tags)?o.tags : (o.tag?[o.tag]:[]); d
 // 例文のふりがな：漢字《ふりがな》 → <ruby>漢字<rt>ふりがな</rt></ruby>（青空文庫式。｜で base を明示可）
 function addRuby(html){
   html=html.replace(/｜([^《｜<]+)《([^》<]+)》/g,'<ruby>$1<rt>$2</rt></ruby>');
-  html=html.replace(/([一-鿿々〆ヶ]+)《([^》<]+)》/g,'<ruby>$1<rt>$2</rt></ruby>');
+  html=html.replace(/([0-9０-９一-鿿々〆ヶ]+)《([^》<]+)》/g,'<ruby>$1<rt>$2</rt></ruby>');
   return html;
 }
 

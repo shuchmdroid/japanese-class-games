@@ -218,7 +218,7 @@ function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,
 function plainText(s){ return String(s||"").replace(/《[^》]*》/g,"").replace(/｜/g,""); }
 function addRuby(html){
   html=html.replace(/｜([^《｜<]+)《([^》<]+)》/g,'<ruby>$1<rt>$2</rt></ruby>');
-  return html.replace(/([一-鿿々〆ヶ]+)《([^》<]+)》/g,'<ruby>$1<rt>$2</rt></ruby>');
+  return html.replace(/([0-9０-９一-鿿々〆ヶ]+)《([^》<]+)》/g,'<ruby>$1<rt>$2</rt></ruby>');
 }
 // ナレーションは voice.js（端末の一番自然な日本語音声を選ぶ共通モジュール）に任せる
 function speak(t){ if(window.JVoice) JVoice.speak(plainText(t)); }
@@ -509,7 +509,7 @@ let aiSi=0;
 function aiPromptText(){
   const lang=($("#aiLang").value||"").trim()||"英語";
   const src=$("#aiSrc").value.trim();
-  return `かわいい動物キャラ2匹（左・右）の、やさしい日本語の会話を作ってください。1行に1セリフ、次の形式で出力：\n左または右 | 日本語のセリフ | ${lang}の翻訳 | 表情 | 頭上マーク\n・表情は次から1つ：ふつう / にこにこ / おこ / かなしい / びっくり / こまり / だいすき / ねむい\n・頭上マークは絵文字1つ（例：💢 ❓ ❗ 💦 💕 🎵 ✨）。無いときは空欄\n・左と右がかわりばんこに話す／初級〜中級のやさしい日本語\n・初心者向けに、セリフの漢字には「漢字《ふりがな》」の形でふりがなを付ける（例：急《いそ》ごう、学校《がっこう》）\n・セリフは8〜16個くらい（読み上げの合計が1分以内に収まる長さ。1つのセリフは長くても25文字くらいまで）\n・番号や説明は付けない\n\n場面：\n${src||"（ここに①で書いた場面が入ります）"}`;
+  return `かわいい動物キャラ2匹（左・右）の、やさしい日本語の会話を作ってください。1行に1セリフ、次の形式で出力：\n左または右 | 日本語のセリフ | ${lang}の翻訳 | 表情 | 頭上マーク\n・表情は次から1つ：ふつう / にこにこ / おこ / かなしい / びっくり / こまり / だいすき / ねむい\n・頭上マークは絵文字1つ（例：💢 ❓ ❗ 💦 💕 🎵 ✨）。無いときは空欄\n・左と右がかわりばんこに話す／初級〜中級のやさしい日本語\n・初心者向けに、セリフの漢字には「漢字《ふりがな》」の形でふりがなを付ける（例：急《いそ》ごう、学校《がっこう》）\n・数字は、数字ごと ふりがなに含める（例：8月《はちがつ》、15日《じゅうごにち》、3時《さんじ》、2人《ふたり》）\n・セリフは8〜16個くらい（読み上げの合計が1分以内に収まる長さ。1つのセリフは長くても25文字くらいまで）\n・番号や説明は付けない\n\n場面：\n${src||"（ここに①で書いた場面が入ります）"}`;
 }
 function updateAiPrompt(){ $("#aiPrompt").textContent=aiPromptText(); }
 function openAi(si){ aiSi=si; $("#aiLang").value=cfg.lang||"English"; $("#aiSrc").value=""; $("#aiResult").value=""; updateAiPrompt(); $("#aiOverlay").hidden=false; setTimeout(()=>$("#aiSrc").focus(),30); }
