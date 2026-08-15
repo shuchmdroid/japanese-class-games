@@ -12,14 +12,13 @@
 
   // 音量。持続音（風・波・ざわめき）は聞こえにくいので強めに、単発音は控えめに上げる
   var VOL = 3.0, NOISE_BOOST = 5.5, BLIP_BOOST = 2.4;
-  var ctx = null, master = null;
+  var ctx = null, master = null, last = null;
   function audio() {
     if (!ctx) {
       var AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
       ctx = new AC();
     }
-    if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} }
     return ctx;
   }
   function stop() {
@@ -29,7 +28,7 @@
 
   function limiter(c) {
     var k = c.createDynamicsCompressor();
-    k.threshold.value = -6; k.knee.value = 6; k.ratio.value = 12; k.attack.value = 0.003; k.release.value = 0.2;
+    k.threshold.value = -3; k.knee.value = 8; k.ratio.value = 6; k.attack.value = 0.006; k.release.value = 0.25;
     return k;
   }
   // ざらざらノイズ（風・波・ざわめきのもと）
@@ -124,10 +123,20 @@
     var fn = SCENES[bg]; if (!fn) return 0;
     var c = audio(); if (!c) return 0;
     stop();
-    master = c.createGain(); master.gain.value = VOL;
-    master.connect(limiter(c)).connect(c.destination);   // 音割れ防止
-    var t = c.currentTime + 0.06;   // 少し先に予約（resume 直後でも取りこぼさない）
-    try { fn(c, master, t); } catch (e) { return 0; }
+    // ⚠️ 停止中(suspended)のまま予約すると、再開した瞬間に全部まとめて鳴って「一瞬で終わる」。
+    //    かならず再開を待ってから予約する。
+    function schedule() {
+      if (!on) return;
+      master = c.createGain(); master.gain.value = VOL;
+      master.connect(limiter(c)).connect(c.destination);   // 音割れ防止
+      var t = c.currentTime + 0.08;
+      last = { state: c.state, now: +c.currentTime.toFixed(3), at: +t.toFixed(3) };
+      try { fn(c, master, t); } catch (e) { last.error = String(e); }
+    }
+    if (c.state === "suspended") {
+      try { var p = c.resume(); if (p && p.then) p.then(schedule, schedule); else schedule(); }
+      catch (e) { schedule(); }
+    } else schedule();
     return 2800;   // だいたいの長さ(ms)
   }
 
@@ -148,6 +157,6 @@
   window.JAmbient = {
     play: play, stop: stop,
     enabled: function (v) { if (v === undefined) return on; setEnabled(v); if (!on) stop(); return on; },
-    scenes: Object.keys(SCENES), renderPeak: renderPeak, volume: function () { return VOL; }
+    scenes: Object.keys(SCENES), renderPeak: renderPeak, volume: function () { return VOL; }, debug: function () { return last; }
   };
 })();
