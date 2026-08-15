@@ -145,6 +145,16 @@ p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
 .mini.plain{background:rgba(255,255,255,.14);color:#fff}
 .lbl-mini{font-size:11px;font-weight:800;color:#a99fd6;margin-left:2px}
 
+/* 台本（生徒の復習用） */
+.sheetwrap{display:flex;justify-content:center;background:#efeaff;border-radius:14px;padding:16px;max-height:56vh;overflow:auto}
+.sheet{background:#fff;color:#241552;border-radius:10px;padding:26px 28px 30px;width:100%;max-width:600px;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.sheet .sh-t{text-align:center;font-size:22px;font-weight:900;margin:0 0 4px}
+.sheet .sh-n{text-align:right;font-size:12px;color:#6a6390;font-weight:700;margin:0 0 16px}
+.sline{display:flex;gap:12px;align-items:flex-start;margin-bottom:15px}
+.sface{width:52px;height:52px;border-radius:50%;flex:0 0 auto;border:2.5px solid #241552;background-color:#f4f0ff;background-repeat:no-repeat;background-position:center 8%;background-size:auto 172%;overflow:hidden;display:grid;place-items:center}
+.sface svg{width:150%;height:auto;margin-top:14%}
+.stext{font-size:19px;font-weight:700;line-height:2.15;padding-top:6px;word-break:break-word}
+.stext ruby rt{font-size:.5em;color:#6a6390;font-weight:700}
 /* AI modal */
 .overlay{position:fixed;inset:0;background:rgba(10,6,30,.66);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow:auto;z-index:120}
 .ai-panel{background:#1c1346;border:1.5px solid rgba(255,255,255,.16);border-radius:18px;max-width:620px;width:100%;padding:20px;box-shadow:0 30px 70px rgba(0,0,0,.55)}
@@ -194,6 +204,19 @@ p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
 </div>
 
 <div class="toast" id="toast">✅ 保存しました</div>
+
+<div class="overlay" id="scriptOverlay" hidden>
+  <div class="ai-panel" style="max-width:680px">
+    <h3>📄 台本（生徒の復習用）</h3>
+    <p class="note" style="margin:4px 0 12px">セリフをふりがな付きで並べた台本です（翻訳なし）。画像で保存して配ったり、印刷して渡せます。</p>
+    <div class="sheetwrap"><div id="sheet"></div></div>
+    <div class="ai-actions">
+      <button class="mini plain" id="scClose">とじる</button>
+      <button class="mini plain" id="scPng">🖼 画像で保存</button>
+      <button class="mini primary" id="scPrint">🖨 印刷 / PDF</button>
+    </div>
+  </div>
+</div>
 
 <div class="overlay" id="aiOverlay" hidden>
   <div class="ai-panel">
@@ -386,6 +409,7 @@ function renderPlay(){
       <button class="pbtn tgl${cfg.showSub?" on":""}" id="cSub">💬 字幕</button>
       <button class="pbtn tgl${cfg.showTr?" on":""}" id="cTr">🌐 翻訳</button>
       <button class="pbtn tgl${(window.JAmbient&&JAmbient.enabled())?" on":""}" id="cAmb" title="はじまる前に、背景に合った環境音を鳴らします">🌿 環境音</button>
+      <button class="pbtn tgl" id="cScript" title="生徒の復習用の台本を作ります">📄 台本</button>
     </div>
     <div class="crumbs" style="text-align:center;margin-top:10px"><span style="color:#a99fd6;font-size:12.5px">タップでも 一時停止／再生できます</span></div>`;
   $("#toMenu").onclick=()=>{ stopRun(); phase="menu"; renderPresent(); window.scrollTo(0,0); };
@@ -393,6 +417,7 @@ function renderPlay(){
   $("#cPlay").onclick=()=>{ togglePlay(); };
   $("#cSub").onclick=()=>{ cfg.showSub=!cfg.showSub; saveCfg(); $("#cSub").classList.toggle("on",cfg.showSub); drawFrame(); };
   $("#cAmb").onclick=()=>{ if(!window.JAmbient) return; const v=!JAmbient.enabled(); JAmbient.enabled(v); $("#cAmb").classList.toggle("on",v); if(v) JAmbient.play(s.bg); };
+  $("#cScript").onclick=()=>{ stopRun(); openScript(run.si); };
   $("#cTr").onclick=()=>{ cfg.showTr=!cfg.showTr; saveCfg(); updateTrBtn(); $("#cTr").classList.toggle("on",cfg.showTr); renderPlay(); };
   $("#anStage").onclick=()=>{ togglePlay(); };
   run._kL=null; run._kR=null;   // 絵の再描画キャッシュをリセット
@@ -540,6 +565,147 @@ editList.addEventListener("click",e=>{
 });
 $(".addscene [data-act='addscene']").onclick=()=>{ data.scenes.push({title:"",titleTr:"",bg:"park",left:"rabbit",right:"bear",style:anyPic()?"pic":"svg",lines:[{who:"left",jp:"",tr:"",ex:"neutral",mark:"",dur:3}]}); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
 
+/* ===== 台本（生徒の復習用・画像/PDFで配れる） ===== */
+// 「漢字《ふりがな》」を [{b:漢字, r:ふりがな}] に分解（canvas に描くため）
+function rubySegments(s){
+  const out=[]; const re=/(?:｜([^《｜]+)|([0-9０-９一-鿿々〆ヶ]+))《([^》]+)》/g;
+  let last=0,m;
+  while((m=re.exec(String(s||"")))){
+    if(m.index>last) out.push({b:s.slice(last,m.index),r:null});
+    out.push({b:(m[1]||m[2]),r:m[3]});
+    last=re.lastIndex;
+  }
+  if(last<String(s||"").length) out.push({b:s.slice(last),r:null});
+  return out;
+}
+// キャラの「顔だけ」を丸く見せる（全身画像の上半分を使う）
+function faceStyle(key){
+  if(hasPic(key)) return `background-image:url('${CHARA_IMG[key]}')`;
+  return "";
+}
+function faceInner(key){ return hasPic(key) ? "" : charSVG(key,"happy"); }
+
+let scriptSi=0;
+function buildSheet(si){
+  const s=data.scenes[si];
+  const rows=s.lines.filter(l=>plainText(l.jp).trim()).map(l=>{
+    const key = l.who==="right" ? s.right : s.left;
+    return `<div class="sline"><div class="sface" style="${faceStyle(key)}">${faceInner(key)}</div><div class="stext">${addRuby(esc(l.jp))}</div></div>`;
+  }).join("");
+  return `<div class="sheet"><div class="sh-t">🎬 ${esc(s.title||"今日のアニメ")}</div><div class="sh-n">なまえ：____________________</div>${rows}</div>`;
+}
+function openScript(si){
+  scriptSi=si;
+  $("#sheet").innerHTML=buildSheet(si);
+  $("#scriptOverlay").hidden=false;
+}
+$("#scClose").onclick=()=>{ $("#scriptOverlay").hidden=true; };
+$("#scriptOverlay").onclick=e=>{ if(e.target===$("#scriptOverlay")) $("#scriptOverlay").hidden=true; };
+
+// 画像で保存（canvas に台本を描く。ふりがなは漢字の上に小さく）
+function loadImg(src){ return new Promise(res=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>res(null); i.src=src; }); }
+function svgToImg(svg){ return loadImg("data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg)); }
+async function faceImage(key){ return hasPic(key) ? await loadImg(CHARA_IMG[key]) : await svgToImg(charSVG(key,"happy")); }
+
+$("#scPng").onclick=async()=>{
+  const s=data.scenes[scriptSi];
+  const lines=s.lines.filter(l=>plainText(l.jp).trim());
+  const W=900, PAD=54, FACE=74, GAP=18, F=30, RF=15, LH=64, TEXTW=W-PAD*2-FACE-GAP;
+  const faces={}; for(const k of [s.left,s.right]) if(!faces[k]) faces[k]=await faceImage(k);
+
+  // 先に行数を測って高さを決める
+  const cv0=document.createElement("canvas"); const m=cv0.getContext("2d");
+  function layout(text){
+    m.font=`bold ${F}px "Yu Gothic UI",Meiryo,sans-serif`;
+    const rows=[]; let row=[], w=0;
+    rubySegments(text).forEach(seg=>{
+      const parts = seg.r ? [seg] : seg.b.split("").map(ch=>({b:ch,r:null}));
+      parts.forEach(p=>{
+        m.font=`bold ${F}px "Yu Gothic UI",Meiryo,sans-serif`;
+        const bw=m.measureText(p.b).width;
+        m.font=`bold ${RF}px "Yu Gothic UI",Meiryo,sans-serif`;
+        const rw=p.r?m.measureText(p.r).width:0;
+        const pw=Math.max(bw,rw)+(p.r?4:0);
+        if(w+pw>TEXTW && row.length){ rows.push(row); row=[]; w=0; }
+        row.push({...p,w:pw,bw,rw}); w+=pw;
+      });
+    });
+    if(row.length) rows.push(row);
+    return rows;
+  }
+  const laid=lines.map(l=>({l,rows:layout(l.jp)}));
+  const H=PAD+96+laid.reduce((a,x)=>a+Math.max(FACE, x.rows.length*LH)+GAP,0)+PAD;
+
+  const cv=document.createElement("canvas"); cv.width=W; cv.height=H; const ctx=cv.getContext("2d");
+  ctx.fillStyle="#fff"; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="#241552"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.font=`bold 40px "Yu Gothic UI",Meiryo,sans-serif`;
+  ctx.fillText("🎬 "+(s.title||"今日のアニメ"), W/2, PAD+18);
+  ctx.textAlign="right"; ctx.font=`22px "Yu Gothic UI",Meiryo,sans-serif`;
+  ctx.fillText("なまえ：________________", W-PAD, PAD+62);
+
+  let y=PAD+96;
+  for(const {l,rows} of laid){
+    const key = l.who==="right" ? s.right : s.left;
+    const im=faces[key];
+    // 顔（上半分）を丸く
+    if(im){
+      const side=Math.min(im.naturalWidth, im.naturalHeight*0.58);
+      const sx=(im.naturalWidth-side)/2, sy=im.naturalHeight*0.03;
+      ctx.save(); ctx.beginPath(); ctx.arc(PAD+FACE/2, y+FACE/2, FACE/2, 0, Math.PI*2); ctx.closePath(); ctx.clip();
+      ctx.fillStyle="#f4f0ff"; ctx.fillRect(PAD,y,FACE,FACE);
+      ctx.drawImage(im, sx, sy, side, side, PAD, y, FACE, FACE);
+      ctx.restore();
+      ctx.strokeStyle="#241552"; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.arc(PAD+FACE/2, y+FACE/2, FACE/2, 0, Math.PI*2); ctx.stroke();
+    }
+    // セリフ（ふりがな付き）
+    ctx.textAlign="left"; ctx.textBaseline="alphabetic"; ctx.fillStyle="#241552";
+    let ty=y+38;
+    rows.forEach(row=>{
+      let x=PAD+FACE+GAP;
+      row.forEach(p=>{
+        ctx.font=`bold ${F}px "Yu Gothic UI",Meiryo,sans-serif`;
+        ctx.fillStyle="#241552";
+        ctx.fillText(p.b, x+(p.w-p.bw)/2, ty);
+        if(p.r){ ctx.font=`bold ${RF}px "Yu Gothic UI",Meiryo,sans-serif`; ctx.fillStyle="#6a6390";
+          ctx.fillText(p.r, x+(p.w-p.rw)/2, ty-F*0.95); }
+        x+=p.w;
+      });
+      ty+=LH;
+    });
+    y+=Math.max(FACE, rows.length*LH)+GAP;
+  }
+  const a=document.createElement("a");
+  a.download="daihon_"+String(s.title||"anime").replace(/[^\w぀-ヿ一-龯]+/g,"_").slice(0,24)+".png";
+  a.href=cv.toDataURL("image/png"); a.click();
+  showToast("🖼 台本を保存しました");
+};
+
+// 印刷 / PDF
+$("#scPrint").onclick=()=>{
+  const s=data.scenes[scriptSi];
+  const css=`*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    html,body{margin:0}
+    body{font-family:"Yu Gothic UI",Meiryo,sans-serif;color:#241552;padding:0}
+    .sh-t{text-align:center;font-size:26px;font-weight:900;margin:0 0 4px}
+    .sh-n{text-align:right;font-size:14px;color:#6a6390;font-weight:700;margin:0 0 18px}
+    .sline{display:flex;gap:14px;align-items:flex-start;margin-bottom:16px;page-break-inside:avoid}
+    .sface{width:58px;height:58px;border-radius:50%;flex:0 0 auto;border:2.5px solid #241552;background-color:#f4f0ff;background-repeat:no-repeat;background-position:center 8%;background-size:auto 172%;overflow:hidden;display:grid;place-items:center}
+    .sface svg{width:150%;height:auto;margin-top:14%}
+    .stext{font-size:21px;font-weight:700;line-height:2.2;padding-top:6px}
+    .stext rt{font-size:.5em;color:#6a6390;font-weight:700}
+    @page{size:A4 portrait;margin:14mm}`;
+  const rows=s.lines.filter(l=>plainText(l.jp).trim()).map(l=>{
+    const key=l.who==="right"?s.right:s.left;
+    return `<div class="sline"><div class="sface" style="${faceStyle(key)}">${faceInner(key)}</div><div class="stext">${addRuby(esc(l.jp))}</div></div>`;
+  }).join("");
+  const w=window.open("","_blank");
+  if(!w){ alert("印刷用の画面を開けませんでした。ブラウザのポップアップを許可してください。"); return; }
+  w.document.write(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>台本 — ${esc(s.title||"今日のアニメ")}</title><style>${css}</style></head><body><div class="sh-t">🎬 ${esc(s.title||"今日のアニメ")}</div><div class="sh-n">なまえ：____________________</div>${rows}<script>window.onload=function(){setTimeout(function(){window.focus();window.print();},350);}<\/script></body></html>`);
+  w.document.close();
+};
+
 /* ===== AI音声づくり（このシーンの全セリフ） ===== */
 async function makeVoices(si){
   const s=data.scenes[si]; if(!s) return;
@@ -621,6 +787,7 @@ $("#saveBtn").onclick=()=>{ saveData(); showToast("✅ 保存しました"); };
 $("#trBtn").onclick=()=>{ cfg.showTr=!cfg.showTr; saveCfg(); updateTrBtn(); if($("#edit").hidden && phase==="play") renderPlay(); };   // タイトルの翻訳も出し分けるので作り直す
 $("#fsBtn").onclick=function(){ if(!document.fullscreenElement){(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen||function(){}).call(document.documentElement);} else {(document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);} };
 document.addEventListener("keydown",e=>{
+  if(e.key==="Escape" && !$("#scriptOverlay").hidden){ $("#scriptOverlay").hidden=true; return; }
   if(e.key==="Escape" && !$("#aiOverlay").hidden){ $("#aiOverlay").hidden=true; return; }
   if($("#present").hidden || phase!=="play")return;
   if(e.key===" "||e.key==="Enter"){ e.preventDefault(); togglePlay(); }
