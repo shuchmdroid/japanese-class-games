@@ -130,6 +130,7 @@ p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
 .addbtns button.tts{border-style:solid;border-color:rgba(255,211,78,.55);color:#ffd34e}
 .addbtns .vcount{font-size:12px;font-weight:800;color:#a99fd6}
 .addbtns .vcount.ok{color:#7af0c4}
+.addbtns .vcount.stale{color:#ffd34e}
 .addbtns .total{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:12.5px;font-weight:700;color:#a99fd6}
 .addbtns .total b{color:#e7e2ff;font-size:13.5px}
 .addbtns .total b.over{color:#ff9aa8}
@@ -562,9 +563,16 @@ async function refreshVoiceCount(si){
   const el=document.getElementById("vc"+si); if(!el||!window.JTTS) return;
   const s=data.scenes[si]; if(!s) return;
   const lines=s.lines.filter(l=>plainText(l.jp).trim());
-  let n=0; for(const l of lines){ if(await JTTS.has(plainText(l.jp), lineSide(l.who))) n++; }
-  el.textContent = lines.length ? (n===lines.length ? `🎙 音声OK（${n}）` : `🎙 音声 ${n}/${lines.length}`) : "";
-  el.className = "vcount"+(lines.length&&n===lines.length?" ok":"");
+  let n=0, stale=0;
+  for(const l of lines){
+    const t=plainText(l.jp);
+    if(await JTTS.has(t, lineSide(l.who))) n++;
+    else if(await JTTS.hasAnySettings(t)) stale++;   // 作ってあるが、いまの声・話し方とは別物
+  }
+  if(!lines.length){ el.textContent=""; el.className="vcount"; return; }
+  if(n===lines.length){ el.textContent=`🎙 音声OK（${n}）`; el.className="vcount ok"; }
+  else if(stale){ el.textContent=`🎙 音声 ${n}/${lines.length}（声の設定が変わりました → 作り直してください）`; el.className="vcount stale"; }
+  else { el.textContent=`🎙 音声 ${n}/${lines.length}`; el.className="vcount"; }
 }
 
 /* ===== AI一括 ===== */

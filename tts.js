@@ -65,13 +65,21 @@
 
   /* ---------- 保存先（IndexedDB：localStorage より容量が大きい） ---------- */
   var DB = "jclass-tts", STORE = "audio", dbp = null;
-  function db() {
-    if (dbp) return dbp;
-    dbp = new Promise(function (res, rej) {
+  function openDB() {
+    return new Promise(function (res, rej) {
       var r = indexedDB.open(DB, 1);
       r.onupgradeneeded = function () { if (!r.result.objectStoreNames.contains(STORE)) r.result.createObjectStore(STORE); };
       r.onsuccess = function () { res(r.result); };
       r.onerror = function () { rej(r.error); };
+    });
+  }
+  function db() {
+    if (dbp) return dbp;
+    // 保存庫が壊れている（入れ物が無い）ときは、作り直して自動で復旧する
+    dbp = openDB().then(function (d) {
+      if (d.objectStoreNames.contains(STORE)) return d;
+      d.close();
+      return new Promise(function (res) { var r = indexedDB.deleteDatabase(DB); r.onsuccess = r.onerror = r.onblocked = function () { res(); }; }).then(openDB);
     });
     return dbp;
   }
@@ -85,6 +93,13 @@
 
   function ready() { return !!cfg.key; }
   function has(text, sd) { return idbGet(keyOf(text, sd)).then(function (b) { return !!b; }); }
+  // 「その文の音声は作ってあるが、いまの設定（声・話し方など）とは違う」かどうか。
+  // 設定を変えたときに「なぜ 0/10 なのか」を説明するために使う。
+  function idbKeys() { return db().then(function (d) { return new Promise(function (res) { var t = d.transaction(STORE, "readonly").objectStore(STORE).getAllKeys(); t.onsuccess = function () { res(t.result || []); }; t.onerror = function () { res([]); }; }); }).catch(function () { return []; }); }
+  function hasAnySettings(text) {
+    var t = String(text || ""), suffix = "|" + hash(t) + "|" + t.length;
+    return idbKeys().then(function (ks) { for (var i = 0; i < ks.length; i++) if (String(ks[i]).indexOf(suffix) >= 0) return true; return false; });
+  }
 
   /* ---------- 生成 ---------- */
   function generate(text, sd) {
@@ -226,7 +241,7 @@
   }
 
   window.JTTS = {
-    ready: ready, has: has, generate: generate, play: play, stop: stop,
+    ready: ready, has: has, hasAnySettings: hasAnySettings, generate: generate, play: play, stop: stop,
     openSettings: openSettings, config: function () { return cfg; }, voices: VOICES, presets: PRESETS, count: idbCount, keyOf: keyOf
   };
 })();

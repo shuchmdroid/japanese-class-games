@@ -72,53 +72,59 @@
     o.start(t0); o.stop(t0 + d + 0.02);
   }
 
-  // 背景ごとの環境音（約2.4〜2.8秒）
+  // 背景ごとの環境音（約5秒）
+  var DUR = 5.0;
   var SCENES = {
     park: function (c, out, t) {            // 小鳥のさえずり＋そよ風
-      noise(c, out, t, 2.6, { type: "lowpass", freq: 700, gain: 0.035, sweep: 500 });
-      [0.25, 0.42, 0.95, 1.15, 1.75, 2.05].forEach(function (d, i) {
+      noise(c, out, t, DUR, { type: "lowpass", freq: 700, gain: 0.035, sweep: 500, attack: .7, release: 1.0 });
+      [0.35, 0.55, 1.2, 1.45, 2.1, 2.4, 3.0, 3.3, 3.9, 4.15].forEach(function (d, i) {
         blip(c, out, t + d, { f0: 2100 + (i % 3) * 320, f1: 3000 + (i % 2) * 500, dur: 0.1, gain: 0.05 });
         blip(c, out, t + d + 0.1, { f0: 2800, f1: 2200, dur: 0.08, gain: 0.035 });
       });
     },
-    sea: function (c, out, t) {             // 波の寄せ返し＋かもめ
-      noise(c, out, t, 1.5, { type: "lowpass", freq: 500, gain: 0.075, sweep: 260, attack: .6, release: .7 });
-      noise(c, out, t + 1.35, 1.3, { type: "lowpass", freq: 480, gain: 0.06, sweep: 240, attack: .5, release: .6 });
-      blip(c, out, t + 0.8, { f0: 1500, f1: 900, dur: 0.3, gain: 0.04 });
-      blip(c, out, t + 1.15, { f0: 1400, f1: 850, dur: 0.28, gain: 0.03 });
+    sea: function (c, out, t) {             // 波の寄せ返し（3回）＋かもめ
+      [0, 1.7, 3.4].forEach(function (d) {
+        noise(c, out, t + d, 1.8, { type: "lowpass", freq: 500, gain: 0.075, sweep: 260, attack: .7, release: .8 });
+      });
+      blip(c, out, t + 1.0, { f0: 1500, f1: 900, dur: 0.3, gain: 0.04 });
+      blip(c, out, t + 1.35, { f0: 1400, f1: 850, dur: 0.28, gain: 0.03 });
+      blip(c, out, t + 3.5, { f0: 1550, f1: 950, dur: 0.3, gain: 0.035 });
     },
     night: function (c, out, t) {           // 虫の音（コオロギ）＋しずかな空気
-      noise(c, out, t, 2.6, { type: "lowpass", freq: 320, gain: 0.05 });
-      for (var i = 0; i < 14; i++) {
+      noise(c, out, t, DUR, { type: "lowpass", freq: 320, gain: 0.05, attack: .8, release: 1.0 });
+      for (var i = 0; i < 27; i++) {
         var d = 0.2 + i * 0.17;
         blip(c, out, t + d, { f0: 4200, f1: 4000, dur: 0.05, gain: 0.055 });
         blip(c, out, t + d + 0.06, { f0: 4300, f1: 4100, dur: 0.05, gain: 0.045 });
       }
     },
     cafe: function (c, out, t) {            // 店内のざわめき＋カップの音
-      noise(c, out, t, 2.6, { type: "bandpass", freq: 500, q: 0.6, gain: 0.05 });
-      noise(c, out, t, 2.6, { type: "lowpass", freq: 250, gain: 0.03 });
-      blip(c, out, t + 0.7, { type: "triangle", f0: 2600, f1: 1800, dur: 0.18, gain: 0.05 });
-      blip(c, out, t + 1.6, { type: "triangle", f0: 3100, f1: 2200, dur: 0.15, gain: 0.04 });
+      noise(c, out, t, DUR, { type: "bandpass", freq: 500, q: 0.6, gain: 0.05, attack: .7, release: 1.0 });
+      noise(c, out, t, DUR, { type: "lowpass", freq: 250, gain: 0.03, attack: .7, release: 1.0 });
+      [0.8, 1.9, 3.1, 4.0].forEach(function (d, i) {
+        blip(c, out, t + d, { type: "triangle", f0: 2600 + (i % 2) * 500, f1: 1800 + (i % 2) * 400, dur: 0.17, gain: 0.05 });
+      });
     },
-    "class": function (c, out, t) {         // 教室のざわつき＋チャイム2音
-      noise(c, out, t, 2.4, { type: "bandpass", freq: 600, q: 0.5, gain: 0.035 });
-      blip(c, out, t + 0.15, { type: "sine", f0: 880, f1: 880, dur: 0.55, gain: 0.06 });
-      blip(c, out, t + 0.75, { type: "sine", f0: 660, f1: 660, dur: 0.7, gain: 0.055 });
+    "class": function (c, out, t) {         // 教室のざわつき＋チャイム
+      noise(c, out, t, DUR, { type: "bandpass", freq: 600, q: 0.5, gain: 0.035, attack: .7, release: 1.0 });
+      [[0.2, 880], [0.85, 660], [1.5, 880], [2.15, 587]].forEach(function (p) {
+        blip(c, out, t + p[0], { type: "sine", f0: p[1], f1: p[1], dur: 0.6, gain: 0.06 });
+      });
     },
-    school: function (c, out, t) {          // チャイム＋外の空気
-      noise(c, out, t, 2.6, { type: "lowpass", freq: 600, gain: 0.03 });
-      [[0.1, 1046], [0.55, 880], [1.0, 784], [1.45, 587]].forEach(function (p) {
-        blip(c, out, t + p[0], { type: "sine", f0: p[1], f1: p[1], dur: 0.6, gain: 0.055 });
+    school: function (c, out, t) {          // チャイム（8音）＋外の空気
+      noise(c, out, t, DUR, { type: "lowpass", freq: 600, gain: 0.03, attack: .7, release: 1.0 });
+      [[0.15, 1046], [0.6, 880], [1.05, 784], [1.5, 587], [2.2, 587], [2.65, 784], [3.1, 880], [3.55, 1046]].forEach(function (p) {
+        blip(c, out, t + p[0], { type: "sine", f0: p[1], f1: p[1], dur: 0.55, gain: 0.055 });
       });
     },
     home: function (c, out, t) {            // しずかな部屋＋時計のカチカチ
-      noise(c, out, t, 2.6, { type: "lowpass", freq: 260, gain: 0.06 });
-      for (var i = 0; i < 5; i++) blip(c, out, t + 0.3 + i * 0.5, { type: "square", f0: 1500, f1: 700, dur: 0.035, gain: 0.06 });
+      noise(c, out, t, DUR, { type: "lowpass", freq: 260, gain: 0.06, attack: .7, release: 1.0 });
+      for (var i = 0; i < 10; i++) blip(c, out, t + 0.3 + i * 0.5, { type: "square", f0: 1500, f1: 700, dur: 0.035, gain: 0.06 });
     },
-    snow: function (c, out, t) {            // しんしんとした風
-      noise(c, out, t, 2.8, { type: "lowpass", freq: 420, gain: 0.055, sweep: 260, attack: .8, release: .9 });
-      noise(c, out, t + 0.4, 1.6, { type: "bandpass", freq: 900, q: .5, gain: 0.02 });
+    snow: function (c, out, t) {            // しんしんとした風（強弱をつける）
+      noise(c, out, t, DUR, { type: "lowpass", freq: 420, gain: 0.055, sweep: 260, attack: 1.0, release: 1.2 });
+      noise(c, out, t + 0.6, 1.8, { type: "bandpass", freq: 900, q: .5, gain: 0.022 });
+      noise(c, out, t + 2.8, 1.8, { type: "bandpass", freq: 780, q: .5, gain: 0.02 });
     }
   };
 
@@ -141,14 +147,14 @@
       try { var p = c.resume(); if (p && p.then) p.then(schedule, schedule); else schedule(); }
       catch (e) { schedule(); }
     } else schedule();
-    return 2800;   // だいたいの長さ(ms)
+    return DUR * 1000;   // だいたいの長さ(ms)
   }
 
   // 動作確認用：実際に鳴る音をオフラインで描画して、音量の最大値を返す
   function renderPeak(bg) {
     var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
     if (!OAC || !SCENES[bg]) return Promise.resolve(null);
-    var oc = new OAC(1, 44100 * 3, 44100);
+    var oc = new OAC(1, Math.round(44100 * (DUR + 1)), 44100);
     var g = oc.createGain(); g.gain.value = VOL; g.connect(limiter(oc)).connect(oc.destination);
     SCENES[bg](oc, g, 0);
     return oc.startRendering().then(function (buf) {
