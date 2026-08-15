@@ -226,7 +226,7 @@ function addRuby(html){
   return html.replace(/([0-9０-９一-鿿々〆ヶ]+)《([^》<]+)》/g,'<ruby>$1<rt>$2</rt></ruby>');
 }
 // ナレーション：AI音声（tts.js）が作ってあればそれを再生。無ければブラウザ内蔵の声（voice.js）
-function lineVoice(who){ const c=(window.JTTS&&JTTS.config())||{}; return who==="right" ? (c.voiceR||"ash") : (c.voiceL||"coral"); }
+function lineSide(who){ return who==="right" ? "R" : "L"; }   // 左右のキャラごとに声・話し方・声の高さが変わる
 function speak(t){ if(window.JVoice) JVoice.speak(plainText(t)); }
 function stopSpeak(){ if(window.JVoice) JVoice.stop(); if(window.JTTS) JTTS.stop(); }
 // AI音声があれば再生して <audio> を返す。無ければブラウザ音声でしゃべって null
@@ -234,7 +234,7 @@ function speakLine(line){
   const txt=plainText(line.jp);
   if(!txt) return Promise.resolve(null);
   if(!window.JTTS) { speak(line.jp); return Promise.resolve(null); }
-  return JTTS.play(txt, lineVoice(line.who)).then(a=>{ if(a) return a; speak(line.jp); return null; }).catch(()=>{ speak(line.jp); return null; });
+  return JTTS.play(txt, lineSide(line.who)).then(a=>{ if(a) return a; speak(line.jp); return null; }).catch(()=>{ speak(line.jp); return null; });
 }
 const MAX_DUR=20, MAX_TOTAL=60;   // 1セリフの最長／アニメ全体の最長（秒）
 // セリフの長さから、読み上げ＋読む時間に合う秒数を決める（短い相づちは短く、長い文は長く）
@@ -539,7 +539,7 @@ async function makeVoices(si){
   let done=0, made=0, failed=0, lastErr="";
   for(const l of lines){
     showToast(`🎙 音声を作っています… ${done+1}/${lines.length}`);
-    const r=await JTTS.generate(plainText(l.jp), lineVoice(l.who));
+    const r=await JTTS.generate(plainText(l.jp), lineSide(l.who));
     if(r.ok){ if(!r.cached) made++; } else { failed++; lastErr=r.error||""; }
     done++;
   }
@@ -552,7 +552,7 @@ async function refreshVoiceCount(si){
   const el=document.getElementById("vc"+si); if(!el||!window.JTTS) return;
   const s=data.scenes[si]; if(!s) return;
   const lines=s.lines.filter(l=>plainText(l.jp).trim());
-  let n=0; for(const l of lines){ if(await JTTS.has(plainText(l.jp), lineVoice(l.who))) n++; }
+  let n=0; for(const l of lines){ if(await JTTS.has(plainText(l.jp), lineSide(l.who))) n++; }
   el.textContent = lines.length ? (n===lines.length ? `🎙 音声OK（${n}）` : `🎙 音声 ${n}/${lines.length}`) : "";
   el.className = "vcount"+(lines.length&&n===lines.length?" ok":"");
 }
