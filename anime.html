@@ -215,6 +215,7 @@ p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
 <script src="chara-images.js"></script>
 <script src="voice.js"></script>
 <script src="tts.js"></script>
+<script src="ambient.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 function load(k,d){ try{const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v}catch(e){return d} }
@@ -383,12 +384,14 @@ function renderPlay(){
       <button class="pbtn play" id="cPlay">▶ 再生</button>
       <button class="pbtn tgl${cfg.showSub?" on":""}" id="cSub">💬 字幕</button>
       <button class="pbtn tgl${cfg.showTr?" on":""}" id="cTr">🌐 翻訳</button>
+      <button class="pbtn tgl${(window.JAmbient&&JAmbient.enabled())?" on":""}" id="cAmb" title="はじまる前に、背景に合った環境音を鳴らします">🌿 環境音</button>
     </div>
     <div class="crumbs" style="text-align:center;margin-top:10px"><span style="color:#a99fd6;font-size:12.5px">タップでも 一時停止／再生できます</span></div>`;
   $("#toMenu").onclick=()=>{ stopRun(); phase="menu"; renderPresent(); window.scrollTo(0,0); };
   $("#cReset").onclick=()=>{ resetRun(); };
   $("#cPlay").onclick=()=>{ togglePlay(); };
   $("#cSub").onclick=()=>{ cfg.showSub=!cfg.showSub; saveCfg(); $("#cSub").classList.toggle("on",cfg.showSub); drawFrame(); };
+  $("#cAmb").onclick=()=>{ if(!window.JAmbient) return; const v=!JAmbient.enabled(); JAmbient.enabled(v); $("#cAmb").classList.toggle("on",v); if(v) JAmbient.play(s.bg); };
   $("#cTr").onclick=()=>{ cfg.showTr=!cfg.showTr; saveCfg(); updateTrBtn(); $("#cTr").classList.toggle("on",cfg.showTr); renderPlay(); };
   $("#anStage").onclick=()=>{ togglePlay(); };
   run._kL=null; run._kR=null;   // 絵の再描画キャッシュをリセット
@@ -418,14 +421,20 @@ function drawFrame(){
   const pb=$("#cPlay"); if(pb) pb.textContent=run.playing?"⏸ 一時停止":(run.idx>=total-1?"🔁 もう一度":"▶ 再生");
 }
 function setMark(id,mk){ const el=$("#"+id); if(!el)return; if(mk){ el.textContent=mk; el.hidden=false; el.style.animation="none"; el.offsetHeight; el.style.animation=""; } else el.hidden=true; }
-function stopRun(){ if(run&&run.timer){ clearTimeout(run.timer); run.timer=null; } if(run)run.playing=false; stopSpeak(); }
+function stopRun(){ if(run&&run.timer){ clearTimeout(run.timer); run.timer=null; } if(run)run.playing=false; stopSpeak(); if(window.JAmbient) JAmbient.stop(); }
 function resetRun(){ stopRun(); run.idx=-1; run.exL="neutral"; run.exR="neutral"; run.mkL=""; run.mkR=""; drawFrame(); }
 function togglePlay(){
   if(!run)return;
   const s=data.scenes[run.si];
   if(run.playing){ stopRun(); drawFrame(); return; }
   if(run.idx>=s.lines.length-1) resetRun();   // 最後まで見たら最初から
-  run.playing=true; nextLine();
+  run.playing=true;
+  // 最初だけ、背景に合った環境音を2〜3秒（タイトルを出したまま）鳴らしてから始める
+  if(run.idx<0 && window.JAmbient && JAmbient.enabled()){
+    const ms=JAmbient.play(s.bg);
+    if(ms){ drawFrame(); run.timer=setTimeout(()=>{ if(run&&run.playing) nextLine(); }, Math.max(1400, ms-500)); return; }
+  }
+  nextLine();
 }
 function nextLine(){
   const s=data.scenes[run.si];
