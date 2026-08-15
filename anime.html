@@ -162,6 +162,7 @@ p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
     <span>今日のアニメ<small>日本語クラス・ツール</small></span>
   </a>
   <div class="top-actions">
+    <button class="chip-btn" id="voiceBtn" title="ナレーションの声・はやさ">🔊 声</button>
     <button class="chip-btn" id="trBtn">🌐 翻訳</button>
     <button class="chip-btn" id="menuBtn">☰ 一覧</button>
     <button class="chip-btn" id="modeBtn">✏️ 編集</button>
@@ -207,6 +208,7 @@ p.sub{margin:0 0 16px;color:#c9c2e8;font-size:14px;text-align:center}
 </div>
 
 <script src="chara-images.js"></script>
+<script src="voice.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 function load(k,d){ try{const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v}catch(e){return d} }
@@ -218,7 +220,9 @@ function addRuby(html){
   html=html.replace(/｜([^《｜<]+)《([^》<]+)》/g,'<ruby>$1<rt>$2</rt></ruby>');
   return html.replace(/([一-鿿々〆ヶ]+)《([^》<]+)》/g,'<ruby>$1<rt>$2</rt></ruby>');
 }
-function speak(t){ try{ if(!window.speechSynthesis)return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(plainText(t)); u.lang="ja-JP"; u.rate=0.95; speechSynthesis.speak(u);}catch(e){} }
+// ナレーションは voice.js（端末の一番自然な日本語音声を選ぶ共通モジュール）に任せる
+function speak(t){ if(window.JVoice) JVoice.speak(plainText(t)); }
+function stopSpeak(){ if(window.JVoice) JVoice.stop(); }
 const MAX_DUR=20, MAX_TOTAL=60;   // 1セリフの最長／アニメ全体の最長（秒）
 // セリフの長さから、読み上げ＋読む時間に合う秒数を決める（短い相づちは短く、長い文は長く）
 // 秒数の計算では、ふりがな記号は長さに数えない
@@ -400,7 +404,7 @@ function drawFrame(){
   const pb=$("#cPlay"); if(pb) pb.textContent=run.playing?"⏸ 一時停止":(run.idx>=total-1?"🔁 もう一度":"▶ 再生");
 }
 function setMark(id,mk){ const el=$("#"+id); if(!el)return; if(mk){ el.textContent=mk; el.hidden=false; el.style.animation="none"; el.offsetHeight; el.style.animation=""; } else el.hidden=true; }
-function stopRun(){ if(run&&run.timer){ clearTimeout(run.timer); run.timer=null; } if(run)run.playing=false; try{speechSynthesis.cancel();}catch(e){} }
+function stopRun(){ if(run&&run.timer){ clearTimeout(run.timer); run.timer=null; } if(run)run.playing=false; stopSpeak(); }
 function resetRun(){ stopRun(); run.idx=-1; run.exL="neutral"; run.exR="neutral"; run.mkL=""; run.mkR=""; drawFrame(); }
 function togglePlay(){
   if(!run)return;
@@ -537,6 +541,7 @@ function showToast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("sh
 function showEdit(){ stopRun&&run&&stopRun(); $("#aiOverlay").hidden=true; $("#present").hidden=true; $("#edit").hidden=false; $("#menuBtn").hidden=true; renderEdit(); }
 function showPresent(){ $("#edit").hidden=true; $("#present").hidden=false; $("#menuBtn").hidden=false; phase="menu"; renderPresent(); }
 function updateTrBtn(){ $("#trBtn").classList.toggle("on",cfg.showTr); }
+$("#voiceBtn").onclick=()=>{ if(run)stopRun(); if(window.JVoice) JVoice.openPicker(); };
 $("#modeBtn").onclick=showEdit;
 $("#doneBtn").onclick=showPresent;
 $("#menuBtn").onclick=()=>{ if(run)stopRun(); phase="menu"; renderPresent(); window.scrollTo(0,0); };

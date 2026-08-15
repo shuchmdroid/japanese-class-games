@@ -299,7 +299,7 @@ function saveData(){ save("memorize.data.v1",data); }
 
 /* ====== 共通 ====== */
 function termText(w){ return w.kanji ? `${w.kana}（${w.kanji}）` : w.kana; }
-function speak(text){ try{ if(!window.speechSynthesis) return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang="ja-JP"; u.rate=0.9; speechSynthesis.speak(u); }catch(e){} }
+function speak(text){ if(window.JVoice) JVoice.speak(text); }   // 声は voice.js（自然な音声を自動選択）
 
 /* ====== 発表 ====== */
 const stage=$("#stage");
@@ -782,6 +782,7 @@ document.addEventListener("keydown",e=>{
 
 renderPresent();
 </script>
+<script src="voice.js"></script>
 <script src="editbar.js"></script>
 <script src="intro.js"></script>
 <script>ClassIntro.init({key:"memorize",icon:"🧠",title:"言葉を覚える",desc:"授業で勉強した言葉を、1つずつ覚えていくツールです。\n「あい（愛）」を見せて発音させ、ボタンで意味や画像を表示します。\n数問ごとにクイズ（ことば↔意味・画像・音声）を自動で入れられます。"});</script>

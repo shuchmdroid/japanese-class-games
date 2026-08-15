@@ -286,7 +286,7 @@ if(!cfg.tags.length) cfg.tags=DEFAULT_TAGS.slice();
 function saveCfg(){ save("katsuyo.cfg.v1",cfg); }
 
 /* ====== 共通 ====== */
-function speak(text){ try{ if(!window.speechSynthesis) return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(plainText(text)); u.lang="ja-JP"; u.rate=0.9; speechSynthesis.speak(u); }catch(e){} }
+function speak(text){ if(window.JVoice) JVoice.speak(plainText(text)); }   // 声は voice.js（自然な音声を自動選択）
 function animalOf(st,i){ return st.animal || ANIMALS[i%ANIMALS.length]; }
 // タグごとに違う色。一覧(cfg.tags)での並び順に黄金角(137.5°)で色相をずらす＝隣どうしも遠い色になり、かぶりにくい。
 function tagHue(tag){ let i=cfg.tags.indexOf(tag); if(i<0){ let h=0; for(let k=0;k<tag.length;k++) h=(h*31+tag.charCodeAt(k))>>>0; i=h; } return Math.round((i*137.508)%360); }
@@ -541,6 +541,7 @@ updateTrBtn();
 renderTagMgr();
 renderPresent();
 </script>
+<script src="voice.js"></script>
 <script src="editbar.js"></script>
 <script src="intro.js"></script>
 <script>ClassIntro.init({key:"katsuyo",icon:"🚪",title:"活用の部屋",desc:"日本語の活用（言い方の変化）を教えるツールです。\n部屋（動詞・形容詞・助動詞など）を選び、活用を選ぶと、もとの例文が出ます。\n「次へ」を押すと、下に変化した文が出て、変わった部分に色が付き、動物が吹き出しで説明します。"});</script>
