@@ -22,8 +22,12 @@
     return ctx;
   }
   function stop() {
-    if (master) { try { master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setTargetAtTime(0, ctx.currentTime, .05); } catch (e) {} }
-    setTimeout(function () { if (master) { try { master.disconnect(); } catch (e) {} master = null; } }, 300);
+    // ⚠️ 後片付けのタイマーは「そのとき止めたノード」だけを対象にする。
+    //    master をあとから見に行くと、次に鳴らし始めた音まで切ってしまう（＝一瞬で消える）。
+    var m = master; master = null;
+    if (!m) return;
+    try { m.gain.cancelScheduledValues(ctx.currentTime); m.gain.setTargetAtTime(0, ctx.currentTime, .05); } catch (e) {}
+    setTimeout(function () { try { m.disconnect(); } catch (e) {} }, 300);
   }
 
   function limiter(c) {
@@ -157,6 +161,6 @@
   window.JAmbient = {
     play: play, stop: stop,
     enabled: function (v) { if (v === undefined) return on; setEnabled(v); if (!on) stop(); return on; },
-    scenes: Object.keys(SCENES), renderPeak: renderPeak, volume: function () { return VOL; }, debug: function () { return last; }
+    scenes: Object.keys(SCENES), renderPeak: renderPeak, volume: function () { return VOL; }, debug: function () { return last ? { state: last.state, now: last.now, at: last.at, alive: !!master } : null; }
   };
 })();
