@@ -372,6 +372,7 @@ body.arranging .card:hover{transform:none;box-shadow:0 4px 14px rgba(31,36,48,.0
 <script src="vendor/supabase.js"></script>
 <script src="auth-config.js"></script>
 <script src="auth.js"></script>
+<script src="sync.js"></script>
 <script>
 (function(){
   var area=document.getElementById("acctArea");
@@ -381,13 +382,44 @@ body.arranging .card:hover{transform:none;box-shadow:0 4px 14px rgba(31,36,48,.0
   function render(u){
     if(u){
       var name=(u.user_metadata&&(u.user_metadata.full_name||u.user_metadata.name))||(u.email?u.email.split("@")[0]:"ユーザー");
-      area.innerHTML='<span class="acct-chip who" title="'+esc(u.email||"")+'">👤 '+esc(name)+' <button class="out" id="acctOut">ログアウト</button></span>';
+      area.innerHTML='<span class="acct-chip who" title="'+esc(u.email||"")+'">👤 '+esc(name)+' <button class="out" id="acctSync" title="クラウド同期">☁</button> <button class="out" id="acctOut">ログアウト</button></span>';
       var o=document.getElementById("acctOut"); if(o) o.onclick=function(){ Auth.signOut().then(function(){ location.reload(); }); };
+      var sy=document.getElementById("acctSync"); if(sy) sy.onclick=openSyncPanel;
     } else {
       area.innerHTML='<a class="acct-chip" href="login.html">🔑 ログイン</a>';
     }
   }
   Auth.onChange(render);
+
+  // ☁ クラウド同期のパネル（今すぐ同期 / クラウドから復元）
+  window.openSyncPanel=function(){
+    if(!window.JSync) return;
+    var last=JSync.lastSync();
+    var when=last? new Date(last).toLocaleString("ja-JP") : "まだありません";
+    var ov=document.createElement("div");
+    ov.style.cssText="position:fixed;inset:0;background:rgba(10,6,30,.66);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow:auto;z-index:400";
+    ov.innerHTML='<div style="background:#1c1346;border:1.5px solid rgba(255,255,255,.16);border-radius:18px;max-width:480px;width:100%;padding:20px;color:#fff;font-family:inherit">'+
+      '<h3 style="margin:0 0 6px;font-size:19px">☁ クラウド同期</h3>'+
+      '<p style="font-size:12.5px;color:#a99fd6;line-height:1.9;margin:0 0 14px">ログイン中は、作った内容が<b>自動でクラウドに保存</b>され、別の端末でログインすると自動で最新になります。<br>最後の同期：<b>'+esc(when)+'</b></p>'+
+      '<div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">'+
+      '<button class="bk-btn load" id="syRestore">⬇️ クラウドから復元</button>'+
+      '<button class="bk-btn save" id="syNow">🔄 今すぐ同期</button>'+
+      '<button class="bk-btn load" id="syClose">とじる</button></div>'+
+      '<div id="syMsg" style="margin-top:12px;font-size:13px;font-weight:700;min-height:1.2em"></div></div>';
+    document.body.appendChild(ov);
+    var msg=ov.querySelector("#syMsg");
+    ov.querySelector("#syClose").onclick=function(){ ov.remove(); };
+    ov.onclick=function(e){ if(e.target===ov) ov.remove(); };
+    ov.querySelector("#syNow").onclick=function(){
+      msg.style.color="#c9c2e8"; msg.textContent="同期中…";
+      JSync.syncNow().then(function(){ msg.style.color="#7ef0c4"; msg.textContent="✅ 同期しました"; });
+    };
+    ov.querySelector("#syRestore").onclick=function(){
+      if(!confirm("クラウドに保存されている内容で、この端末の内容を上書きします。よろしいですか？")) return;
+      msg.style.color="#c9c2e8"; msg.textContent="復元中…";
+      JSync.restore().then(function(n){ msg.style.color="#7ef0c4"; msg.textContent="✅ "+n+"件を復元しました。ページを読み込み直します…"; setTimeout(function(){ location.reload(); },1200); });
+    };
+  };
 })();
 </script>
 
