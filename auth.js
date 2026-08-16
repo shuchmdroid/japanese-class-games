@@ -43,6 +43,14 @@
       if (!client) return Promise.resolve({ error: { message: "未設定" } });
       return client.auth.signInWithOtp({ email: email, options: { emailRedirectTo: redirectTo || siteUrl("/games.html"), shouldCreateUser: true } });
     },
+    // どのログイン方法が使えるか（未設定のボタンを出さないために使う）
+    providers: function () {
+      if (!hasCfg) return Promise.resolve({});
+      return fetch(cfg.SUPABASE_URL + "/auth/v1/settings", { headers: { apikey: cfg.SUPABASE_ANON_KEY } })
+        .then(function (r) { return r.json(); })
+        .then(function (j) { return (j && j.external) || {}; })
+        .catch(function () { return {}; });
+    },
     signOut: function () {
       if (!client) return Promise.resolve();
       return client.auth.signOut();
