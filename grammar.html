@@ -648,7 +648,7 @@ function editClick(e){
 $("#editLessons").addEventListener("click",editClick);
 $("#editTables").addEventListener("click",editClick);
 document.querySelectorAll(".edtabs button").forEach(b=>b.onclick=()=>{ etab=b.dataset.tab; renderEdit(); });
-$("#addLessonBtn").onclick=()=>{ data.lessons.push({title:"",meaning:"",meaningTr:"",pattern:"",patternTr:"",tableName:(tables.tables[0]&&tables.tables[0].name)||"",note:"",noteTr:"",verbs:[{dict:"",dRead:"",dRoma:"",conj:"",cRead:"",cRoma:"",tr:""}]}); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
+$("#addLessonBtn").onclick=()=>{ if(window.JPlan&&!JPlan.guardAdd(data.lessons,"文法")) return; data.lessons.push(JPlan.mark({title:"",meaning:"",meaningTr:"",pattern:"",patternTr:"",tableName:(tables.tables[0]&&tables.tables[0].name)||"",note:"",noteTr:"",verbs:[{dict:"",dRead:"",dRoma:"",conj:"",cRead:"",cRoma:"",tr:""}]})); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
 $("#addTableBtn").onclick=()=>{ tables.tables.push({name:"",nameTr:"",intro:"",introTr:"",groups:[{title:"",note:"",rules:[{badge:"",pattern:"",result:"",note:"",ex:[]}]}],verbs:[{dict:"",dRead:"",dRoma:"",conj:"",cRead:"",cRoma:"",tr:""}]}); saveTables(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
 
 /* ====== AI一括 ====== */
@@ -729,6 +729,9 @@ renderPresent();
 <script src="vendor/supabase.js"></script>
 <script src="auth-config.js"></script>
 <script src="auth.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan.js"></script>
 <script src="sync.js"></script>
 </body>
 </html>

@@ -488,7 +488,7 @@ editList.addEventListener("click",e=>{
   else return;
   saveData(); renderEdit();
 });
-$(".addroom [data-act='roomadd']").onclick=()=>{ data.rooms.push({name:"",icon:"🚪",topics:[{title:"",base:{jp:"",tr:"",tags:[]},steps:[{jp:"",tr:"",note:"",noteTr:"",tags:[],animal:""}]}]}); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
+$(".addroom [data-act='roomadd']").onclick=()=>{ if(window.JPlan&&!JPlan.guardAdd(data.rooms,"部屋")) return; data.rooms.push(JPlan.mark({name:"",icon:"🚪",topics:[{title:"",base:{jp:"",tr:"",tags:[]},steps:[{jp:"",tr:"",note:"",noteTr:"",tags:[],animal:""}]}]})); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
 
 /* ====== AI一括 ====== */
 let aiRi=0, aiTi=0;
@@ -548,6 +548,9 @@ renderPresent();
 <script src="vendor/supabase.js"></script>
 <script src="auth-config.js"></script>
 <script src="auth.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan.js"></script>
 <script src="sync.js"></script>
 </body>
 </html>

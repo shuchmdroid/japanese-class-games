@@ -678,7 +678,8 @@ function commitFields(){
 function saveSettings(){ commitFields(); overlay.classList.remove("open"); renderAll(); }
 
 function addGroup(){
-  const g={key:genKey(), label:"✏️ 新しいグループ", type:"list", cells:"word", items:[]};
+  if(window.JPlan&&!JPlan.guardAdd(groups,"グループ")) return;
+  const g=JPlan.mark({key:genKey(), label:"✏️ 新しいグループ", type:"list", cells:"word", items:[]});
   groups.push(g); saveGroups();
   mode=g.key; cfg.mode=g.key; save(LS_CFG,cfg);
   renderAll(); openSettings();
@@ -905,9 +906,10 @@ $("#mergeGo").onclick=()=>{
   const items=[], imgs={}, seen=new Set();
   keys.forEach(k=>{ const g=groupOf(k); poolOf(k).forEach(v=>{ if(!seen.has(v)){ seen.add(v); items.push(v); } if(g&&g.imgs&&g.imgs[v]&&!imgs[v]) imgs[v]=g.imgs[v]; }); });
   if(items.length<2){ alert("合体できる中身が足りません。"); return; }
+  if(window.JPlan&&!JPlan.guardAdd(groups,"グループ")) return;
   const label=($("#mergeName").value||"").trim() || ("🔗 "+keys.map(k=>(groupOf(k)||{}).label||"").join("＋"));
   const key=genKey();
-  const g={key,label,type:"list",cells:inferCells(keys),items};
+  const g=JPlan.mark({key,label,type:"list",cells:inferCells(keys),items});
   if(Object.keys(imgs).length) g.imgs=imgs;
   groups.push(g); saveGroups();
   mode=key; cfg.mode=key; save(LS_CFG,cfg);
@@ -922,6 +924,9 @@ renderAll();
 <script src="vendor/supabase.js"></script>
 <script src="auth-config.js"></script>
 <script src="auth.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan.js"></script>
 <script src="sync.js"></script>
 </body>
 </html>

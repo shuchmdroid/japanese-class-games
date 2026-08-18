@@ -626,7 +626,7 @@ editList.addEventListener("click",e=>{
   else return;
   saveData(); renderEdit();
 });
-$(".addquiz [data-act='addset']").onclick=()=>{ data.sets.push({name:"",lang:"English",revealOrder:"answer",quizEvery:3,quizTypes:["mean","word","audio"],choices:4,words:[{kana:"",kanji:"",tr:"",img:""}]}); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
+$(".addquiz [data-act='addset']").onclick=()=>{ if(window.JPlan&&!JPlan.guardAdd(data.sets,"セット")) return; data.sets.push(JPlan.mark({name:"",lang:"English",revealOrder:"answer",quizEvery:3,quizTypes:["mean","word","audio"],choices:4,words:[{kana:"",kanji:"",tr:"",img:""}]})); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
 
 /* ====== 画像 ====== */
 let activeImgTarget=null;
@@ -789,6 +789,9 @@ renderPresent();
 <script src="vendor/supabase.js"></script>
 <script src="auth-config.js"></script>
 <script src="auth.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan.js"></script>
 <script src="sync.js"></script>
 </body>
 </html>

@@ -626,7 +626,7 @@ $("#doneBtn").onclick=showPresent;
 $("#doneBtn2").onclick=showPresent;
 $("#saveBtn").onclick=doSave;
 $("#saveBtn2").onclick=doSave;
-$("#addPageBtn").onclick=()=>{ data.pages.push({title:"",words:[{jp:"",kana:"",romaji:"",tr:""}]}); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
+$("#addPageBtn").onclick=()=>{ if(window.JPlan&&!JPlan.guardAdd(data.pages,"ページ")) return; data.pages.push(JPlan.mark({title:"",words:[{jp:"",kana:"",romaji:"",tr:""}]})); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
 
 /* ====== ゲームの単語グループへ同期（ビンゴ・神経衰弱・ジェスチャー共通の bingo.groups.v2 へ） ====== */
 function trySaveGroups(groups){ try{ localStorage.setItem("bingo.groups.v2", JSON.stringify(groups)); return true; }catch(e){ return false; } }
@@ -720,7 +720,8 @@ $("#bulkAdd").onclick=()=>{
     const pi=Math.min(+$("#bulkPageSel").value, data.pages.length-1);
     words.forEach(w=>data.pages[pi].words.push(w));
   } else {
-    data.pages.push({title:"", words});   // 新しいページ（名前は編集画面で自分で入力）
+    if(window.JPlan&&!JPlan.guardAdd(data.pages,"ページ")) return;
+    data.pages.push(JPlan.mark({title:"", words}));   // 新しいページ（名前は編集画面で自分で入力）
   }
   saveData(); renderEdit(); closeBulk(); $("#bulkText").value="";
   showToast(`✅ ${words.length}語を追加しました`);
@@ -787,6 +788,9 @@ renderPage();
 <script src="vendor/supabase.js"></script>
 <script src="auth-config.js"></script>
 <script src="auth.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan.js"></script>
 <script src="sync.js"></script>
 </body>
 </html>

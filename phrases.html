@@ -412,7 +412,7 @@ $("#saveBtn2").onclick=doSave;
 $("#modeBtn").onclick=showEdit;
 $("#doneBtn").onclick=showPresent;
 $("#doneBtn2").onclick=showPresent;
-$("#addPhraseBtn").onclick=()=>{ data.phrases.push({segs:[{jp:"",kana:"",romaji:"",tr:""}],note:"",noteJa:""}); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
+$("#addPhraseBtn").onclick=()=>{ if(window.JPlan&&!JPlan.guardAdd(data.phrases,"フレーズ")) return; data.phrases.push(JPlan.mark({segs:[{jp:"",kana:"",romaji:"",tr:""}],note:"",noteJa:""})); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
 
 /* ====== AIで一括作成 ====== */
 function aiPromptText(){
@@ -460,7 +460,11 @@ $("#aiCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText($("#aiP
 $("#aiAdd").onclick=()=>{
   const phrases=parseAiPhrases($("#aiResult").value);
   if(!phrases.length){ alert("フレーズが読み取れませんでした。「日本語 | よみ | ローマ字 | 翻訳」の行を並べ、文の最後に「説明: …」、文と文の間は空行で区切って貼り付けてください。"); return; }
-  data.phrases.push(...phrases);
+  const room=window.JPlan?JPlan.allowance(data.phrases,"フレーズ"):Infinity;
+  if(room<=0){ JPlan.openUpgrade("フレーズ"); return; }
+  const take=phrases.slice(0,room===Infinity?phrases.length:room).map(p=>window.JPlan?JPlan.mark(p):p);
+  data.phrases.push(...take);
+  if(take.length<phrases.length) setTimeout(()=>JPlan.openUpgrade("フレーズ"),400);
   saveData(); $("#aiOverlay").hidden=true; renderEdit(); showToast(`✅ ${phrases.length}フレーズを追加しました`);
 };
 $("#langInput").addEventListener("input",function(){ cfg.lang=this.value.trim(); saveCfg(); });
@@ -488,6 +492,9 @@ renderPhrase();
 <script src="vendor/supabase.js"></script>
 <script src="auth-config.js"></script>
 <script src="auth.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan.js"></script>
 <script src="sync.js"></script>
 </body>
 </html>

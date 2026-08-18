@@ -563,7 +563,7 @@ editList.addEventListener("click",e=>{
   else return;
   saveData(); renderEdit();
 });
-$(".addscene [data-act='addscene']").onclick=()=>{ data.scenes.push({title:"",titleTr:"",bg:"park",left:"rabbit",right:"bear",style:anyPic()?"pic":"svg",lines:[{who:"left",jp:"",tr:"",ex:"neutral",mark:"",dur:3}]}); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
+$(".addscene [data-act='addscene']").onclick=()=>{ if(window.JPlan&&!JPlan.guardAdd(data.scenes,"アニメ")) return; data.scenes.push(JPlan.mark({title:"",titleTr:"",bg:"park",left:"rabbit",right:"bear",style:anyPic()?"pic":"svg",lines:[{who:"left",jp:"",tr:"",ex:"neutral",mark:"",dur:3}]})); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
 
 /* ===== 台本（生徒の復習用・画像/PDFで配れる） ===== */
 // 「漢字《ふりがな》」を [{b:漢字, r:ふりがな}] に分解（canvas に描くため）
@@ -802,6 +802,9 @@ renderPresent();
 <script src="vendor/supabase.js"></script>
 <script src="auth-config.js"></script>
 <script src="auth.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan.js"></script>
 <script src="sync.js"></script>
 </body>
 </html>

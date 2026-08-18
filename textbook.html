@@ -505,7 +505,7 @@ editList.addEventListener("click",e=>{
   else return;
   saveData(); renderEdit();
 });
-$(".addbtns [data-add='page']").onclick=()=>{ data.pages.push({title:"",coverImg:"",keywords:[],quiz:[],items:[{t:"p",jp:"",tr:""}]}); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
+$(".addbtns [data-add='page']").onclick=()=>{ if(window.JPlan&&!JPlan.guardAdd(data.pages,"ページ")) return; data.pages.push(JPlan.mark({title:"",coverImg:"",keywords:[],quiz:[],items:[{t:"p",jp:"",tr:""}]})); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
 
 /* ====== 画像（貼り付け・選択・ドロップ・自動圧縮） ====== */
 let curEditPage=0, imgTarget=null, lastMouse={x:-1,y:-1};
@@ -640,6 +640,9 @@ renderPage();
 <script src="vendor/supabase.js"></script>
 <script src="auth-config.js"></script>
 <script src="auth.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan.js"></script>
 <script src="sync.js"></script>
 </body>
 </html>

@@ -362,7 +362,7 @@ editList.addEventListener("click",e=>{
   else return;
   saveData(); renderEdit();
 });
-$(".addbtns [data-act='add']").onclick=()=>{ data.items.push({kanji:"",on:"",kun:"",meaning:"",meaningTr:"",level:"",levelTr:"",strokes:0,uses:[]}); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
+$(".addbtns [data-act='add']").onclick=()=>{ if(window.JPlan&&!JPlan.guardAdd(data.items,"漢字")) return; data.items.push(JPlan.mark({kanji:"",on:"",kun:"",meaning:"",meaningTr:"",level:"",levelTr:"",strokes:0,uses:[]})); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
 
 /* ====== 使い方（頻出語）を kanjiapi の単語から取得 ====== */
 function scoreVar(v){ let s=0; (v.priorities||[]).forEach(p=>{
@@ -434,7 +434,11 @@ $("#aiAdd").onclick=()=>{
     added.push({kanji, on:p[1]||"", kun:p[2]||"", meaning:p[3]||"", meaningTr:p[4]||"", level:p[5]||"", levelTr:p[6]||"", strokes:0, uses});
   });
   if(!added.length){ alert("読み取れませんでした。「漢字 | 音 | 訓 | 意味 | 翻訳 | レベル | レベル翻訳」の形で貼り付けてください。"); return; }
-  data.items.push(...added); saveData(); $("#aiOverlay").hidden=true; renderEdit(); showToast(`✅ ${added.length}字を追加しました`);
+  const room=window.JPlan?JPlan.allowance(data.items,"漢字"):Infinity;
+  if(room<=0){ JPlan.openUpgrade("漢字"); return; }
+  const take=added.slice(0,room===Infinity?added.length:room).map(p=>window.JPlan?JPlan.mark(p):p);
+  if(take.length<added.length) setTimeout(()=>JPlan.openUpgrade("漢字"),400);
+  data.items.push(...take); saveData(); $("#aiOverlay").hidden=true; renderEdit(); showToast(`✅ ${added.length}字を追加しました`);
 };
 
 /* ====== トースト ====== */
@@ -469,6 +473,9 @@ renderCard();
 <script src="vendor/supabase.js"></script>
 <script src="auth-config.js"></script>
 <script src="auth.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan.js"></script>
 <script src="sync.js"></script>
 </body>
 </html>

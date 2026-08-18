@@ -347,7 +347,7 @@ editList.addEventListener("click",e=>{
 $(".add-row").addEventListener("click",e=>{
   const b=e.target.closest("[data-add]"); if(!b) return;
   const m={empty:{title:"",chars:[]}, hira:{title:"ひらがな",chars:[...HIRA]}, kata:{title:"カタカナ",chars:[...KATA]}, num:{title:"漢数字",chars:[...NUM]}};
-  data.pages.push(m[b.dataset.add]); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight);
+  if(window.JPlan&&!JPlan.guardAdd(data.pages,"ページ")) return; data.pages.push(JPlan.mark(m[b.dataset.add])); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight);
 });
 
 /* ====== トースト ====== */
@@ -391,6 +391,9 @@ renderStage();
 <script src="vendor/supabase.js"></script>
 <script src="auth-config.js"></script>
 <script src="auth.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan.js"></script>
 <script src="sync.js"></script>
 </body>
 </html>

@@ -535,7 +535,7 @@ editList.addEventListener("click",e=>{
   else return;
   saveData(); renderEdit();
 });
-$(".addbtns [data-add='play']").onclick=()=>{ data.plays.push({title:"",coverImg:"",roles:["A","B"],lines:[{role:0,jp:"",kana:"",romaji:"",tr:""}]}); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
+$(".addbtns [data-add='play']").onclick=()=>{ if(window.JPlan&&!JPlan.guardAdd(data.plays,"ロールプレイ")) return; data.plays.push(JPlan.mark({title:"",coverImg:"",roles:["A","B"],lines:[{role:0,jp:"",kana:"",romaji:"",tr:""}]})); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
 
 /* ====== 表紙画像（選択・圧縮・容量ガード） ====== */
 let imgTarget=null;
@@ -688,6 +688,9 @@ renderScreen();
 <script src="vendor/supabase.js"></script>
 <script src="auth-config.js"></script>
 <script src="auth.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan.js"></script>
 <script src="sync.js"></script>
 </body>
 </html>

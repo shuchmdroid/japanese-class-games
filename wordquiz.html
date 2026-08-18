@@ -385,7 +385,7 @@ editList.addEventListener("click",e=>{
   else return;
   saveData(); renderEdit();
 });
-$(".addquiz [data-act='addquiz']").onclick=()=>{ data.quizzes.push({name:"",lang:"",furigana:true,choices:4,auto:true,questions:[{q:"",a:"",kana:"",dist:[]}]}); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
+$(".addquiz [data-act='addquiz']").onclick=()=>{ if(window.JPlan&&!JPlan.guardAdd(data.quizzes,"クイズ")) return; data.quizzes.push(JPlan.mark({name:"",lang:"",furigana:true,choices:4,auto:true,questions:[{q:"",a:"",kana:"",dist:[]}]})); saveData(); renderEdit(); window.scrollTo(0,document.body.scrollHeight); };
 
 /* ====== AI一括 ====== */
 let aiZi=0;
@@ -439,6 +439,9 @@ renderPresent();
 <script src="vendor/supabase.js"></script>
 <script src="auth-config.js"></script>
 <script src="auth.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan-config.js"></script>
+<script src="plan.js"></script>
 <script src="sync.js"></script>
 </body>
 </html>
